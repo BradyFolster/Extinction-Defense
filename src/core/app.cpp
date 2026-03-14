@@ -16,7 +16,8 @@ bool App::init(){
     // Creates a window and a renderer attached to said window
     // Title, resolution (width x height), flags
     // Pass the pointers so that SDL assigns them correctly
-    if (SDL_CreateWindowAndRenderer(1280, 720, SDL_WINDOW_SHOWN, &window_, &renderer_) != 0){
+    if (SDL_CreateWindowAndRenderer(1280, 720, SDL_WINDOW_SHOWN | SDL_RENDERER_PRESENTVSYNC
+                                    , &window_, &renderer_) != 0){
         const char* error = SDL_GetError();
         
         std::cerr << "SDL_CreateWindowAndRenderer failed";
@@ -86,6 +87,11 @@ void App::render(){
 
     // Clears the window to the current draw color
     SDL_RenderClear(renderer_);
+
+    SDL_Rect rect{100, 100, 200, 150};
+
+    SDL_SetRenderDrawColor(renderer_, 200, 80, 80, 255);
+    SDL_RenderFillRect(renderer_, &rect);
 
     // Present the finished frame to the screen
     SDL_RenderPresent(renderer_);
