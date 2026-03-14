@@ -1,0 +1,25 @@
+cmake_minimum_required(VERSION 3.20)
+
+project(ExtinctionDefense LANGUAGES CXX)
+
+set(CMAKE_CXX_STANDARD 20)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_CXX_EXTENSIONS OFF)
+
+add_executable(ExtinctionDefense
+    src/main.cpp
+    src/core/app.cpp
+)
+
+target_include_directories(ExtinctionDefense PRIVATE include)
+
+find_package(SDL2 REQUIRED)
+target_link_libraries(ExtinctionDefense PRIVATE SDL2::SDL2)
+
+if (CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
+    target_compile_options(ExtinctionDefense PRIVATE
+        -Wall
+        -Wextra
+        -Wpedantic
+    )
+endif()
