@@ -1,1 +1,0 @@
-/usr/bin/c++ CMakeFiles/png_to_map_json.dir/tools/png_to_map_json.cpp.o -o png_to_map_json  /usr/lib/x86_64-linux-gnu/libSDL2_image.so /usr/lib/x86_64-linux-gnu/libSDL2.so 
