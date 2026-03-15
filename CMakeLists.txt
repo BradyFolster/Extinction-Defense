@@ -17,6 +17,9 @@ add_executable(ExtinctionDefense
     src/main.cpp
     src/core/app.cpp
     src/map/map_data.cpp
+    src/tower/tower.cpp
+    src/player/player.cpp
+    src/enemy/enemy.cpp
 )
 
 add_executable(png_to_map_json

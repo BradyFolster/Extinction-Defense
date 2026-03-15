@@ -4,6 +4,7 @@
 #include <SDL2/SDL_image.h>
 #include <vector>
 #include "map/map_data.h"
+#include "tower/tower.h"
 
 // Each grid cell - has room for more variables (terrain type, blocked, reserved_for_path, etc.)
 struct GridCell{
@@ -42,6 +43,15 @@ class App{
         bool initialize_map_from_json(const char* file_path);
         void apply_map_data_to_grid();
         void render_path_debug();
+        // Tower helpers
+        bool can_place_tower(int start_col, int start_row, int footprint_w, int footprint_h);
+        void render_towers();
+        void render_tower_preview();
+        SDL_Rect get_tower_button_rect(TowerType type) const;
+        bool point_in_rect(int x, int y, const SDL_Rect& rect) const;
+        bool place_selected_tower_if_valid(int center_col, int center_row);
+        void render_tower_menu();
+        void render_tower_button(TowerType type);
     private:
         // Pointer to the OS window SDL will create
         SDL_Window* window_;
@@ -62,8 +72,13 @@ class App{
         static constexpr int CELL_SIZE = 20;
 
         // Number of grid rows/cols
-        static constexpr int GRID_COLS = WORLD_WIDTH / CELL_SIZE;
+        static constexpr int GRID_COLS = 80;
         static constexpr int GRID_ROWS = WORLD_HEIGHT / CELL_SIZE;
+
+        // Playble window (not including side menu)
+        static constexpr int PLAYABLE_WIDTH = GRID_COLS * CELL_SIZE; // 1600
+        static constexpr int MENU_WIDTH = WORLD_WIDTH - PLAYABLE_WIDTH; // 320
+        static constexpr int MENU_X = PLAYABLE_WIDTH;
 
         // Temp debug option to show/hide grid
         bool show_grid_ = true;
@@ -79,4 +94,13 @@ class App{
 
         // Contains data for the map read from a json file
         MapData map_data_;
+
+        // Contains all towers
+        std::vector<Tower> towers_;
+        const Tower* selected_tower_ = nullptr;
+
+        // Data for the tower menu
+        bool tower_selected_ = false;
+        TowerType selected_tower_type_ = TowerType::Trex;
+
 };

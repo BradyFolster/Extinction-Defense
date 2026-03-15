@@ -18,8 +18,8 @@ struct MapData  {
     std::string name;
     std::string image_path;
 
-    int world_width = 1920;
-    int world_height = 1080;
+    int world_width = 0;
+    int world_height = 0;
     int cell_size = 20;
 
     CellCoord spawn{};

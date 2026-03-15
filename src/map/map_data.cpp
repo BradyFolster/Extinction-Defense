@@ -22,7 +22,7 @@ bool load_map_data(const std::string& file_path, MapData& out_map)
 
     // Fills out the values in the MapData object
     out_map.name = j.value("name", "unnamed_map");
-    out_map.image_path = j.value("image", "");
+    out_map.image_path = j.value("image_path", "");
     out_map.world_width = j.value("world_width", 1920);
     out_map.world_height = j.value("world_height", 1080);
     out_map.cell_size = j.value("cell_size", 20);
