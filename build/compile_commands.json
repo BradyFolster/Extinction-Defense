@@ -1,0 +1,14 @@
+[
+{
+  "directory": "/home/brady/Documents/Projects/Extinction-Defense/build",
+  "command": "/usr/bin/c++  -I/home/brady/Documents/Projects/Extinction-Defense/include -isystem /usr/include/SDL2 -std=c++20 -Wall -Wextra -Wpedantic -o CMakeFiles/ExtinctionDefense.dir/src/main.cpp.o -c /home/brady/Documents/Projects/Extinction-Defense/src/main.cpp",
+  "file": "/home/brady/Documents/Projects/Extinction-Defense/src/main.cpp",
+  "output": "CMakeFiles/ExtinctionDefense.dir/src/main.cpp.o"
+},
+{
+  "directory": "/home/brady/Documents/Projects/Extinction-Defense/build",
+  "command": "/usr/bin/c++  -I/home/brady/Documents/Projects/Extinction-Defense/include -isystem /usr/include/SDL2 -std=c++20 -Wall -Wextra -Wpedantic -o CMakeFiles/ExtinctionDefense.dir/src/core/app.cpp.o -c /home/brady/Documents/Projects/Extinction-Defense/src/core/app.cpp",
+  "file": "/home/brady/Documents/Projects/Extinction-Defense/src/core/app.cpp",
+  "output": "CMakeFiles/ExtinctionDefense.dir/src/core/app.cpp.o"
+}
+]

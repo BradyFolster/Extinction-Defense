@@ -109,6 +109,7 @@ ExtinctionDefense: CMakeFiles/ExtinctionDefense.dir/src/main.cpp.o
 ExtinctionDefense: CMakeFiles/ExtinctionDefense.dir/src/core/app.cpp.o
 ExtinctionDefense: CMakeFiles/ExtinctionDefense.dir/build.make
 ExtinctionDefense: /usr/lib/x86_64-linux-gnu/libSDL2.so
+ExtinctionDefense: /usr/lib/x86_64-linux-gnu/libSDL2_image.so
 ExtinctionDefense: CMakeFiles/ExtinctionDefense.dir/link.txt
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --bold --progress-dir=/home/brady/Documents/Projects/Extinction-Defense/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_3) "Linking CXX executable ExtinctionDefense"
 	$(CMAKE_COMMAND) -E cmake_link_script CMakeFiles/ExtinctionDefense.dir/link.txt --verbose=$(VERBOSE)

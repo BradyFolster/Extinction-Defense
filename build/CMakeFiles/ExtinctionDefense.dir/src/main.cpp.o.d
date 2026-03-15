@@ -232,4 +232,28 @@ CMakeFiles/ExtinctionDefense.dir/src/main.cpp.o: \
  /usr/include/SDL2/SDL_render.h /usr/include/SDL2/SDL_shape.h \
  /usr/include/SDL2/SDL_system.h /usr/include/SDL2/SDL_timer.h \
  /usr/include/SDL2/SDL_version.h /usr/include/SDL2/SDL_locale.h \
- /usr/include/SDL2/SDL_misc.h
+ /usr/include/SDL2/SDL_misc.h /usr/include/SDL2/SDL_image.h \
+ /usr/include/SDL2/SDL.h /usr/include/c++/13/vector \
+ /usr/include/c++/13/bits/allocator.h \
+ /usr/include/x86_64-linux-gnu/c++/13/bits/c++allocator.h \
+ /usr/include/c++/13/bits/new_allocator.h \
+ /usr/include/c++/13/bits/memoryfwd.h \
+ /usr/include/c++/13/bits/stl_uninitialized.h \
+ /usr/include/c++/13/ext/alloc_traits.h \
+ /usr/include/c++/13/bits/alloc_traits.h \
+ /usr/include/c++/13/bits/stl_vector.h \
+ /usr/include/c++/13/initializer_list \
+ /usr/include/c++/13/bits/stl_bvector.h \
+ /usr/include/c++/13/bits/functional_hash.h \
+ /usr/include/c++/13/bits/hash_bytes.h /usr/include/c++/13/bits/refwrap.h \
+ /usr/include/c++/13/bits/invoke.h \
+ /usr/include/c++/13/bits/stl_function.h \
+ /usr/include/c++/13/backward/binders.h \
+ /usr/include/c++/13/bits/range_access.h \
+ /usr/include/c++/13/bits/vector.tcc \
+ /usr/include/c++/13/bits/memory_resource.h /usr/include/c++/13/cstddef \
+ /usr/include/c++/13/bits/uses_allocator.h \
+ /usr/include/c++/13/bits/uses_allocator_args.h /usr/include/c++/13/tuple \
+ /usr/include/c++/13/bits/ranges_util.h \
+ /usr/include/c++/13/bits/ranges_base.h \
+ /usr/include/c++/13/bits/max_size_type.h /usr/include/c++/13/numbers

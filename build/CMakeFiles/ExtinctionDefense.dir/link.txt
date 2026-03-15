@@ -1,1 +1,1 @@
-/usr/bin/c++ CMakeFiles/ExtinctionDefense.dir/src/main.cpp.o CMakeFiles/ExtinctionDefense.dir/src/core/app.cpp.o -o ExtinctionDefense  /usr/lib/x86_64-linux-gnu/libSDL2.so 
+/usr/bin/c++ CMakeFiles/ExtinctionDefense.dir/src/main.cpp.o CMakeFiles/ExtinctionDefense.dir/src/core/app.cpp.o -o ExtinctionDefense  /usr/lib/x86_64-linux-gnu/libSDL2.so /usr/lib/x86_64-linux-gnu/libSDL2_image.so 
