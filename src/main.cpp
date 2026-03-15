@@ -1,4 +1,4 @@
-#include "../include/core/app.h"
+#include "core/app.h"
 
 int main(){
     // Creates App object

@@ -3,15 +3,11 @@
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_image.h>
 #include <vector>
+#include "map/map_data.h"
 
 // Each grid cell - has room for more variables (terrain type, blocked, reserved_for_path, etc.)
-struct CellType{
-    bool buildable = false;
-    bool path = false;
-    bool blocked = false;
-};
 struct GridCell{
-    CellType type;
+    CellType type =CellType::Buildable;
     bool occupied = false;
 };
 
@@ -43,6 +39,9 @@ class App{
         void render_hovered_cell();
         void render_occupied_cells();
         bool load_map_texture(const char* file_path);
+        bool initialize_map_from_json(const char* file_path);
+        void apply_map_data_to_grid();
+        void render_path_debug();
     private:
         // Pointer to the OS window SDL will create
         SDL_Window* window_;
@@ -77,4 +76,7 @@ class App{
         int mouse_y_ = 0;
         int hovered_col_ = -1;
         int hovered_row_ = -1;
+
+        // Contains data for the map read from a json file
+        MapData map_data_;
 };

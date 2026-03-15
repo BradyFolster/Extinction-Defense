@@ -8,9 +8,7 @@ set(CMAKE_DEPENDS_LANGUAGES
 
 # The set of dependency files which are needed:
 set(CMAKE_DEPENDS_DEPENDENCY_FILES
-  "/home/brady/Documents/Projects/Extinction-Defense/src/core/app.cpp" "CMakeFiles/ExtinctionDefense.dir/src/core/app.cpp.o" "gcc" "CMakeFiles/ExtinctionDefense.dir/src/core/app.cpp.o.d"
-  "/home/brady/Documents/Projects/Extinction-Defense/src/main.cpp" "CMakeFiles/ExtinctionDefense.dir/src/main.cpp.o" "gcc" "CMakeFiles/ExtinctionDefense.dir/src/main.cpp.o.d"
-  "/home/brady/Documents/Projects/Extinction-Defense/src/map/map_data.cpp" "CMakeFiles/ExtinctionDefense.dir/src/map/map_data.cpp.o" "gcc" "CMakeFiles/ExtinctionDefense.dir/src/map/map_data.cpp.o.d"
+  "/home/brady/Documents/Projects/Extinction-Defense/tools/png_to_map_json.cpp" "CMakeFiles/png_to_map_json.dir/tools/png_to_map_json.cpp.o" "gcc" "CMakeFiles/png_to_map_json.dir/tools/png_to_map_json.cpp.o.d"
   )
 
 # Targets to which this target links which contain Fortran sources.

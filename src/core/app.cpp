@@ -1,4 +1,4 @@
-#include "../../include/core/app.h"
+#include "core/app.h"
 
 #include <iostream>
 
@@ -46,11 +46,8 @@ bool App::init(){
         return false;
     }
 
-    // Initializes the invisible grid
-    initialize_grid();
-
-    // Loads the map image
-    if (!load_map_texture("assets/images/map1.png")){
+    // Initializes the grid from the json file
+    if (!initialize_map_from_json("assets/maps/map1.json")){
         return false;
     }
 
@@ -141,6 +138,8 @@ void App::render(){
     if (map_texture_ != nullptr){
         SDL_RenderCopy(renderer_, map_texture_, nullptr, nullptr);
     }
+    // Temp path render debug
+    render_path_debug();
 
     render_grid_debug();
     render_hovered_cell();
@@ -252,4 +251,68 @@ bool App::load_map_texture(const char* file_path){
         return false;
     }
     return true;
+}
+
+bool App::initialize_map_from_json(const char* file_path){
+    // Loads the json into map_data_
+    if (!load_map_data(file_path, map_data_)){
+        std::cerr << "Failed to load map data from: " << file_path << "\n";
+        return false;
+    }
+    // Loads image referenced by the json
+    if (!load_map_texture(map_data_.image_path.c_str())){
+        std::cerr << "Failed to load map texture from " << map_data_.image_path << "\n";
+        return false;
+    }
+
+    // Creates the grid and applies the data
+    initialize_grid();
+    apply_map_data_to_grid();
+
+    return true;
+}
+
+void App::apply_map_data_to_grid(){
+    // Resets everything first
+    for (int row = 0; row < GRID_ROWS; row++){
+        for (int col = 0; col < GRID_COLS; col++){
+            grid_[row][col].type = CellType::Buildable;
+            grid_[row][col].occupied = false;
+        }
+    }
+    int markedPathCount = 0;
+    // Marks path cells from the json
+    for (const auto& cell : map_data_.path_cells){
+        if (cell.col >= 0 && cell.col < GRID_COLS && cell.row >= 0 && cell.row < GRID_ROWS){
+            grid_[cell.row][cell.col].type = CellType::Path;
+            markedPathCount++;
+        }
+    }
+    // Marks blocked cells from the json
+    for (const auto& cell : map_data_.blocked_cells){
+        if (cell.col >= 0 && cell.col < GRID_COLS && cell.row >= 0 && cell.row < GRID_ROWS){
+            grid_[cell.row][cell.col].type = CellType::Blocked;
+        }
+    }
+}
+
+// Fills in all path cells 
+void App::render_path_debug(){
+    for (int row = 0; row < GRID_ROWS; row++){
+        for (int col = 0; col < GRID_COLS; col++){
+            SDL_Rect rect;
+            rect.x = col * CELL_SIZE;
+            rect.y = row * CELL_SIZE;
+            rect.w = CELL_SIZE;
+            rect.h = CELL_SIZE;
+
+            if (grid_[row][col].type == CellType::Path){
+                SDL_SetRenderDrawColor(renderer_, 255, 0, 0, 255);
+                SDL_RenderFillRect(renderer_, &rect);
+            } else if (grid_[row][col].type == CellType::Blocked){
+                SDL_SetRenderDrawColor(renderer_, 20, 20, 20, 160);
+                SDL_RenderFillRect(renderer_, &rect);
+            }
+        }
+    }
 }

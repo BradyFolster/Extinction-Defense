@@ -129,6 +129,19 @@ ExtinctionDefense/fast:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/ExtinctionDefense.dir/build.make CMakeFiles/ExtinctionDefense.dir/build
 .PHONY : ExtinctionDefense/fast
 
+#=============================================================================
+# Target rules for targets named png_to_map_json
+
+# Build rule for target.
+png_to_map_json: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 png_to_map_json
+.PHONY : png_to_map_json
+
+# fast build rule for target.
+png_to_map_json/fast:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/png_to_map_json.dir/build.make CMakeFiles/png_to_map_json.dir/build
+.PHONY : png_to_map_json/fast
+
 src/core/app.o: src/core/app.cpp.o
 .PHONY : src/core/app.o
 
@@ -177,6 +190,54 @@ src/main.cpp.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/ExtinctionDefense.dir/build.make CMakeFiles/ExtinctionDefense.dir/src/main.cpp.s
 .PHONY : src/main.cpp.s
 
+src/map/map_data.o: src/map/map_data.cpp.o
+.PHONY : src/map/map_data.o
+
+# target to build an object file
+src/map/map_data.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/ExtinctionDefense.dir/build.make CMakeFiles/ExtinctionDefense.dir/src/map/map_data.cpp.o
+.PHONY : src/map/map_data.cpp.o
+
+src/map/map_data.i: src/map/map_data.cpp.i
+.PHONY : src/map/map_data.i
+
+# target to preprocess a source file
+src/map/map_data.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/ExtinctionDefense.dir/build.make CMakeFiles/ExtinctionDefense.dir/src/map/map_data.cpp.i
+.PHONY : src/map/map_data.cpp.i
+
+src/map/map_data.s: src/map/map_data.cpp.s
+.PHONY : src/map/map_data.s
+
+# target to generate assembly for a file
+src/map/map_data.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/ExtinctionDefense.dir/build.make CMakeFiles/ExtinctionDefense.dir/src/map/map_data.cpp.s
+.PHONY : src/map/map_data.cpp.s
+
+tools/png_to_map_json.o: tools/png_to_map_json.cpp.o
+.PHONY : tools/png_to_map_json.o
+
+# target to build an object file
+tools/png_to_map_json.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/png_to_map_json.dir/build.make CMakeFiles/png_to_map_json.dir/tools/png_to_map_json.cpp.o
+.PHONY : tools/png_to_map_json.cpp.o
+
+tools/png_to_map_json.i: tools/png_to_map_json.cpp.i
+.PHONY : tools/png_to_map_json.i
+
+# target to preprocess a source file
+tools/png_to_map_json.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/png_to_map_json.dir/build.make CMakeFiles/png_to_map_json.dir/tools/png_to_map_json.cpp.i
+.PHONY : tools/png_to_map_json.cpp.i
+
+tools/png_to_map_json.s: tools/png_to_map_json.cpp.s
+.PHONY : tools/png_to_map_json.s
+
+# target to generate assembly for a file
+tools/png_to_map_json.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/png_to_map_json.dir/build.make CMakeFiles/png_to_map_json.dir/tools/png_to_map_json.cpp.s
+.PHONY : tools/png_to_map_json.cpp.s
+
 # Help Target
 help:
 	@echo "The following are some of the valid targets for this Makefile:"
@@ -186,12 +247,19 @@ help:
 	@echo "... edit_cache"
 	@echo "... rebuild_cache"
 	@echo "... ExtinctionDefense"
+	@echo "... png_to_map_json"
 	@echo "... src/core/app.o"
 	@echo "... src/core/app.i"
 	@echo "... src/core/app.s"
 	@echo "... src/main.o"
 	@echo "... src/main.i"
 	@echo "... src/main.s"
+	@echo "... src/map/map_data.o"
+	@echo "... src/map/map_data.i"
+	@echo "... src/map/map_data.s"
+	@echo "... tools/png_to_map_json.o"
+	@echo "... tools/png_to_map_json.i"
+	@echo "... tools/png_to_map_json.s"
 .PHONY : help
 
 

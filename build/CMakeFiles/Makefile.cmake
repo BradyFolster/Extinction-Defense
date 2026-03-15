@@ -10,10 +10,6 @@ set(CMAKE_MAKEFILE_DEPENDS
   "/home/brady/Documents/Projects/Extinction-Defense/CMakeLists.txt"
   "CMakeFiles/3.28.3/CMakeCXXCompiler.cmake"
   "CMakeFiles/3.28.3/CMakeSystem.cmake"
-  "/usr/lib/x86_64-linux-gnu/cmake/SDL2/sdl2-config-version.cmake"
-  "/usr/lib/x86_64-linux-gnu/cmake/SDL2/sdl2-config.cmake"
-  "/usr/lib/x86_64-linux-gnu/cmake/SDL2_image/sdl2_image-config-version.cmake"
-  "/usr/lib/x86_64-linux-gnu/cmake/SDL2_image/sdl2_image-config.cmake"
   "/usr/share/cmake-3.28/Modules/CMakeCXXCompiler.cmake.in"
   "/usr/share/cmake-3.28/Modules/CMakeCXXCompilerABI.cpp"
   "/usr/share/cmake-3.28/Modules/CMakeCXXInformation.cmake"
@@ -26,7 +22,6 @@ set(CMAKE_MAKEFILE_DEPENDS
   "/usr/share/cmake-3.28/Modules/CMakeDetermineCompilerId.cmake"
   "/usr/share/cmake-3.28/Modules/CMakeDetermineSystem.cmake"
   "/usr/share/cmake-3.28/Modules/CMakeFindBinUtils.cmake"
-  "/usr/share/cmake-3.28/Modules/CMakeFindDependencyMacro.cmake"
   "/usr/share/cmake-3.28/Modules/CMakeGenericSystem.cmake"
   "/usr/share/cmake-3.28/Modules/CMakeInitializeConfigs.cmake"
   "/usr/share/cmake-3.28/Modules/CMakeLanguageInformation.cmake"
@@ -82,7 +77,9 @@ set(CMAKE_MAKEFILE_DEPENDS
   "/usr/share/cmake-3.28/Modules/Compiler/XL-CXX-DetermineCompiler.cmake"
   "/usr/share/cmake-3.28/Modules/Compiler/XLClang-CXX-DetermineCompiler.cmake"
   "/usr/share/cmake-3.28/Modules/Compiler/zOS-CXX-DetermineCompiler.cmake"
-  "/usr/share/cmake-3.28/Modules/FeatureSummary.cmake"
+  "/usr/share/cmake-3.28/Modules/FindPackageHandleStandardArgs.cmake"
+  "/usr/share/cmake-3.28/Modules/FindPackageMessage.cmake"
+  "/usr/share/cmake-3.28/Modules/FindPkgConfig.cmake"
   "/usr/share/cmake-3.28/Modules/Internal/FeatureTesting.cmake"
   "/usr/share/cmake-3.28/Modules/Platform/Linux-Determine-CXX.cmake"
   "/usr/share/cmake-3.28/Modules/Platform/Linux-GNU-CXX.cmake"
@@ -90,6 +87,9 @@ set(CMAKE_MAKEFILE_DEPENDS
   "/usr/share/cmake-3.28/Modules/Platform/Linux-Initialize.cmake"
   "/usr/share/cmake-3.28/Modules/Platform/Linux.cmake"
   "/usr/share/cmake-3.28/Modules/Platform/UnixPaths.cmake"
+  "/usr/share/cmake/nlohmann_json/nlohmann_jsonConfig.cmake"
+  "/usr/share/cmake/nlohmann_json/nlohmann_jsonConfigVersion.cmake"
+  "/usr/share/cmake/nlohmann_json/nlohmann_jsonTargets.cmake"
   )
 
 # The corresponding makefile is:
@@ -109,4 +109,5 @@ set(CMAKE_MAKEFILE_PRODUCTS
 # Dependency information for all targets:
 set(CMAKE_DEPEND_INFO_FILES
   "CMakeFiles/ExtinctionDefense.dir/DependInfo.cmake"
+  "CMakeFiles/png_to_map_json.dir/DependInfo.cmake"
   )
