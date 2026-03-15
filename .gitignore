@@ -1,20 +1,28 @@
-# Build directories
+# Build folders
 build/
 builds/
-cmake-build-debug/
-cmake-build-release/
+cmake-build-*/
 
-# CMake artifacts
+# CMake
 CMakeFiles/
 CMakeCache.txt
 cmake_install.cmake
 Makefile
+compile_commands.json
 
-# Compiled binaries
+# Compiled objects
 *.o
+*.obj
 *.out
 *.a
 *.so
 
+# Executables
+ExtinctionDefense
+
 # VSCode
 .vscode/
+
+# OS junk
+.DS_Store
+Thumbs.db
