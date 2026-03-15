@@ -1,6 +1,10 @@
 #include "core/app.h"
 
 #include <iostream>
+#include <algorithm>
+#include <queue>
+#include <map>
+#include <set>
 
 // Default constructor & destructor
 App::App() : window_(nullptr), renderer_(nullptr), map_texture_(nullptr), running_(false) {}
@@ -20,7 +24,7 @@ bool App::init(){
     // Creates a window and a renderer attached to said window
     // Title, resolution (width x height), flags
     // Pass the pointers so that SDL assigns them correctly
-    if (SDL_CreateWindowAndRenderer(1280, 720, SDL_WINDOW_SHOWN | SDL_RENDERER_PRESENTVSYNC | SDL_WINDOW_RESIZABLE
+    if (SDL_CreateWindowAndRenderer(1280, 720, SDL_WINDOW_SHOWN | SDL_WINDOW_RESIZABLE
                                     , &window_, &renderer_) != 0){
         const char* error = SDL_GetError();
         
@@ -50,6 +54,9 @@ bool App::init(){
     if (!initialize_map_from_json("assets/maps/map1.json")){
         return false;
     }
+    
+    // Debug spawn one enemy right away
+    spawn_enemy(EnemyType::CaveMan);
 
     // If the tests pass, SDL successfully made a window/renderer
     running_ = true;
@@ -138,7 +145,7 @@ void App::process_events(){
 
 // Updates game logic
 void App::update(float dt){
-    (void)dt;
+    update_enemies(dt);
 }
 
 // Renders the current frame
@@ -169,6 +176,9 @@ void App::render(){
     render_grid_debug();
     // render_hovered_cell();
     render_occupied_cells();
+
+    // Renders enemies
+    render_enemies();
 
     // Renders menu
     render_tower_menu();
@@ -226,7 +236,7 @@ void App::render_grid_debug(){
     // Horizontal lines
     for (int row = 0; row <= GRID_ROWS; ++row){
         int y = row * CELL_SIZE;
-        SDL_RenderDrawLine(renderer_, 0, y, WORLD_WIDTH, y);
+        SDL_RenderDrawLine(renderer_, 0, y, PLAYABLE_WIDTH, y);
     }
 }
 
@@ -298,6 +308,12 @@ bool App::initialize_map_from_json(const char* file_path){
     // Creates the grid and applies the data
     initialize_grid();
     apply_map_data_to_grid();
+
+    enemy_path_ = map_data_.enemy_path;
+    if (enemy_path_.empty()){
+        std::cerr << "Map JSON has empty enemy_path_.\n";
+        return false;
+    }
 
     return true;
 }
@@ -511,4 +527,98 @@ void App::render_tower_menu()   {
     render_tower_button(TowerType::Trex);
     render_tower_button(TowerType::Stegosaurus);
     render_tower_button(TowerType::Velociraptor);
+}
+
+float App::cell_center_x(int col) const{
+    return static_cast<float>(col * CELL_SIZE + CELL_SIZE / 2);
+}
+float App::cell_center_y(int row) const{
+    return static_cast<float>(row * CELL_SIZE + CELL_SIZE / 2);
+}
+
+void App::spawn_enemy(EnemyType type){
+    if (enemy_path_.empty()){
+        return;
+    }
+
+    Enemy enemy;
+    enemy.type = type;
+    enemy.health = get_enemy_definition(type).max_health;
+    enemy.x = cell_center_x(enemy_path_[0].col);
+    enemy.y = cell_center_y(enemy_path_[0].row);
+    enemy.path_index = 1;
+    enemy.alive = true;
+    enemy.reached_goal = false;
+
+    enemies_.push_back(enemy);
+}
+
+void App::update_enemies(float dt){
+    for (Enemy& enemy : enemies_){
+        if (!enemy.alive){
+            continue;
+        }
+        // If the enemy reaches the goal
+        if (enemy.path_index >= static_cast<int>(enemy_path_.size())){
+            const EnemyDefinition& def = get_enemy_definition(enemy.type);
+            player_.take_damage(def.goal_damage);
+            enemy.alive = false;
+            enemy.reached_goal = true;
+            continue;
+        }
+
+        const CellCoord& target = enemy_path_[enemy.path_index];
+        float target_x = cell_center_x(target.col);
+        float target_y = cell_center_y(target.row);
+
+        float dx = target_x - enemy.x;
+        float dy = target_y - enemy.y;
+        float dist = std::sqrt( dx*dx + dy*dy);
+
+        if (dist < 1.0f){
+            enemy.x = target_x;
+            enemy.y = target_y;
+            enemy.path_index++;
+            continue;
+        }
+        
+        const EnemyDefinition& def = get_enemy_definition(enemy.type);
+        float move_amount = def.speed * dt;
+
+        if (move_amount >= dist){
+            enemy.x = target_x;
+            enemy.y = target_y;
+            enemy.path_index++;
+        } else{
+            enemy.x += (dx / dist) * move_amount;
+            enemy.y += (dy / dist) * move_amount;
+        }
+    }
+   enemies_.erase(
+        std::remove_if(enemies_.begin(), enemies_.end(),
+            [](const Enemy& enemy){
+                return !enemy.alive;
+            }),
+        enemies_.end());
+}
+
+void App::render_enemies() const{
+    for (const Enemy& enemy : enemies_){
+        if (!enemy.alive){
+            continue;
+        }
+
+        const EnemyDefinition& def = get_enemy_definition(enemy.type);
+
+        SDL_SetRenderDrawColor(renderer_, def.debug_color.r, def.debug_color.g, def.debug_color.b, 255);
+
+        SDL_Rect rect{
+            static_cast<int>(enemy.x - CELL_SIZE / 3),
+            static_cast<int>(enemy.y - CELL_SIZE / 3),
+            CELL_SIZE * 2 / 3,
+            CELL_SIZE * 2 / 3
+        };
+
+        SDL_RenderFillRect(renderer_, &rect);
+    }
 }

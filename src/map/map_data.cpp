@@ -63,5 +63,17 @@ bool load_map_data(const std::string& file_path, MapData& out_map)
         }
     }
 
+    out_map.enemy_path.clear();
+    if (j.contains("enemy_path") && j["enemy_path"].is_array()){
+        for (const auto& cell : j["enemy_path"]){
+            if (cell.is_array() && cell.size() == 2){
+                out_map.enemy_path.push_back({
+                    cell[0].get<int>(),
+                    cell[1].get<int>()
+                });
+            }
+        }
+    }
+
     return true;
 }

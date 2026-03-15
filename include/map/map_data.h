@@ -12,6 +12,12 @@ enum class CellType{
 struct CellCoord{
     int col = 0;
     int row = 0;
+
+    bool operator<(const CellCoord& other) const{
+        if(col != other.col)
+            return col < other.col;
+        return row < other.row;
+    }
 };
 
 struct MapData  {
@@ -27,6 +33,7 @@ struct MapData  {
 
     std::vector<CellCoord> path_cells;
     std::vector<CellCoord> blocked_cells;
+    std::vector<CellCoord> enemy_path;
 };
 
 bool load_map_data(const std::string& file_path, MapData& out_map);

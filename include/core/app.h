@@ -5,6 +5,8 @@
 #include <vector>
 #include "map/map_data.h"
 #include "tower/tower.h"
+#include "enemy/enemy.h"
+#include "player/player.h"
 
 // Each grid cell - has room for more variables (terrain type, blocked, reserved_for_path, etc.)
 struct GridCell{
@@ -52,6 +54,14 @@ class App{
         bool place_selected_tower_if_valid(int center_col, int center_row);
         void render_tower_menu();
         void render_tower_button(TowerType type);
+
+        // Enemy helpers
+        bool build_enemy_path();
+        void spawn_enemy(EnemyType type);
+        void update_enemies(float dt);
+        void render_enemies() const;
+        float cell_center_x(int col) const;
+        float cell_center_y(int row) const;
     private:
         // Pointer to the OS window SDL will create
         SDL_Window* window_;
@@ -102,5 +112,11 @@ class App{
         // Data for the tower menu
         bool tower_selected_ = false;
         TowerType selected_tower_type_ = TowerType::Trex;
+
+        // Data for enemies and enemy paths
+        std::vector<CellCoord> enemy_path_;
+        std::vector<Enemy> enemies_;
+        // Player object containing (health, money)
+        Player player_{100, 500};
 
 };
