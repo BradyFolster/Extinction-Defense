@@ -55,8 +55,8 @@ bool App::init(){
         return false;
     }
     
-    // Debug spawn one enemy right away
-    spawn_enemy(EnemyType::CaveMan);
+    // Starts the first wave
+    // wave_manager_.start_next_wave();
 
     // If the tests pass, SDL successfully made a window/renderer
     running_ = true;
@@ -116,7 +116,12 @@ void App::process_events(){
                 int mouse_x = event.button.x;
                 int mouse_y = event.button.y;
 
-                if (mouse_x >= MENU_X) {
+                if (point_in_rect(mouse_x, mouse_y, get_next_wave_button_rect())){
+                    if (wave_manager_.can_start_next_wave()){
+                        wave_manager_.start_next_wave();
+                    }
+                }
+                else if (mouse_x >= MENU_X) {
                     if (point_in_rect(mouse_x, mouse_y, get_tower_button_rect(TowerType::Trex))) {
                         tower_selected_ = true;
                         selected_tower_type_ = TowerType::Trex;
@@ -145,7 +150,18 @@ void App::process_events(){
 
 // Updates game logic
 void App::update(float dt){
+    wave_manager_.update(dt);
+
+    while (wave_manager_.should_spawn_enemy()){
+        EnemyType type = wave_manager_.consume_spawn_enemy();
+        spawn_enemy(type);
+    }
+
     update_enemies(dt);
+
+    if (wave_manager_.is_waiting_for_clear() && enemies_.empty()){
+        wave_manager_.notify_wave_cleared();
+    }
 }
 
 // Renders the current frame
@@ -179,6 +195,9 @@ void App::render(){
 
     // Renders enemies
     render_enemies();
+
+    // Start next wave button
+    render_next_wave_button();
 
     // Renders menu
     render_tower_menu();
@@ -621,4 +640,32 @@ void App::render_enemies() const{
 
         SDL_RenderFillRect(renderer_, &rect);
     }
+}
+
+SDL_Rect App::get_next_wave_button_rect() const{
+    // Top-left corner
+    return SDL_Rect{
+        20,
+        20,
+        180,
+        60
+    };
+}
+
+void App::render_next_wave_button(){
+    SDL_Rect rect = get_next_wave_button_rect();
+
+    // Button is green when active
+    // Grey when a wave can't be spawned
+    if (wave_manager_.can_start_next_wave()){
+        SDL_SetRenderDrawColor(renderer_, 60, 170, 90, 255);
+    } else{
+        SDL_SetRenderDrawColor(renderer_, 90, 90, 90, 255);
+    }
+
+    SDL_RenderFillRect(renderer_, &rect);
+
+    // Outline
+    SDL_SetRenderDrawColor(renderer_, 220, 220, 220, 255);
+    SDL_RenderDrawRect(renderer_, &rect);
 }

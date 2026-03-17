@@ -7,6 +7,7 @@
 #include "tower/tower.h"
 #include "enemy/enemy.h"
 #include "player/player.h"
+#include "wave/wave.h"
 
 // Each grid cell - has room for more variables (terrain type, blocked, reserved_for_path, etc.)
 struct GridCell{
@@ -56,12 +57,15 @@ class App{
         void render_tower_button(TowerType type);
 
         // Enemy helpers
-        bool build_enemy_path();
         void spawn_enemy(EnemyType type);
         void update_enemies(float dt);
         void render_enemies() const;
         float cell_center_x(int col) const;
         float cell_center_y(int row) const;
+
+        // Start wave helpers
+        SDL_Rect get_next_wave_button_rect() const;
+        void render_next_wave_button();
     private:
         // Pointer to the OS window SDL will create
         SDL_Window* window_;
@@ -116,6 +120,7 @@ class App{
         // Data for enemies and enemy paths
         std::vector<CellCoord> enemy_path_;
         std::vector<Enemy> enemies_;
+        WaveManager wave_manager_;
         // Player object containing (health, money)
         Player player_{100, 500};
 

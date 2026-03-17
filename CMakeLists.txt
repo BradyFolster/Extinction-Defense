@@ -20,6 +20,7 @@ add_executable(ExtinctionDefense
     src/tower/tower.cpp
     src/player/player.cpp
     src/enemy/enemy.cpp
+    src/wave/wave.cpp
 )
 
 add_executable(png_to_map_json
