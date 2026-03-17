@@ -12,6 +12,7 @@ find_package(nlohmann_json REQUIRED)
 
 pkg_check_modules(SDL2 REQUIRED IMPORTED_TARGET sdl2)
 pkg_check_modules(SDL2_IMAGE REQUIRED IMPORTED_TARGET SDL2_image)
+pkg_check_modules(SDL2_TTF REQUIRED IMPORTED_TARGET SDL2_ttf)
 
 add_executable(ExtinctionDefense
     src/main.cpp
@@ -33,6 +34,7 @@ target_include_directories(png_to_map_json PRIVATE include)
 target_link_libraries(ExtinctionDefense PRIVATE
     PkgConfig::SDL2
     PkgConfig::SDL2_IMAGE
+    PkgConfig::SDL2_TTF
     nlohmann_json::nlohmann_json
 )
 

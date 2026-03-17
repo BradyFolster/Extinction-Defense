@@ -54,6 +54,15 @@ bool App::init(){
     if (!initialize_map_from_json("assets/maps/map1.json")){
         return false;
     }
+
+    // Initializes debug text rendering
+    if (TTF_Init() != 0){
+        std::cerr << "TTF_Init() failed: " << TTF_GetError() << "\n";
+        return false;
+    }
+    if (!init_debug_font()){
+        return false;
+    }
     
     // Starts the first wave
     // wave_manager_.start_next_wave();
@@ -157,6 +166,7 @@ void App::update(float dt){
         spawn_enemy(type);
     }
 
+    update_towers(dt);
     update_enemies(dt);
 
     if (wave_manager_.is_waiting_for_clear() && enemies_.empty()){
@@ -202,6 +212,9 @@ void App::render(){
     // Renders menu
     render_tower_menu();
 
+    // Debug menu
+    render_debug_hud();
+
     // Present the finished frame to the screen
     SDL_RenderPresent(renderer_);
 }
@@ -225,6 +238,8 @@ void App::shutdown(){
         window_ = nullptr;
     }
 
+    // Shuts down SDL_TTF text rendering
+    shutdown_debug_font();
     // Finally, shut down SDL itself
     SDL_Quit();
 }
@@ -668,4 +683,167 @@ void App::render_next_wave_button(){
     // Outline
     SDL_SetRenderDrawColor(renderer_, 220, 220, 220, 255);
     SDL_RenderDrawRect(renderer_, &rect);
+}
+
+float App::tower_center_x(const Tower& tower) const{
+    const TowerDefinition& def = get_tower_definition(tower.type);
+    return static_cast<float>(tower.col * CELL_SIZE + (def.footprint_w * CELL_SIZE) / 2);
+}
+
+float App::tower_center_y(const Tower& tower) const{
+    const TowerDefinition& def = get_tower_definition(tower.type);
+    return static_cast<float>(tower.row * CELL_SIZE + (def.footprint_h * CELL_SIZE) / 2);
+}
+
+Enemy* App::find_target_for_tower(const Tower& tower){
+    const TowerDefinition& def = get_tower_definition(tower.type);
+
+    float tx = tower_center_x(tower);
+    float ty = tower_center_y(tower);
+    float range = def.attack_range;
+    float range_sq = range*range;
+
+    for (Enemy& enemy : enemies_){
+        if (!enemy.alive){
+            continue;
+        }
+
+        float dx = enemy.x - tx;
+        float dy = enemy.y - ty;
+        float dist_sq = dx*dx + dy*dy;
+
+        if (dist_sq <= range_sq){
+            return &enemy;
+        }
+    }
+    return nullptr;
+}
+
+void App::update_towers(float dt){
+    for (Tower& tower : towers_){
+        const TowerDefinition& def = get_tower_definition(tower.type);
+
+        // Tick cooldown towards 0
+        if (tower.attack_cooldown > 0.0f){
+            tower.attack_cooldown -= dt;
+            if (tower.attack_cooldown < 0.0f){
+                tower.attack_cooldown = 0.0f;
+            }
+        }
+
+        // Can't fire yet
+        if (tower.attack_cooldown > 0.0f){
+            continue;
+        }
+
+        // Find a target
+        Enemy* target = find_target_for_tower(tower);
+        if (target == nullptr){
+            continue;
+        }
+        target->health -= def.attack_damage;
+
+        // Kill enemy if health is depleted
+        if (target->health <= 0.0f){
+            target->alive = false;
+            // Temp flat reward for killing enemy
+            player_.add_money(10);
+        }
+
+        // Reset attack cooldown
+        if (def.attacks_per_second > 0.0f){
+            tower.attack_cooldown = 1.0f / def.attacks_per_second;
+        }
+    }
+}
+
+bool App::init_debug_font(){
+    // .ttf file path
+    debug_font_ = TTF_OpenFont("assets/fonts/Roboto-Regular.ttf", 24);
+
+    if (debug_font_ == nullptr){
+        std::cerr << "TTF_OpenFont() failed: " << TTF_GetError() << "\n";
+        return false;
+    }
+
+    return true;
+}
+
+void App::shutdown_debug_font(){
+    if (debug_font_ != nullptr){
+        TTF_CloseFont(debug_font_);
+        debug_font_ = nullptr;
+    }
+}
+
+bool App::draw_text(const std::string& text, int x, int y, SDL_Color color) const{
+    if (debug_font_ == nullptr){
+        return false;
+    }
+
+    SDL_Surface* surface = TTF_RenderText_Blended(debug_font_, text.c_str(), color);
+    if (surface == nullptr){
+        std::cerr << "TTF_RenderText_Blended() failed: " << TTF_GetError() << "\n";
+        return false;
+    }
+
+    // Turns the surface into a texture so SDL can draw it
+    SDL_Texture* texture = SDL_CreateTextureFromSurface(renderer_, surface);
+    if (texture == nullptr){
+        std::cerr << "SDL_CreateTextureFromSurface() failed: " << SDL_GetError() << "\n";
+        SDL_FreeSurface(surface);
+        return false;
+    }
+
+    SDL_Rect dest{
+        x,
+        y,
+        surface->w,
+        surface->h
+    };
+
+    SDL_FreeSurface(surface);
+
+    SDL_RenderCopy(renderer_, texture, nullptr, &dest);
+    SDL_DestroyTexture(texture);
+
+    return true;
+}
+
+void App::render_debug_hud() const{
+    if (!show_debug_hud_){
+        return;
+    }
+
+    SDL_Color text_color{0, 0, 0, 255};
+
+    // Top-left of playable area
+    int x = 20;
+    int y = 100;
+    int line_height = 30;
+
+    draw_text("Health: " + std::to_string(player_.health()), x, y, text_color);
+    y += line_height;
+
+    draw_text("Money: " + std::to_string(player_.money()), x, y, text_color);
+    y += line_height;
+
+    draw_text("Wave: " + std::to_string(wave_manager_.current_wave_number()), x, y, text_color);
+    y += line_height;
+
+    
+    std::string wave_state = "Unknown";
+
+    if (wave_manager_.is_waiting_to_start()){
+        wave_state = "Waiting";
+    } else if (wave_manager_.is_waiting_for_clear()){
+        wave_state = "Clearing";
+    } else if (wave_manager_.is_spawning()){
+        wave_state = "Spawning";
+    }
+
+    draw_text("State: " + wave_state, x, y, text_color);
+    y += line_height;
+
+    draw_text("Enemies: " + std::to_string(enemies_.size()), x, y, text_color);
 }

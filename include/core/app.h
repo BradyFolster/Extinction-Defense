@@ -2,12 +2,14 @@
 
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_image.h>
+#include <SDL2/SDL_ttf.h>
 #include <vector>
 #include "map/map_data.h"
 #include "tower/tower.h"
 #include "enemy/enemy.h"
 #include "player/player.h"
 #include "wave/wave.h"
+#include <string>
 
 // Each grid cell - has room for more variables (terrain type, blocked, reserved_for_path, etc.)
 struct GridCell{
@@ -45,7 +47,6 @@ class App{
         bool load_map_texture(const char* file_path);
         bool initialize_map_from_json(const char* file_path);
         void apply_map_data_to_grid();
-        void render_path_debug();
         // Tower helpers
         bool can_place_tower(int start_col, int start_row, int footprint_w, int footprint_h);
         void render_towers();
@@ -55,6 +56,11 @@ class App{
         bool place_selected_tower_if_valid(int center_col, int center_row);
         void render_tower_menu();
         void render_tower_button(TowerType type);
+        void update_towers(float dt);
+        Enemy* find_target_for_tower(const Tower& tower);
+        float tower_center_x(const Tower& tower) const;
+        float tower_center_y(const Tower& tower) const;
+
 
         // Enemy helpers
         void spawn_enemy(EnemyType type);
@@ -66,6 +72,14 @@ class App{
         // Start wave helpers
         SDL_Rect get_next_wave_button_rect() const;
         void render_next_wave_button();
+
+        // Debug rendering
+        void render_path_debug();
+        bool init_debug_font();
+        void shutdown_debug_font();
+        bool draw_text(const std::string& text, int x, int y, SDL_Color color) const;
+        void render_debug_hud() const;
+
     private:
         // Pointer to the OS window SDL will create
         SDL_Window* window_;
@@ -123,5 +137,9 @@ class App{
         WaveManager wave_manager_;
         // Player object containing (health, money)
         Player player_{100, 500};
+
+        // Used for SDL_TTF text rendering
+        TTF_Font* debug_font_ = nullptr;
+        bool show_debug_hud_ = true;
 
 };
