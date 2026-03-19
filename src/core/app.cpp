@@ -654,6 +654,8 @@ void App::render_enemies() const{
         };
 
         SDL_RenderFillRect(renderer_, &rect);
+
+        render_enemy_health_bar(enemy, rect);
     }
 }
 
@@ -846,4 +848,63 @@ void App::render_debug_hud() const{
     y += line_height;
 
     draw_text("Enemies: " + std::to_string(enemies_.size()), x, y, text_color);
+}
+
+void App::render_enemy_health_bar(const Enemy& enemy, const SDL_Rect& enemy_rect) const{
+    const EnemyDefinition& def = get_enemy_definition(enemy.type);
+
+    // Render only if the enemy has taken damage
+    // if (enemy.health >- def.max_health){
+    //     return;
+    // }
+
+    if (def.max_health <= 0.0f){
+        return;
+    }
+
+    float health_percent = enemy.health / def.max_health;
+
+    if (health_percent < 0.0f){
+        health_percent = 0.0f;
+    }
+    if (health_percent > 1.0f){
+        health_percent = 1.0f;
+    }
+
+    const int bar_width = CELL_SIZE;
+    const int bar_height = 4;
+    const int bar_x = static_cast<int>(enemy.x - bar_width / 2);
+    const int bar_y = enemy.y - 8;
+
+    SDL_Rect background_rect{
+        bar_x,
+        bar_y,
+        bar_width,
+        bar_height
+    };
+    SDL_Rect fill_rect{
+        bar_x,
+        bar_y,
+        static_cast<int>(bar_width * health_percent),
+        bar_height
+    };
+
+    // Background
+    SDL_SetRenderDrawColor(renderer_, 40, 40, 40, 255);
+    SDL_RenderFillRect(renderer_, &background_rect);
+
+    // Fill color based on remaining health
+    if (health_percent > 0.6f){
+        SDL_SetRenderDrawColor(renderer_, 80, 220, 100, 255);
+    } else if (health_percent > 0.3f){
+        SDL_SetRenderDrawColor(renderer_, 230, 200, 70, 255);
+    } else{
+        SDL_SetRenderDrawColor(renderer_, 220, 70, 70, 255);
+    }
+
+    SDL_RenderFillRect(renderer_, &fill_rect);
+
+    // Outline
+    SDL_SetRenderDrawColor(renderer_, 0, 0, 0, 255);
+    SDL_RenderDrawRect(renderer_, &background_rect);
 }

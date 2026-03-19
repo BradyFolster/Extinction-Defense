@@ -68,6 +68,7 @@ class App{
         void render_enemies() const;
         float cell_center_x(int col) const;
         float cell_center_y(int row) const;
+        void render_enemy_health_bar(const Enemy& enemy, const SDL_Rect& enemy_rect) const;
 
         // Start wave helpers
         SDL_Rect get_next_wave_button_rect() const;
