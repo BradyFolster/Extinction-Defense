@@ -438,6 +438,11 @@ bool App::place_selected_tower_if_valid(int center_col, int center_row) {
         return false;
     }
 
+    // Subtract cost from player
+    if (!player_.spend_money(def.cost)){
+        return false;
+    }
+
     Tower tower;
     tower.type = selected_tower_type_;
     tower.col = start_col;
