@@ -1,13 +1,13 @@
   GNU nano 7.2                                    README.md *                                            
 # **Extinction Defense**
 
-### Tech Stack
+## Tech Stack
 - C++
 - SDL2 (rendering/input)
 - nlohmann/json
 - CMake
 
-### Current Status
+## Current Status
 Core gameplay loop implemented. Actively working on:
 - Projectiles
 - More Waves / Enemy Variety
