@@ -26,8 +26,9 @@ Core gameplay loop implemented. Actively working on:
 ## Demo
 (coming soon)
 
-### LICENSE
+***
 
+### LICENSE
 The source code in this repository is licensed under the MIT License.
 
 All assets located in the `/assets` directory are proprietary and are
