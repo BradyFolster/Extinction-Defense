@@ -1,0 +1,7 @@
+All assets in this directory (including but not limited to images, audio, and fonts)
+are NOT covered by the MIT License.
+
+These assets are © 2026 Brady Foltser. All rights reserved.
+
+You may NOT copy, modify, distrubute, or use these assets for comercial purposes
+without explicit written permission.
