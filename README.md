@@ -15,6 +15,16 @@ modular gameplay systems and eventual Steam release.
 - nlohmann/json
 - CMake
 
+## Key Systems
+- Game loop and real-time update/render cycle
+- Enemy pathing and wave spawning system
+- Tower targeting and attack logic
+- JSON-based map generation pipeline
+
+## Motivation
+This project was build to deepen my understanding of systems programming,
+game architecture, and real-time application design in C++.
+
 ## Current Status
 Core gameplay loop implemented. Actively working on:
 - Projectiles
