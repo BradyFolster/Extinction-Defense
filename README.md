@@ -1,4 +1,3 @@
-  GNU nano 7.2                                    README.md *                                            
 # **Extinction Defense**
 
 A cross-platform tower defense game built in C++ and SDL, focused on
