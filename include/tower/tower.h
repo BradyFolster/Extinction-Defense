@@ -16,14 +16,24 @@ enum class AttackType{
 
 struct TowerDefinition{
     TowerType type;
+    // How many spaces it occupies
     int footprint_w;
     int footprint_h;
+    // Debug/preview rendering color
     SDL_Color preview_color;
 
+    // Economy/Combat stats
     int cost;
     float attack_damage;
     float attack_range;
     float attacks_per_second;
+
+    // Projectile-specific stats
+    float projectile_speed; // pixels per second
+    int projectile_size; // rendered size in pixels
+    SDL_Color projectile_color; // debug render color
+
+    // For future expansion
     AttackType attack_type;
 };
 

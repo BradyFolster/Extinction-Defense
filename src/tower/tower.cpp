@@ -12,6 +12,13 @@ const TowerDefinition& get_tower_definition(TowerType type){
         35.0f,  // attack_damage
         140.0f,     // attack_range
         0.75f,      // attacks_per_second
+
+        // Projectile stats
+        280.0f, // projectile_speed
+        12,     // projectile_size
+        SDL_Color{255, 220, 120, 255},
+
+        // Attack behavior type
         AttackType::SingleTarget
     };
 
@@ -23,6 +30,12 @@ const TowerDefinition& get_tower_definition(TowerType type){
         18.0f,
         170.0f,
         1.00f,
+
+        // Projectile stats
+        340.0f,
+        10,
+        SDL_Color{120, 255, 180, 255},
+
         AttackType::SingleTarget
     };
 
@@ -34,6 +47,12 @@ const TowerDefinition& get_tower_definition(TowerType type){
         8.0f,
         110.0f,
         3.00f,
+
+        // Projectile stats
+        480.0f,
+        9,
+        SDL_Color{160, 220, 255, 255},
+
         AttackType::SingleTarget
     };
 

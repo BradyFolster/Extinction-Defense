@@ -9,7 +9,9 @@
 #include "enemy/enemy.h"
 #include "player/player.h"
 #include "wave/wave.h"
+#include "projectile/projectile.h"
 #include <string>
+#include <unordered_map>
 
 // Each grid cell - has room for more variables (terrain type, blocked, reserved_for_path, etc.)
 struct GridCell{
@@ -69,6 +71,14 @@ class App{
         float cell_center_x(int col) const;
         float cell_center_y(int row) const;
         void render_enemy_health_bar(const Enemy& enemy, const SDL_Rect& enemy_rect) const;
+        Enemy* find_enemy_by_id(int enemy_id);
+        void rebuild_enemy_index();
+        void damage_enemy(Enemy& enemy, float damage);
+        void get_enemy_velocity(const Enemy& enemy, float& out_vx, float& out_vy) const;
+        // Projectile helpers
+        void spawn_projectile(const Tower& tower, const Enemy& target);
+        void update_projectiles(float dt);
+        void render_projectiles() const;
 
         // Start wave helpers
         SDL_Rect get_next_wave_button_rect() const;
@@ -135,7 +145,11 @@ class App{
         // Data for enemies and enemy paths
         std::vector<CellCoord> enemy_path_;
         std::vector<Enemy> enemies_;
+        std::unordered_map<int, std::size_t> enemy_index_by_id_;
+        std::vector<Projectile> projectiles_;
+        int next_enemy_id_ = 1;
         WaveManager wave_manager_;
+
         // Player object containing (health, money)
         Player player_{100, 500};
 

@@ -1,5 +1,5 @@
 #include "core/app.h"
-
+#include <cmath>
 #include <iostream>
 #include <algorithm>
 #include <queue>
@@ -159,16 +159,28 @@ void App::process_events(){
 
 // Updates game logic
 void App::update(float dt){
+    // Let the wave manager advance its timers/spawn logic
     wave_manager_.update(dt);
 
+    // Spawn any enemies the wave manager says should appear this frame
     while (wave_manager_.should_spawn_enemy()){
         EnemyType type = wave_manager_.consume_spawn_enemy();
         spawn_enemy(type);
     }
 
+    // Update tower attack logic first
+    // Towers may create new projectiles here
     update_towers(dt);
+
+    // Move enemies along the path
     update_enemies(dt);
 
+    // Move projectiles after enemies move
+    // Makes it so projectiles track enemies based on their updated positions
+    update_projectiles(dt);
+
+    // If the wave is waiting for everything to die/reach the end,
+    // and there are no enemies left, then the wave is cleared
     if (wave_manager_.is_waiting_for_clear() && enemies_.empty()){
         wave_manager_.notify_wave_cleared();
     }
@@ -205,6 +217,9 @@ void App::render(){
 
     // Renders enemies
     render_enemies();
+
+    // Render all active projectiles
+    render_projectiles();
 
     // Start next wave button
     render_next_wave_button();
@@ -576,20 +591,34 @@ float App::cell_center_y(int row) const{
 }
 
 void App::spawn_enemy(EnemyType type){
+    // If there is no path, we cannot place enemies meaningfully
     if (enemy_path_.empty()){
         return;
     }
 
     Enemy enemy;
+
+    // Give this enemy a unique ID before storing it
+    // Projectiles will use this ID later to find the same enemy again
+    enemy.id = next_enemy_id_++;
+
     enemy.type = type;
     enemy.health = get_enemy_definition(type).max_health;
+
+    // Start the enemy at the first path cell
     enemy.x = cell_center_x(enemy_path_[0].col);
     enemy.y = cell_center_y(enemy_path_[0].row);
+
+    // Start moving toward the second point in the path 
     enemy.path_index = 1;
+
     enemy.alive = true;
     enemy.reached_goal = false;
 
     enemies_.push_back(enemy);
+
+    // Rebuild the enemy hash map
+    rebuild_enemy_index();
 }
 
 void App::update_enemies(float dt){
@@ -639,6 +668,9 @@ void App::update_enemies(float dt){
                 return !enemy.alive;
             }),
         enemies_.end());
+    
+    // Rebuilds the enemy hash map
+    rebuild_enemy_index();
 }
 
 void App::render_enemies() const{
@@ -748,14 +780,9 @@ void App::update_towers(float dt){
         if (target == nullptr){
             continue;
         }
-        target->health -= def.attack_damage;
 
-        // Kill enemy if health is depleted
-        if (target->health <= 0.0f){
-            target->alive = false;
-            // Temp flat reward for killing enemy
-            player_.add_money(10);
-        }
+        // Spawns a projectile
+        spawn_projectile(tower, *target);
 
         // Reset attack cooldown
         if (def.attacks_per_second > 0.0f){
@@ -912,4 +939,237 @@ void App::render_enemy_health_bar(const Enemy& enemy, const SDL_Rect& enemy_rect
     // Outline
     SDL_SetRenderDrawColor(renderer_, 0, 0, 0, 255);
     SDL_RenderDrawRect(renderer_, &background_rect);
+}
+
+void App::spawn_projectile(const Tower& tower, const Enemy& target){
+    // Read the tower's stats so the projectile inherits its speed, size, color, and damage
+    const TowerDefinition& def = get_tower_definition(tower.type);
+
+    Projectile projectile;
+
+    // Lock this projectile onto the enemy's unique ID
+    projectile.target_enemy_id = target.id;
+
+    // Start the projectile at the center of the tower
+    projectile.x = tower_center_x(tower);
+    projectile.y = tower_center_y(tower);
+
+    // Copy projectile behavior from tower data
+    projectile.speed = def.projectile_speed;
+    projectile.damage = def.attack_damage;
+    projectile.size = def.projectile_size;
+    projectile.color = def.projectile_color;
+
+    projectile.alive = true;
+
+    // PREDICTIVE AIMING
+    // Estimate current nemy velocity
+    float enemy_vx = 0.0f;
+    float enemy_vy = 0.0f;
+    get_enemy_velocity(target, enemy_vx, enemy_vy);
+
+    // Estimate current distance from tower to target
+    float to_target_x = target.x - projectile.x;
+    float to_target_y = target.y - projectile.y;
+    float distance_to_target = std::sqrt(to_target_x * to_target_x + to_target_y * to_target_y);
+
+    // Estimate travel time for the projectile (time = dist / speed)
+    float predicted_time = 0.0f;
+    if (projectile.speed > 0.0f){
+        predicted_time = distance_to_target / projectile.speed;
+    }
+
+    // Predict future enemy position
+    float aim_x = target.x + enemy_vx * predicted_time;
+    float aim_y = target.y + enemy_vy * predicted_time;
+
+    // Build a direction from the tower to that predicted point
+    float aim_dx = aim_x - projectile.x;
+    float aim_dy = aim_y - projectile.y;
+    float aim_dist = std::sqrt(aim_dx * aim_dx + aim_dy * aim_dy);
+
+    // Convert direction into fixed velocty
+    if (aim_dist > 0.0f){
+        float dir_x = aim_dx / aim_dist;
+        float dir_y = aim_dy / aim_dist;
+
+        projectile.vx = dir_x * projectile.speed;
+        projectile.vy = dir_y * projectile.speed;
+    } else{
+        // Fallback if the aimpoint equals the projectile spawn point (shouldn't happen)
+        projectile.vx = 0.0f;
+        projectile.vy = 0.0f;
+    }
+
+    // Adds the projectile to the "world" aka the vector of all projectiles
+    projectiles_.push_back(projectile);
+}
+
+void App::update_projectiles(float dt){
+    // Update every projectile currently in flight
+    for (Projectile& projectile : projectiles_){
+        if (!projectile.alive){
+            continue;
+        }
+
+        // Move using fixed velocity
+        projectile.x += projectile.vx * dt;
+        projectile.y += projectile.vy * dt;
+
+        // Look up the target enemy
+        Enemy* target = find_enemy_by_id(projectile.target_enemy_id);
+
+        // If the target is dead, let the projectile keep flying off the screen
+        if (target == nullptr || !target->alive){
+            if (projectile.x < 0.0f || projectile.x > static_cast<float>(PLAYABLE_WIDTH) ||
+                projectile.y < 0.0f || projectile.y > static_cast<float>(WORLD_HEIGHT)){
+                projectile.alive = false;
+            }
+            continue;
+        }
+
+        // Measure the current distance to the target
+        float dx = target->x - projectile.x;
+        float dy = target->y - projectile.y;
+        float dist = std::sqrt(dx * dx + dy * dy);
+
+        // Treat a close approach as an impact
+        float impact_distance = static_cast<float>(projectile.size) * 0.5f;
+
+        if (dist <= impact_distance){
+            damage_enemy(*target, projectile.damage);
+            projectile.alive = false;
+            continue;
+        }
+
+        // Remove projectiles that fly off-screen
+        if (projectile.x < 0.0f || projectile.x > static_cast<float>(PLAYABLE_WIDTH) ||
+            projectile.y < 0.0f || projectile.y > static_cast<float>(WORLD_HEIGHT)){
+            projectile.alive = false;
+            continue;
+        }
+    }
+
+    // Clean up dead projectiles
+    projectiles_.erase(
+        std::remove_if(projectiles_.begin(), projectiles_.end(),
+            [](const Projectile& projectile){
+                return !projectile.alive;
+            }),
+        projectiles_.end());
+        
+}
+
+void App::render_projectiles() const{
+    // Draw each active projectile as a small filled square
+    for (const Projectile& projectile : projectiles_){
+        if (!projectile.alive){
+            continue;
+        }
+
+        SDL_SetRenderDrawColor(
+            renderer_,
+            projectile.color.r,
+            projectile.color.g,
+            projectile.color.b,
+            projectile.color.a
+        );
+
+        SDL_Rect rect{
+            // center the square on the projectile's position
+            static_cast<int>(projectile.x - projectile.size / 2),
+            static_cast<int>(projectile.y - projectile.size / 2),
+            projectile.size,
+            projectile.size
+        };
+
+        SDL_RenderFillRect(renderer_, &rect);
+    }
+}
+
+Enemy* App::find_enemy_by_id(int enemy_id){
+    // Look up the enemy ID in the hash map
+    auto it = enemy_index_by_id_.find(enemy_id);
+
+    // If the ID is not present, the enemy does not exist
+    if (it == enemy_index_by_id_.end()){
+        return nullptr;
+    }
+
+    // Read the stored index
+    std::size_t index = it->second;
+
+    // If something got out of sync, avoids invalid access
+    if (index >= enemies_.size()){
+        return nullptr;
+    }
+
+    // Make sure t is in the map
+    if (enemies_[index].id != enemy_id){
+        return nullptr;
+    }
+
+    return  &enemies_[index];
+}
+
+void App::rebuild_enemy_index(){
+    // Throw away old mappings
+    enemy_index_by_id_.clear();
+
+    // Rebuild the map so each enemy ID points to its current position
+    // inside the enemies_ vector
+    for (std::size_t i = 0; i < enemies_.size(); ++i){
+        enemy_index_by_id_[enemies_[i].id] = i;
+    }
+}
+
+void App::damage_enemy(Enemy& enemy, float damage){
+    // Make sure the enemy is alive
+    if (!enemy.alive){
+        return;
+    }
+
+    enemy.health -= damage;
+
+    // If health is zero, kill the enemy
+    if (enemy.health <= 0.0f){
+        enemy.alive = false;
+
+        // TEMPORARY 
+        // reward for killing enemy
+        player_.add_money(10);
+    }
+}
+
+void App::get_enemy_velocity(const Enemy& enemy, float& out_vx, float& out_vy) const{
+    // Default to zero in case the funciton fails
+    out_vx = 0.0f;
+    out_vy = 0.0f;
+
+    // If the enemy is not moving toward a valid path node, the function won't work
+    if (enemy.path_index < 0 || enemy.path_index >= static_cast<int>(enemy_path_.size())){
+        return;
+    }
+
+    // Find the world-space position ofthe next path node the enemy is moving towards
+    const CellCoord& next_cell = enemy_path_[enemy.path_index];
+    float target_x = cell_center_x(next_cell.col);
+    float target_y = cell_center_y(next_cell.row);
+
+    // Build a direction from the enemy to that next path node
+    float dx = target_x - enemy.x;
+    float dy = target_y - enemy.y;
+    float dist = std::sqrt(dx * dx + dy * dy);
+
+    // Avoid dividing by zero
+    if (dist <= 0.0f){
+        return;
+    }
+
+    // Read the enemy's movement speed from its definition
+    const EnemyDefinition& def = get_enemy_definition(enemy.type);
+
+    // Convert direction into velocity
+    out_vx = (dx / dist) * def.speed;
+    out_vy = (dy / dist) * def.speed;
 }

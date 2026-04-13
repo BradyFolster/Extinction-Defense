@@ -18,6 +18,9 @@ struct EnemyDefinition{
 };
 
 struct Enemy{
+    // ID used for projectiles
+    int id = -1;
+
     EnemyType type;
     float health = 0.0f;
 
