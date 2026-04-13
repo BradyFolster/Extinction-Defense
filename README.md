@@ -20,6 +20,7 @@ modular gameplay systems and eventual Steam release.
 - Enemy pathing and wave spawning system
 - Tower targeting and attack logic
 - JSON-based map generation pipeline
+- Predictive projectile system
 
 ## Motivation
 This project was build to deepen my understanding of systems programming,
@@ -27,7 +28,6 @@ game architecture, and real-time application design in C++.
 
 ## Current Status
 Core gameplay loop implemented. Actively working on:
-- Projectiles
 - More Waves / Enemy Variety
 - Basic UI
 - Basic Art Implementation
