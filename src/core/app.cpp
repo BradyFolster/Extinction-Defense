@@ -134,24 +134,37 @@ void App::process_events(){
                     if (point_in_rect(mouse_x, mouse_y, get_tower_button_rect(TowerType::Trex))) {
                         tower_selected_ = true;
                         selected_tower_type_ = TowerType::Trex;
+                        selected_tower_index_ = -1;
                     }
                     else if (point_in_rect(mouse_x, mouse_y, get_tower_button_rect(TowerType::Stegosaurus))) {
                         tower_selected_ = true;
                         selected_tower_type_ = TowerType::Stegosaurus;
+                        selected_tower_index_ = -1;
                     }
                     else if (point_in_rect(mouse_x, mouse_y, get_tower_button_rect(TowerType::Velociraptor))) {
                         tower_selected_ = true;
                         selected_tower_type_ = TowerType::Velociraptor;
+                        selected_tower_index_ = -1;
                     }
                 }
                 else {
                     if (tower_selected_) {
+                        // Build mode takes priority
                         place_selected_tower_if_valid(mouse_x / CELL_SIZE, mouse_y / CELL_SIZE);
+                    } else{
+                        int clicked_tower_index = find_tower_at_pixel(mouse_x, mouse_y);
+
+                        if (clicked_tower_index != -1){
+                            selected_tower_index_ = clicked_tower_index;
+                        } else {
+                            selected_tower_index_ = -1;
+                        }
                     }
                 }
             }
             else if (event.button.button == SDL_BUTTON_RIGHT) {
                 tower_selected_ = false;
+                selected_tower_index_ = -1;
             }
         }
     }
@@ -209,6 +222,10 @@ void App::render(){
 
     // Tower debug tests
     render_towers();
+
+    // Radius around selected tower
+    render_selected_tower_radius();
+
     render_tower_preview();
 
     render_grid_debug();
@@ -1172,4 +1189,77 @@ void App::get_enemy_velocity(const Enemy& enemy, float& out_vx, float& out_vy) c
     // Convert direction into velocity
     out_vx = (dx / dist) * def.speed;
     out_vy = (dy / dist) * def.speed;
+}
+
+int App::find_tower_at_pixel(int x, int y) const {
+    // Search from back to front
+    for (int i = static_cast<int>(towers_.size()) - 1; i >= 0; --i){
+        const Tower& tower = towers_[i];
+        const TowerDefinition& def = get_tower_definition(tower.type);
+
+        SDL_Rect tower_rect{
+            tower.col * CELL_SIZE,
+            tower.row * CELL_SIZE,
+            def.footprint_w * CELL_SIZE,
+            def.footprint_h * CELL_SIZE
+        };
+
+        if (point_in_rect(x, y, tower_rect)){
+            return i;
+        }
+    }
+
+    // No tower was found
+    return -1;
+}
+
+void App::draw_filled_circle(int center_x, int center_y, int radius) const{
+    // Go from top to bottom of circle with horizontal lines
+    // Uses circle equation: x^2 + y^2 = r^2
+
+    for (int y = -radius; y <= radius; ++y){
+        int x = static_cast<int>(std::sqrt(radius * radius - y * y));
+
+        SDL_RenderDrawLine(
+            renderer_,
+            center_x - x, center_y + y,
+            center_x + x, center_y + y
+        );
+    }
+}
+
+void App::render_selected_tower_radius() const{
+    if (selected_tower_index_ < 0){
+        return;
+    }
+
+    // Bounds checks
+    if (selected_tower_index_ >= static_cast<int>(towers_.size())){
+        return;
+    }
+
+    const Tower& tower = towers_[selected_tower_index_];
+    const TowerDefinition& def = get_tower_definition(tower.type);
+
+    int center_x = static_cast<int>(tower_center_x(tower));
+    int center_y = static_cast<int>(tower_center_y(tower));
+    int radius = static_cast<int>(def.attack_range);
+
+    SDL_SetRenderDrawBlendMode(renderer_, SDL_BLENDMODE_BLEND);
+
+
+    // Light transparent range circle
+    SDL_SetRenderDrawColor(renderer_, 255, 0, 0, 80);
+    draw_filled_circle(center_x, center_y, radius);
+
+    // Small center marker so it's obvious which tower owns the radius
+    SDL_Rect center_marker{
+        center_x - 4,
+        center_y - 4,
+        8,
+        8
+    };
+
+    SDL_SetRenderDrawColor(renderer_, 255, 255, 255, 220);
+    SDL_RenderFillRect(renderer_, &center_marker);
 }

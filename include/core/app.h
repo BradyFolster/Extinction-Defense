@@ -62,6 +62,10 @@ class App{
         Enemy* find_target_for_tower(const Tower& tower);
         float tower_center_x(const Tower& tower) const;
         float tower_center_y(const Tower& tower) const;
+        // Tower Selection helpers
+        int find_tower_at_pixel(int x, int y) const;
+        void render_selected_tower_radius() const;
+        void draw_filled_circle(int center_x, int center_y, int radius) const;
 
 
         // Enemy helpers
@@ -141,6 +145,7 @@ class App{
         // Data for the tower menu
         bool tower_selected_ = false;
         TowerType selected_tower_type_ = TowerType::Trex;
+        int selected_tower_index_ = -1;
 
         // Data for enemies and enemy paths
         std::vector<CellCoord> enemy_path_;
@@ -156,5 +161,4 @@ class App{
         // Used for SDL_TTF text rendering
         TTF_Font* debug_font_ = nullptr;
         bool show_debug_hud_ = true;
-
 };
