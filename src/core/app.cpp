@@ -7,7 +7,7 @@
 #include <set>
 
 // Default constructor & destructor
-App::App() : window_(nullptr), renderer_(nullptr), map_texture_(nullptr), running_(false) {}
+App::App() : window_(nullptr), renderer_(nullptr), running_(false) {}
 App::~App() { shutdown(); }
 
 // Initializes SDL
@@ -51,16 +51,15 @@ bool App::init(){
     }
 
     // Initializes the grid from the json file
-    if (!initialize_map_from_json("assets/maps/map1.json")){
-        return false;
-    }
+
 
     // Initializes debug text rendering
     if (TTF_Init() != 0){
         std::cerr << "TTF_Init() failed: " << TTF_GetError() << "\n";
         return false;
     }
-    if (!init_debug_font()){
+
+    if (!load_assets()){
         return false;
     }
     
@@ -208,15 +207,18 @@ void App::render(){
     SDL_RenderClear(renderer_);
 
     // Renders the map image
-    if (map_texture_ != nullptr){
-        SDL_Rect map_dest;
-        map_dest.x = 0;
-        map_dest.y = 0;
-        map_dest.w = PLAYABLE_WIDTH;
-        map_dest.h = WORLD_HEIGHT;
+    SDL_Texture* map_texture = assets_.get_texture("map_background");
+    if (map_texture != nullptr){
+        SDL_Rect map_dest{
+            0,
+            0,
+            PLAYABLE_WIDTH,
+            WORLD_HEIGHT
+        };
 
-        SDL_RenderCopy(renderer_, map_texture_, nullptr, &map_dest);
+        SDL_RenderCopy(renderer_, map_texture, nullptr, &map_dest);
     }
+
     // Temp path render debug
     render_path_debug();
 
@@ -252,28 +254,41 @@ void App::render(){
 }
 
 void App::shutdown(){
-    // Destroy the map texture
-    if (map_texture_ != nullptr){
-        SDL_DestroyTexture(map_texture_);
-        map_texture_ = nullptr;
-    }
+    // Free assets first
+    assets_.cleanup();
 
-    // Destroy the renderer first
     if (renderer_ != nullptr){
         SDL_DestroyRenderer(renderer_);
         renderer_ = nullptr;
     }
 
-    // Then destroy the window
     if (window_ != nullptr){
         SDL_DestroyWindow(window_);
         window_ = nullptr;
     }
 
-    // Shuts down SDL_TTF text rendering
-    shutdown_debug_font();
-    // Finally, shut down SDL itself
+    TTF_Quit();
+    IMG_Quit();
     SDL_Quit();
+}
+
+bool App::load_assets(){
+    // =======================================================
+    //            ADD MORE ASSETS BELOW (same format)
+    // =======================================================
+
+    if (!initialize_map_from_json("assets/maps/map1.json")){
+        std::cerr << "Failed to intialize map assets.\n";
+        return false;
+    }
+
+    if (!assets_.load_font("debug_font", "assets/fonts/Roboto-Regular.ttf", 24)){
+        std::cerr << "failed to load debug font.\n";
+        return false;
+    }
+
+
+    return true;
 }
 
 void App::initialize_grid(){
@@ -338,25 +353,7 @@ void App::render_occupied_cells(){
 }
 
 bool App::load_map_texture(const char* file_path){
-    // Reads an image file onto an SDL_Surface
-    SDL_Surface* surface = IMG_Load(file_path);
-
-    if (surface == nullptr){
-        std::cerr << "IMG_Load failed for " << file_path << ": " << IMG_GetError() << "\n";
-        return false;
-    }
-
-    // Convert surface into a texturer that the renderer can draw
-    map_texture_ = SDL_CreateTextureFromSurface(renderer_, surface);
-
-    // Deletes the surface
-    SDL_FreeSurface(surface);
-
-    if (map_texture_ == nullptr){
-        std::cerr << "SDL_CreateTextureFromSurface failed: " << SDL_GetError() << "\n";
-        return false;
-    }
-    return true;
+    return assets_.load_texture(renderer_, "map_background", file_path);
 }
 
 bool App::initialize_map_from_json(const char* file_path){
@@ -808,31 +805,14 @@ void App::update_towers(float dt){
     }
 }
 
-bool App::init_debug_font(){
-    // .ttf file path
-    debug_font_ = TTF_OpenFont("assets/fonts/Roboto-Regular.ttf", 24);
-
-    if (debug_font_ == nullptr){
-        std::cerr << "TTF_OpenFont() failed: " << TTF_GetError() << "\n";
-        return false;
-    }
-
-    return true;
-}
-
-void App::shutdown_debug_font(){
-    if (debug_font_ != nullptr){
-        TTF_CloseFont(debug_font_);
-        debug_font_ = nullptr;
-    }
-}
-
 bool App::draw_text(const std::string& text, int x, int y, SDL_Color color) const{
-    if (debug_font_ == nullptr){
+    TTF_Font* font = assets_.get_font("debug_font");
+
+    if (font == nullptr){
         return false;
     }
+    SDL_Surface* surface = TTF_RenderText_Blended(font, text.c_str(), color);
 
-    SDL_Surface* surface = TTF_RenderText_Blended(debug_font_, text.c_str(), color);
     if (surface == nullptr){
         std::cerr << "TTF_RenderText_Blended() failed: " << TTF_GetError() << "\n";
         return false;
@@ -1227,6 +1207,7 @@ void App::draw_filled_circle(int center_x, int center_y, int radius) const{
         );
     }
 }
+
 
 void App::render_selected_tower_radius() const{
     if (selected_tower_index_ < 0){

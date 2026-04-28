@@ -13,6 +13,7 @@ find_package(nlohmann_json REQUIRED)
 pkg_check_modules(SDL2 REQUIRED IMPORTED_TARGET sdl2)
 pkg_check_modules(SDL2_IMAGE REQUIRED IMPORTED_TARGET SDL2_image)
 pkg_check_modules(SDL2_TTF REQUIRED IMPORTED_TARGET SDL2_ttf)
+pkg_check_modules(SDL2_MIXER REQUIRED IMPORTED_TARGET SDL2_mixer)
 
 add_executable(ExtinctionDefense
     src/main.cpp
@@ -23,6 +24,7 @@ add_executable(ExtinctionDefense
     src/enemy/enemy.cpp
     src/wave/wave.cpp
     src/projectile/projectile.cpp
+    src/assets/asset_manager.cpp
 )
 
 add_executable(png_to_map_json
@@ -36,12 +38,14 @@ target_link_libraries(ExtinctionDefense PRIVATE
     PkgConfig::SDL2
     PkgConfig::SDL2_IMAGE
     PkgConfig::SDL2_TTF
+    PkgConfig::SDL2_MIXER
     nlohmann_json::nlohmann_json
 )
 
 target_link_libraries(png_to_map_json PRIVATE
     PkgConfig::SDL2
     PkgConfig::SDL2_IMAGE
+    PkgConfig::SDL2_TTF
     nlohmann_json::nlohmann_json
 )
 

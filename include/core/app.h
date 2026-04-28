@@ -3,6 +3,7 @@
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_image.h>
 #include <SDL2/SDL_ttf.h>
+
 #include <vector>
 #include "map/map_data.h"
 #include "tower/tower.h"
@@ -10,6 +11,9 @@
 #include "player/player.h"
 #include "wave/wave.h"
 #include "projectile/projectile.h"
+#include "assets/asset_manager.h"
+
+
 #include <string>
 #include <unordered_map>
 
@@ -41,6 +45,9 @@ class App{
         // Draws the current frame
         void render();
 
+        // Loads all game assets used by SDL in the asset manager
+        bool load_assets();
+
         // Grid helpers
         void initialize_grid();
         void render_grid_debug();
@@ -67,7 +74,6 @@ class App{
         void render_selected_tower_radius() const;
         void draw_filled_circle(int center_x, int center_y, int radius) const;
 
-
         // Enemy helpers
         void spawn_enemy(EnemyType type);
         void update_enemies(float dt);
@@ -90,8 +96,6 @@ class App{
 
         // Debug rendering
         void render_path_debug();
-        bool init_debug_font();
-        void shutdown_debug_font();
         bool draw_text(const std::string& text, int x, int y, SDL_Color color) const;
         void render_debug_hud() const;
 
@@ -101,8 +105,8 @@ class App{
         // Pointer to the renderer SDL will create
         SDL_Renderer* renderer_;
 
-        // Holds background texture
-        SDL_Texture* map_texture_;
+        // Asset manager
+        AssetManager assets_;
 
         // Controls whether the main loop keeps running
         bool running_;
