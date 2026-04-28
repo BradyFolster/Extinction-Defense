@@ -26,8 +26,14 @@ modular gameplay systems and eventual Steam release.
 This project was build to deepen my understanding of systems programming,
 game architecture, and real-time application design in C++.
 
+## Recent Accomplishments
+- Selected tower & attack radius
+- Predictive targeting
+- Attack visualization
+
 ## Current Status
 Core gameplay loop implemented. Actively working on:
+- Selected tower menu
 - More Waves / Enemy Variety
 - Basic UI
 - Basic Art Implementation
