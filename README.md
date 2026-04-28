@@ -21,12 +21,14 @@ modular gameplay systems and eventual Steam release.
 - Tower targeting and attack logic
 - JSON-based map generation pipeline
 - Predictive projectile system
+- AssetManager that handles loading/deletion of all assets
 
 ## Motivation
 This project was build to deepen my understanding of systems programming,
 game architecture, and real-time application design in C++.
 
 ## Recent Accomplishments
+- AssetManager
 - Selected tower & attack radius
 - Predictive targeting
 - Attack visualization
