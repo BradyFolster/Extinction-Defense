@@ -3,8 +3,9 @@ Damage
 	- Piercing line tower
 - Allosaurus
 	- Burst attacks
-- Sarcosuchus
+- Sarcosuchus -- DONE
 	- Slow heavy projectile
+	- Splash damage
 
 Support
 - Dilophosaurus
