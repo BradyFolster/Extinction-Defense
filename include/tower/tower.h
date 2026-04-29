@@ -7,7 +7,9 @@ enum class TowerType{
     Stegosaurus,
     Velociraptor,
     Spinosaurus,
-    Parasaurolophus
+    Parasaurolophus,
+    Ankylosaurus,
+    Sarcosuchus
 };
 
 enum class AttackType{
@@ -25,6 +27,25 @@ struct MoneyGeneratorStats{
 
     // Tracks time since last payout
     float timer = 0.0f;
+};
+
+struct SlowOnHitStats{
+    // Multiplier applied to enemy speed
+    // ex. 0.50f means 50% speed
+    float speed_multiplier = 1.0f;
+
+    // How long the slow lasts after a tower hits an enemy
+    float duration = 0.0f;
+};
+
+struct SplashDamageStats{
+    // Radius around the impact point that receives splash damage
+    // Radius of 0 means the tower doesn't have any splash damage
+    float radius = 0.0f;
+
+    // Damage multiplier for enemies caught in the splash
+    // ex. 0.50f means enemies take 50% of the tower's damage
+    float damage_multiplier = 1.0f;
 };
 
 struct TowerDefinition{
@@ -51,6 +72,12 @@ struct TowerDefinition{
     // Optional economy behavior
     // Stays 0 for non-money towers
     MoneyGeneratorStats money_generator;
+
+    // Optional on-hit slow behavior
+    SlowOnHitStats slow_on_hit;
+
+    // Optional splash damage behavior
+    SplashDamageStats splash_damage;
 
     // For future expansion
     AttackType attack_type;
@@ -84,6 +111,12 @@ struct Tower{
 
     // For money generating towers (Parasaurolophus)
     MoneyGeneratorStats money_generator;
+
+    // For slow-on-hit towers (Ankylosaurus)
+    SlowOnHitStats slow_on_hit;
+
+    // For splash damage towers (Sarcosuchus)
+    SplashDamageStats splash_damage;
 };
 
 const TowerDefinition& get_tower_definition(TowerType type);

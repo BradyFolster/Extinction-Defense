@@ -141,9 +141,9 @@ void App::process_events(){
                 }
                 else if (mouse_x >= MENU_X) {
                     if (selected_tower_index_ >= 0){
-                        if (point_in_rect(mouse_x, mouse_y, get_upggrade_button_rect(UpgradePath::Damage))){
+                        if (point_in_rect(mouse_x, mouse_y, get_upgrade_button_rect(UpgradePath::Damage))){
                             handle_upgrade_button_click(UpgradePath::Damage);
-                        } else if (point_in_rect(mouse_x, mouse_y, get_upggrade_button_rect(UpgradePath::Utility))){
+                        } else if (point_in_rect(mouse_x, mouse_y, get_upgrade_button_rect(UpgradePath::Utility))){
                             handle_upgrade_button_click(UpgradePath::Utility);
                         }
                     }
@@ -170,6 +170,16 @@ void App::process_events(){
                     else if (point_in_rect(mouse_x, mouse_y, get_tower_button_rect(TowerType::Parasaurolophus))) {
                         tower_selected_ = true;
                         selected_tower_type_ = TowerType::Parasaurolophus;
+                        selected_tower_index_ = -1;
+                    }
+                    else if (point_in_rect(mouse_x, mouse_y, get_tower_button_rect(TowerType::Ankylosaurus))) {
+                        tower_selected_ = true;
+                        selected_tower_type_ = TowerType::Ankylosaurus;
+                        selected_tower_index_ = -1;
+                    }
+                    else if (point_in_rect(mouse_x, mouse_y, get_tower_button_rect(TowerType::Sarcosuchus))) {
+                        tower_selected_ = true;
+                        selected_tower_type_ = TowerType::Sarcosuchus;
                         selected_tower_index_ = -1;
                     }
                 }
@@ -526,6 +536,10 @@ bool App::place_selected_tower_if_valid(int center_col, int center_row) {
     tower.level = 1;
     // Optional money-generation stats
     tower.money_generator = def.money_generator;
+    // Optional slow-on-hit stats
+    tower.slow_on_hit = def.slow_on_hit;
+    // Optional splash damage stats
+    tower.splash_damage = def.splash_damage;
 
     towers_.push_back(tower);
 
@@ -609,6 +623,10 @@ SDL_Rect App::get_tower_button_rect(TowerType type) const   {
             return SDL_Rect{button_x, 400, button_w, button_h};
         case TowerType::Parasaurolophus:
             return SDL_Rect{button_x, 520, button_w, button_h};
+        case TowerType::Ankylosaurus:
+            return SDL_Rect{button_x, 640, button_w, button_h};
+        case TowerType::Sarcosuchus:
+            return SDL_Rect{button_x, 760, button_w, button_h};
         default:
             return SDL_Rect{button_x, 40, button_w, button_h};
     }
@@ -652,6 +670,8 @@ void App::render_tower_menu()   {
     render_tower_button(TowerType::Velociraptor);
     render_tower_button(TowerType::Spinosaurus);
     render_tower_button(TowerType::Parasaurolophus);
+    render_tower_button(TowerType::Ankylosaurus);
+    render_tower_button(TowerType::Sarcosuchus);
 }
 
 float App::cell_center_x(int col) const{
@@ -722,7 +742,22 @@ void App::update_enemies(float dt){
         }
         
         const EnemyDefinition& def = get_enemy_definition(enemy.type);
-        float move_amount = def.speed * dt;
+        // Ticks down slow effect before moving
+        if (enemy.slow_timer > 0.0f){
+            enemy.slow_timer -= dt;
+
+            if (enemy.slow_timer <= 0.0f){
+                enemy.slow_timer = 0.0f;
+                enemy.slow_multiplier = 1.0f;
+            }
+        }
+        // Moves enemy based on slow effect and dt
+        float current_speed = def.speed;
+        if (enemy.slow_timer > 0.0f){
+            current_speed *= enemy.slow_multiplier;
+        }
+        float move_amount = current_speed * dt;
+
 
         if (move_amount >= dist){
             enemy.x = target_x;
@@ -828,7 +863,8 @@ Enemy* App::find_target_for_tower(const Tower& tower){
 }
 
 void App::update_towers(float dt){
-    for (Tower& tower : towers_){
+    for (int i = 0; i < static_cast<int>(towers_.size()); ++i){
+        Tower& tower = towers_[i];
         // Money generator logic
         if (tower.money_generator.amount > 0 && tower.money_generator.interval > 0.0f){
             const bool wave_active = wave_manager_.is_spawning() || wave_manager_.is_waiting_for_clear();
@@ -865,7 +901,7 @@ void App::update_towers(float dt){
         }
 
         // Spawns a projectile
-        spawn_projectile(tower, *target);
+        spawn_projectile(tower, i, *target);
 
         // Reset attack cooldown
         if (tower.attacks_per_second > 0.0f){
@@ -1013,7 +1049,7 @@ void App::render_enemy_health_bar(const Enemy& enemy, const SDL_Rect& enemy_rect
     SDL_RenderDrawRect(renderer_, &background_rect);
 }
 
-void App::spawn_projectile(const Tower& tower, const Enemy& target){
+void App::spawn_projectile(const Tower& tower, int tower_index, const Enemy& target){
     Projectile projectile;
 
     // Lock this projectile onto the enemy's unique ID
@@ -1037,6 +1073,11 @@ void App::spawn_projectile(const Tower& tower, const Enemy& target){
     } else{
         projectile.pierce_remaining = 1;
     }
+
+    // Copy splash behavior
+    projectile.splash_damage = tower.splash_damage;
+
+    projectile.source_tower_index = tower_index;
 
     projectile.alive = true;
 
@@ -1116,11 +1157,47 @@ void App::update_projectiles(float dt){
 
         if (projectile.attack_type == AttackType::SingleTarget){
             if (dist <= impact_distance){
-                damage_enemy(*target, projectile.damage);
+                if (projectile.source_tower_index >= 0 && projectile.source_tower_index < static_cast<int>(towers_.size())){
+                    damage_enemy(*target, towers_[projectile.source_tower_index]);
+                }
                 projectile.alive = false;
                 continue;
             }
-        } else if (projectile.attack_type == AttackType::Pierce){
+        } 
+        else if (projectile.attack_type == AttackType::Splash){
+            if (dist <= impact_distance){
+                // First, damage the direct target
+                if (projectile.source_tower_index >= 0 && projectile.source_tower_index < static_cast<int>(towers_.size())){
+                    const Tower& source_tower = towers_[projectile.source_tower_index];
+
+                    damage_enemy(*target, source_tower);
+
+                    // Then, damage nearby enemies
+                    for (Enemy& enemy : enemies_){
+                        if (!enemy.alive || enemy.id == target->id){
+                            continue;
+                        }
+
+                        float splash_dx = enemy.x - projectile.x;
+                        float splash_dy = enemy.y - projectile.y;
+                        float splash_dist = std::sqrt(splash_dx * splash_dx + splash_dy * splash_dy);
+
+                        if (splash_dist <= projectile.splash_damage.radius){
+                            // Creates a temporary copy of the source tower so splash can use the same damage_enemy() function
+                            Tower splash_source = source_tower;
+                            splash_source.attack_damage *= projectile.splash_damage.damage_multiplier;
+
+                            damage_enemy(enemy, splash_source);
+                        }
+                    }
+                }
+
+                // Splash projectile explodes once, then disappears
+                projectile.alive = false;
+                continue;
+            }
+        }
+        else if (projectile.attack_type == AttackType::Pierce){
             // Piercing logic
             for (Enemy& enemy : enemies_){
                 if (!enemy.alive){
@@ -1144,7 +1221,10 @@ void App::update_projectiles(float dt){
                 float enemy_dist = std::sqrt(enemy_dx * enemy_dx + enemy_dy * enemy_dy);
 
                 if (enemy_dist <= impact_distance){
-                    damage_enemy(enemy, projectile.damage);
+                    if (projectile.source_tower_index >= 0 &&
+                        projectile.source_tower_index < static_cast<int>(towers_.size())){
+                        damage_enemy(enemy, towers_[projectile.source_tower_index]);
+                    }
 
                     // Keep track of enemy so we don't hit it again
                     projectile.hit_enemy_ids.push_back(enemy.id);
@@ -1245,20 +1325,26 @@ void App::rebuild_enemy_index(){
     }
 }
 
-void App::damage_enemy(Enemy& enemy, float damage){
+void App::damage_enemy(Enemy& enemy, const Tower& source_tower){
     // Make sure the enemy is alive
     if (!enemy.alive){
         return;
     }
 
-    enemy.health -= damage;
+    // Apply this tower's runtime damage
+    enemy.health -= source_tower.attack_damage;
 
-    // If health is zero, kill the enemy
+    // Apply optional slow-on-hit behavior
+    if (source_tower.slow_on_hit.duration > 0.0f){
+        enemy.slow_timer = source_tower.slow_on_hit.duration;
+        enemy.slow_multiplier = source_tower.slow_on_hit.speed_multiplier;
+    }
+
+    // If health is zero, kill the enemy and give reward money
     if (enemy.health <= 0.0f){
         enemy.alive = false;
 
         const EnemyDefinition& def = get_enemy_definition(enemy.type);
-        // reward for killing enemy
         player_.add_money(def.reward);
     }
 }
@@ -1350,6 +1436,7 @@ void App::render_selected_tower_radius() const{
     int center_y = static_cast<int>(tower_center_y(tower));
     int radius = static_cast<int>(tower.attack_range);
 
+    // Visual for towers that do not attack (economy towers, etc.)
     if (radius <= 0){
         radius = 50;
     }
@@ -1421,7 +1508,7 @@ void App::render_selected_tower_menu(){
     render_upgrade_button(tower, UpgradePath::Utility, tower.utility_path_level);
 }
 
-SDL_Rect App::get_upggrade_button_rect(UpgradePath path) const{
+SDL_Rect App::get_upgrade_button_rect(UpgradePath path) const{
     // Damage is first, utility is second
     const int button_x = MENU_X + 24;
     const int button_w = MENU_WIDTH - 48;
@@ -1490,7 +1577,7 @@ std::string App::describe_upgrade_effect(const TowerUpgradeDefinition& upgrade) 
 }
 
 void App::render_upgrade_button(const Tower& tower, UpgradePath path, int current_path_level){
-    SDL_Rect rect = get_upggrade_button_rect(path);
+    SDL_Rect rect = get_upgrade_button_rect(path);
 
     const TowerUpgradeDefinition* next_upgrade = get_next_upgrade_definition(tower.type, path, current_path_level);
 

@@ -40,4 +40,9 @@ struct Projectile{
     // For piercing attacks
     int pierce_remaining = 1;
     std::vector<int> hit_enemy_ids;
+
+    // The tower that fired this projectile
+    int source_tower_index = -1;
+
+    SplashDamageStats splash_damage;
 };

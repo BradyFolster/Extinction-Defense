@@ -76,7 +76,7 @@ class App{
         void render_tower_menu();
         void render_tower_button(TowerType type);
         void render_selected_tower_menu();
-        SDL_Rect get_upggrade_button_rect(UpgradePath path) const;
+        SDL_Rect get_upgrade_button_rect(UpgradePath path) const;
         void handle_upgrade_button_click(UpgradePath path);
         void render_upgrade_button(const Tower& tower, UpgradePath path, int current_path_level);
         std::string describe_upgrade_effect(const TowerUpgradeDefinition& upgrade) const;
@@ -90,10 +90,10 @@ class App{
         void render_enemy_health_bar(const Enemy& enemy, const SDL_Rect& enemy_rect) const;
         Enemy* find_enemy_by_id(int enemy_id);
         void rebuild_enemy_index();
-        void damage_enemy(Enemy& enemy, float damage);
+        void damage_enemy(Enemy& enemy, const Tower& source_tower);
         void get_enemy_velocity(const Enemy& enemy, float& out_vx, float& out_vy) const;
         // Projectile helpers
-        void spawn_projectile(const Tower& tower, const Enemy& target);
+        void spawn_projectile(const Tower& tower, int tower_index, const Enemy& target);
         void update_projectiles(float dt);
         void render_projectiles() const;
 

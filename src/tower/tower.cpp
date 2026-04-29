@@ -20,6 +20,8 @@ const TowerDefinition& get_tower_definition(TowerType type){
         SDL_Color{255, 220, 120, 255},
         1, // pierce
         MoneyGeneratorStats{0, 0.0f, 0.0f,}, // money_generator
+        SlowOnHitStats{1.0f, 0.0f}, // slow_on_hit
+        SplashDamageStats{0.0f, 1.0f}, // splash_damage
 
         // Attack behavior type
         AttackType::SingleTarget
@@ -41,6 +43,8 @@ const TowerDefinition& get_tower_definition(TowerType type){
         SDL_Color{120, 255, 180, 255},
         1,
         MoneyGeneratorStats{0, 0.0f, 0.0f,},
+        SlowOnHitStats{1.0f, 0.0f},
+        SplashDamageStats{0.0f, 1.0f},
 
         AttackType::SingleTarget
     };
@@ -61,6 +65,8 @@ const TowerDefinition& get_tower_definition(TowerType type){
         SDL_Color{160, 220, 255, 255},
         1,
         MoneyGeneratorStats{0, 0.0f, 0.0f,},
+        SlowOnHitStats{1.0f, 0.0f},
+        SplashDamageStats{0.0f, 1.0f},
 
         AttackType::SingleTarget
     };
@@ -79,6 +85,8 @@ const TowerDefinition& get_tower_definition(TowerType type){
         SDL_Color{190, 160, 255, 255},
         3,
         MoneyGeneratorStats{0, 0.0f, 0.0f,},
+        SlowOnHitStats{1.0f, 0.0f},
+        SplashDamageStats{0.0f, 1.0f},
 
         AttackType::Pierce
     };
@@ -98,8 +106,50 @@ const TowerDefinition& get_tower_definition(TowerType type){
         1,
 
         MoneyGeneratorStats{10, 5.0f, 0.0f},
+        SlowOnHitStats{1.0f, 0.0f},
+        SplashDamageStats{0.0f, 1.0f},
 
         AttackType::SingleTarget
+    };
+
+    static const TowerDefinition ankylosaurus{
+        TowerType::Ankylosaurus,
+        "Ankylosaurus",
+        3, 2,
+        SDL_Color{180, 140, 90, 180},
+        130,
+        10.0f,
+        135.0f,
+        0.90f,
+        300.0f,
+        11,
+        SDL_Color{210, 170, 100, 255},
+        1,
+        MoneyGeneratorStats{0, 0.0f, 0.0f},
+        SlowOnHitStats{0.50f, 2.0f},
+        SplashDamageStats{0.0f, 1.0f},
+
+        AttackType::SingleTarget
+    };
+
+    static const TowerDefinition sarcosuchus{
+        TowerType::Sarcosuchus,
+        "Sarcosuchus",
+        3, 2,
+        SDL_Color{80, 180, 180, 180},
+        160,
+        28.0f,
+        145.0f,
+        0.60f,
+        230.0f,
+        16,
+        SDL_Color{100, 230, 230, 255},
+        1,
+        MoneyGeneratorStats{0, 0.0f, 0.0f},
+        SlowOnHitStats{1.0f, 0.0f},
+        SplashDamageStats{55.0f, 0.60f},
+
+        AttackType::Splash
     };
 
     switch (type){
@@ -108,6 +158,8 @@ const TowerDefinition& get_tower_definition(TowerType type){
         case TowerType::Velociraptor: return velociraptor;
         case TowerType::Spinosaurus: return spinosaurus;
         case TowerType::Parasaurolophus: return parasaurolophus;
+        case TowerType::Ankylosaurus: return ankylosaurus;
+        case TowerType::Sarcosuchus: return sarcosuchus;
         default: throw std::runtime_error("Unknown TowerType\n");
     }
 }

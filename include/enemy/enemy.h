@@ -31,6 +31,10 @@ struct Enemy{
     int path_index = 0;
     bool reached_goal = false;
     bool alive = true;
+
+    // Runtime slow status
+    float slow_timer = 0.0f;
+    float slow_multiplier = 1.0f;
 };
 
 const EnemyDefinition& get_enemy_definition(EnemyType type);

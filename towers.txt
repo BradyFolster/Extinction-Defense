@@ -9,7 +9,7 @@ Damage
 Support
 - Dilophosaurus
 	- +APS to towers in range
-- Ankylosaurus
+- Ankylosaurus -- DONE
 	- Stunner
 	- Slows enemies when hit
 - Troodon
