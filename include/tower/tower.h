@@ -9,7 +9,8 @@ enum class TowerType{
     Spinosaurus,
     Parasaurolophus,
     Ankylosaurus,
-    Sarcosuchus
+    Sarcosuchus,
+    Allosaurus
 };
 
 enum class AttackType{
@@ -48,6 +49,20 @@ struct SplashDamageStats{
     float damage_multiplier = 1.0f;
 };
 
+struct BurstAttackStats{
+    // Shots fired for each burst "round"
+    int shots_per_burst = 1;
+    
+    // Time between shots inside the same burst
+    float shot_interval = 0.0f;
+
+    // Runtime: how many shots remaining in the same burst
+    int shots_remaining = 0;
+
+    // Runtime: countdown until the next round of bursts
+    float shot_timer = 0.0f;
+};
+
 struct TowerDefinition{
     TowerType type;
     const char* name;
@@ -78,6 +93,9 @@ struct TowerDefinition{
 
     // Optional splash damage behavior
     SplashDamageStats splash_damage;
+
+    // Optional burst attack behavior
+    BurstAttackStats burst_attack;
 
     // For future expansion
     AttackType attack_type;
@@ -117,6 +135,9 @@ struct Tower{
 
     // For splash damage towers (Sarcosuchus)
     SplashDamageStats splash_damage;
+
+    // For burst attacks (Allosaurus)
+    BurstAttackStats burst_attack;
 };
 
 const TowerDefinition& get_tower_definition(TowerType type);

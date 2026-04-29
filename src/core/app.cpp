@@ -182,6 +182,11 @@ void App::process_events(){
                         selected_tower_type_ = TowerType::Sarcosuchus;
                         selected_tower_index_ = -1;
                     }
+                    else if (point_in_rect(mouse_x, mouse_y, get_tower_button_rect(TowerType::Allosaurus))) {
+                        tower_selected_ = true;
+                        selected_tower_type_ = TowerType::Allosaurus;
+                        selected_tower_index_ = -1;
+                    }
                 }
                 else {
                     if (tower_selected_) {
@@ -540,6 +545,8 @@ bool App::place_selected_tower_if_valid(int center_col, int center_row) {
     tower.slow_on_hit = def.slow_on_hit;
     // Optional splash damage stats
     tower.splash_damage = def.splash_damage;
+    // Optional burst damage stats
+    tower.burst_attack = def.burst_attack;
 
     towers_.push_back(tower);
 
@@ -627,6 +634,8 @@ SDL_Rect App::get_tower_button_rect(TowerType type) const   {
             return SDL_Rect{button_x, 640, button_w, button_h};
         case TowerType::Sarcosuchus:
             return SDL_Rect{button_x, 760, button_w, button_h};
+        case TowerType::Allosaurus:
+            return SDL_Rect{button_x, 880, button_w, button_h};
         default:
             return SDL_Rect{button_x, 40, button_w, button_h};
     }
@@ -672,6 +681,7 @@ void App::render_tower_menu()   {
     render_tower_button(TowerType::Parasaurolophus);
     render_tower_button(TowerType::Ankylosaurus);
     render_tower_button(TowerType::Sarcosuchus);
+    render_tower_button(TowerType::Allosaurus);
 }
 
 float App::cell_center_x(int col) const{
@@ -881,6 +891,37 @@ void App::update_towers(float dt){
             continue;
         }
 
+        // Continue an active burst before starting a new attack
+        if (tower.burst_attack.shots_remaining > 0){
+            tower.burst_attack.shot_timer -= dt;
+
+            if (tower.burst_attack.shot_timer <= 0.0f){
+                Enemy* burst_target = find_target_for_tower(tower);
+
+                if (burst_target != nullptr){
+                    spawn_projectile(tower, i, *burst_target);
+
+                    tower.burst_attack.shots_remaining -= 1;
+
+                    if (tower.burst_attack.shots_remaining > 0){
+                        tower.burst_attack.shot_timer = tower.burst_attack.shot_interval;
+                    } else if (tower.attacks_per_second > 0.0f){
+                        tower.attack_cooldown = 1.0f / tower.attacks_per_second;
+                    }
+                } else{
+                    tower.burst_attack.shots_remaining = 0;
+                    tower.burst_attack.shot_timer = 0.0f;
+
+                    if (tower.attacks_per_second > 0.0f){
+                        tower.attack_cooldown = 1.0f / tower.attacks_per_second;
+                    }
+                }
+            }
+            // If the tower is bursting, don't do normal logic;
+            continue;
+        }
+
+
         // Tick cooldown towards 0
         if (tower.attack_cooldown > 0.0f){
             tower.attack_cooldown -= dt;
@@ -900,11 +941,21 @@ void App::update_towers(float dt){
             continue;
         }
 
-        // Spawns a projectile
+        // Fire the first projectile immediately.
+        // For normal towers, this is the only shot.
+        // For burst towers, this is shot 1 of the burst.
         spawn_projectile(tower, i, *target);
 
-        // Reset attack cooldown
-        if (tower.attacks_per_second > 0.0f){
+        // If this tower has burst behavior, queue the remaining shots.
+        // Allosaurus uses this: first shot now, then the rest shortly after.
+        if (tower.burst_attack.shots_per_burst > 1 &&
+            tower.burst_attack.shot_interval > 0.0f){
+
+            tower.burst_attack.shots_remaining = tower.burst_attack.shots_per_burst - 1;
+            tower.burst_attack.shot_timer = tower.burst_attack.shot_interval;
+        }
+        // Normal non-burst towers just go straight onto cooldown.
+        else if (tower.attacks_per_second > 0.0f){
             tower.attack_cooldown = 1.0f / tower.attacks_per_second;
         }
     }
