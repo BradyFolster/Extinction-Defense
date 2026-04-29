@@ -136,7 +136,14 @@ void App::process_events(){
                     }
                 }
                 else if (mouse_x >= MENU_X) {
-                    if (point_in_rect(mouse_x, mouse_y, get_tower_button_rect(TowerType::Trex))) {
+                    if (selected_tower_index_ >= 0){
+                        if (point_in_rect(mouse_x, mouse_y, get_upggrade_button_rect(UpgradePath::Damage))){
+                            handle_upgrade_button_click(UpgradePath::Damage);
+                        } else if (point_in_rect(mouse_x, mouse_y, get_upggrade_button_rect(UpgradePath::Utility))){
+                            handle_upgrade_button_click(UpgradePath::Utility);
+                        }
+                    }
+                    else if (point_in_rect(mouse_x, mouse_y, get_tower_button_rect(TowerType::Trex))) {
                         tower_selected_ = true;
                         selected_tower_type_ = TowerType::Trex;
                         selected_tower_index_ = -1;
@@ -1312,4 +1319,116 @@ void App::render_selected_tower_menu(){
     y += line_height;
 
     draw_text("Cost: $" + std::to_string(def.cost), x, y, text_color);
+
+    // Render both upgrade paths for the selected tower
+    render_upgrade_button(tower, UpgradePath::Damage, tower.damage_path_level);
+    render_upgrade_button(tower, UpgradePath::Utility, tower.utility_path_level);
+}
+
+SDL_Rect App::get_upggrade_button_rect(UpgradePath path) const{
+    // Damage is first, utility is second
+    const int button_x = MENU_X + 24;
+    const int button_w = MENU_WIDTH - 48;
+    const int button_h = 110;
+
+    if (path == UpgradePath::Damage){
+        return SDL_Rect{button_x, 430, button_w, button_h};
+    }
+
+    return SDL_Rect{button_x, 540, button_w, button_h};
+}
+
+void App::handle_upgrade_button_click(UpgradePath path){
+    // Only selected towers can be upgraded
+    if (selected_tower_index_ < 0 || selected_tower_index_ >= static_cast<int>(towers_.size())){
+        return;
+    }
+
+    Tower& tower = towers_[selected_tower_index_];
+
+    // Use the correct path level based on which button was clicked
+    int& current_path_level = path == UpgradePath::Damage ? tower.damage_path_level : tower.utility_path_level;
+
+    // Finds the data for the next upgrade
+    const TowerUpgradeDefinition* upgrade = get_next_upgrade_definition(tower.type, path, current_path_level);
+    if (upgrade == nullptr){
+        return;
+    }
+
+    // Do not apply the upgrade unless the player can afford it
+    if (!player_.spend_money(upgrade->cost)){
+        return;
+    }
+
+    // Apply the actual upgrade
+    apply_upgrade(tower, *upgrade);
+
+    current_path_level += 1;
+}
+
+std::string App::describe_upgrade_effect(const TowerUpgradeDefinition& upgrade) const{
+    // Dynamically builds a one line effect description for an upgrade
+    std::string effect;
+
+    if (upgrade.damage_bonus != 0.0f){
+        effect += "+" + std::to_string(static_cast<int>(upgrade.damage_bonus)) + " damage";
+    }
+    if (upgrade.range_bonus != 0.0f){
+        if (!effect.empty()) effect += ", ";
+        effect += "+" + std::to_string(static_cast<int>(upgrade.range_bonus)) + " range";
+    }
+    if (upgrade.attacks_per_second_bonus != 0.0f){
+        if (!effect.empty()) effect += ", ";
+        effect += "+" + format_float_2dp(upgrade.attacks_per_second_bonus) + " APS";
+    }
+    if (upgrade.projectile_size_bonus != 0.0f){
+        if (!effect.empty()) effect += ", ";
+        effect += "+" + std::to_string(static_cast<int>(upgrade.projectile_speed_bonus)) + " proj speed";
+    }
+    if (upgrade.projectile_size_bonus != 0){
+        if (!effect.empty()) effect += ", ";
+        effect += "+" + std::to_string(upgrade.projectile_size_bonus) + " proj size";
+    }
+
+    return effect;
+}
+
+void App::render_upgrade_button(const Tower& tower, UpgradePath path, int current_path_level){
+    SDL_Rect rect = get_upggrade_button_rect(path);
+
+    const TowerUpgradeDefinition* next_upgrade = get_next_upgrade_definition(tower.type, path, current_path_level);
+
+    bool is_maxed = next_upgrade == nullptr;
+    bool can_afford = !is_maxed && player_.can_afford(next_upgrade->cost);
+
+    // Dim the button if the player cannot buy it or the path is finished
+    if (is_maxed){
+        SDL_SetRenderDrawColor(renderer_, 70, 70, 70, 255);
+    } else if (!can_afford){
+        SDL_SetRenderDrawColor(renderer_, 110, 70, 70, 255);
+    } else{
+        SDL_SetRenderDrawColor(renderer_, 70, 110, 80, 255);
+    }
+
+    SDL_RenderFillRect(renderer_, &rect);
+
+    SDL_SetRenderDrawColor(renderer_, 220, 220, 220, 255);
+    SDL_RenderDrawRect(renderer_, &rect);
+
+    SDL_Color title_color{255, 255, 255, 255};
+    SDL_Color text_color{210, 220, 230, 255};
+
+    int text_x = rect.x + 12;
+    int text_y = rect.y + 10;
+
+    std::string path_name = path == UpgradePath::Damage ? "Damage Path" : "Utility Path";
+    draw_text(path_name, text_x, text_y, title_color);
+
+    if (is_maxed){
+        draw_text("MAX LEVEL", text_x, text_y + 28, text_color);
+        return;
+    }
+
+    draw_text(next_upgrade->name, text_x, text_y + 28, text_color);
+    draw_text("$" + std::to_string(next_upgrade->cost) + " - " + describe_upgrade_effect(*next_upgrade), text_x, text_y + 56, text_color);
 }

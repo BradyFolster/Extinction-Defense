@@ -51,9 +51,42 @@ struct Tower{
     float projectile_speed;
     int projectile_size;
     SDL_Color projectile_color;
+
+    // Total upgrade level across both paths
     int level = 1;
+
+    // Tracks how far this specific placed tower has upgraded in each path
+    int damage_path_level = 0;
+    int utility_path_level = 0;
 
     float attack_cooldown = 0.0f;
 };
 
 const TowerDefinition& get_tower_definition(TowerType type);
+
+
+// =================================================
+//               Tower Upgrade Stuff
+// =================================================
+enum class UpgradePath{
+    Damage,
+    Utility
+};
+
+struct TowerUpgradeDefinition{
+    const char* name;
+    int cost;
+
+    // Stat changes applied when the upgrade is purchased
+    float damage_bonus = 0.0f;
+    float range_bonus = 0.0f;
+    float attacks_per_second_bonus = 0.0f;
+    float projectile_speed_bonus = 0.0f;
+    int projectile_size_bonus = 0;
+};
+
+const TowerUpgradeDefinition* get_upgrade_path(TowerType type, UpgradePath path);
+const TowerUpgradeDefinition* get_current_upgrade_definition(TowerType type, UpgradePath path, int current_path_level);
+const TowerUpgradeDefinition* get_next_upgrade_definition(TowerType type, UpgradePath path, int current_path_level);
+
+void apply_upgrade(Tower& tower, const TowerUpgradeDefinition& upgrade);

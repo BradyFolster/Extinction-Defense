@@ -66,3 +66,115 @@ const TowerDefinition& get_tower_definition(TowerType type){
         default: throw std::runtime_error("Unknown TowerType\n");
     }
 }
+
+// =================================================
+//               Tower Upgrade Stuff
+// =================================================
+const TowerUpgradeDefinition* get_upgrade_path(TowerType type, UpgradePath path){
+    // Apex Damage
+    static const TowerUpgradeDefinition trex_damage[] = {
+        {"Sharpened Teeth", 80, 10.0f}, // name, cost, damage_bonus
+        {"Crushing Jaws", 130, 10.0f},
+        {"Bone Breaker", 210, 15.0f},
+        {"Apex Bite", 340, 25.0f},
+        {"Extinction Bite", 560, 40.0f}
+    };
+    // Predator Reach
+    // Improves coverage and attack tempo wthout directly increasing damage
+    static const TowerUpgradeDefinition trex_utility[] = {
+        {"Hunting Grounds", 75, 0.0f, 20.0f},
+        {"Faster Strikes", 120, 0.0f, 0.0f, 0.15f},
+        {"Blood Scent", 190, 0.0f, 20.0f, 0.0f, 80.0f},
+        {"Relentless Predator", 320, 0.0f, 0.0f, 0.20f, 0.0f, 2}, // name, cost, damage_bonus, range_bonus, attacks_per_second_bonus, projectile_speed_bonus, projectile_size_bonus
+        {"Tyrant Territory", 520, 0.0f, 25.0f, 0.25f}
+    };
+
+
+    // Heavy Plates
+    static const TowerUpgradeDefinition stego_damage[] = {
+        {"Sharper Spikes", 65, 5.0f},
+        {"Reinforced Spikes", 105, 7.0f},
+        {"Heavy Plates", 175, 10.0f},
+        {"Fossil Breaker", 285, 15.0f},
+        {"Ancient Arsenal", 470, 25.0f}
+    };
+    // Watchtower
+    // Increases range
+    static const TowerUpgradeDefinition stego_utility[] = {
+        {"Taller Stance", 70, 0.0f, 25.0f},
+        {"Faster Volley", 110, 0.0f, 0.0f, 0.15f},
+        {"High Ground", 180, 0.0f, 30.0f, 0.0f, 60.0f},
+        {"Spiked Barrage", 290, 0.0f, 0.0f, 0.20f, 0.0f, 2},
+        {"Map Control", 480, 0.0f, 35.0f, 0.20f}
+    };
+
+
+    // Serrated Claws
+    static const TowerUpgradeDefinition raptor_damage[] = {
+        {"Sharpened Claws", 55, 2.0f},
+        {"Serrated Claws", 90, 2.0f},
+        {"Ripping Strikes", 145, 3.0f},
+        {"Killing Claws", 240, 4.0f},
+        {"Alpha Predator", 395, 6.0f}
+    };
+    // Pack Frenzy
+    // Improves fast attacks 
+    static const TowerUpgradeDefinition raptor_utility[] = {
+        {"Quick Reflexes", 60, 0.0f, 0.0f, 0.40f},
+        {"Longer Leap", 95, 0.0f, 15.0f, 0.0f, 80.0f},
+        {"Pack Rhythm", 155, 0.0f, 0.0f, 0.55f},
+        {"Hunter's Focus", 250, 0.0f, 20.0f, 0.0f, 0.0f, 2},
+        {"Feeding Frenzy", 410, 0.0f, 20.0f, 0.75f}
+    };
+
+    // Returns the correct 5-upgrade-array based on type and tower
+    switch (type){
+        case TowerType::Trex:
+            return path == UpgradePath::Damage ? trex_damage : trex_utility;
+        case TowerType::Stegosaurus:
+            return path == UpgradePath::Damage ? stego_damage : stego_utility;
+        case TowerType::Velociraptor:
+            return path == UpgradePath::Damage ? raptor_damage : raptor_utility;
+        default:
+            return nullptr;
+    }
+}
+
+const TowerUpgradeDefinition* get_current_upgrade_definition(TowerType type, UpgradePath path, int current_path_level){
+    if (current_path_level <= 0){
+        return nullptr;
+    }
+
+    const TowerUpgradeDefinition* upgrades = get_upgrade_path(type, path);
+    if (upgrades == nullptr){
+        return nullptr;
+    }
+
+    return &upgrades[current_path_level - 1];
+}
+
+const TowerUpgradeDefinition* get_next_upgrade_definition(TowerType type, UpgradePath path, int current_path_level){
+    constexpr int MAX_UPGRADE_LEVEL = 5;
+
+    if (current_path_level >= MAX_UPGRADE_LEVEL){
+        return nullptr;
+    }
+
+    const TowerUpgradeDefinition* upgrades = get_upgrade_path(type, path);
+    if (upgrades == nullptr){
+        return nullptr;
+    }
+
+    return &upgrades[current_path_level];
+}
+
+void apply_upgrade(Tower& tower, const TowerUpgradeDefinition& upgrade){
+    // Apply each bonus directly to this tower's runtime stats
+    tower.attack_damage += upgrade.damage_bonus;
+    tower.attack_range += upgrade.range_bonus;
+    tower.attacks_per_second += upgrade.attacks_per_second_bonus;
+    tower.projectile_speed += upgrade.projectile_speed_bonus;
+    tower.projectile_size += upgrade.projectile_size_bonus;
+
+    tower.level += 1;
+}

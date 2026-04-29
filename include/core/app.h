@@ -75,6 +75,10 @@ class App{
         void render_tower_menu();
         void render_tower_button(TowerType type);
         void render_selected_tower_menu();
+        SDL_Rect get_upggrade_button_rect(UpgradePath path) const;
+        void handle_upgrade_button_click(UpgradePath path);
+        void render_upgrade_button(const Tower& tower, UpgradePath path, int current_path_level);
+        std::string describe_upgrade_effect(const TowerUpgradeDefinition& upgrade) const;
 
         // Enemy helpers
         void spawn_enemy(EnemyType type);
