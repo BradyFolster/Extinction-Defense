@@ -1,0 +1,25 @@
+Damage
+- Spinosaurus
+	- Piercing line tower
+- Allosaurus
+	- Burst attacks
+- Sarcosuchus
+	- Slow heavy projectile
+
+Support
+- Dilophosaurus
+	- +APS to towers in range
+- Ankylosaurus
+	- Stunner
+	- Slows enemies when hit
+- Troodon
+	- Towers in range target enemies w/ lowest health
+
+Mechanic
+- Parasaurolophus
+	- Money generator
+- Pteranodon
+	- Regular damage tower
+	- Can change position (on a cooldown)
+- Oviraptor
+	- Can aim attack at one place

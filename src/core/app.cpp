@@ -158,6 +158,11 @@ void App::process_events(){
                         selected_tower_type_ = TowerType::Velociraptor;
                         selected_tower_index_ = -1;
                     }
+                    else if (point_in_rect(mouse_x, mouse_y, get_tower_button_rect(TowerType::Spinosaurus))) {
+                        tower_selected_ = true;
+                        selected_tower_type_ = TowerType::Spinosaurus;
+                        selected_tower_index_ = -1;
+                    }
                 }
                 else {
                     if (tower_selected_) {
@@ -508,6 +513,7 @@ bool App::place_selected_tower_if_valid(int center_col, int center_row) {
     tower.projectile_speed = def.projectile_speed;
     tower.projectile_size = def.projectile_size;
     tower.projectile_color = def.projectile_color;
+    tower.pierce = def.pierce;
     tower.level = 1;
 
     towers_.push_back(tower);
@@ -588,6 +594,8 @@ SDL_Rect App::get_tower_button_rect(TowerType type) const   {
             return SDL_Rect{button_x, 160, button_w, button_h};
         case TowerType::Velociraptor:
             return SDL_Rect{button_x, 280, button_w, button_h};
+        case TowerType::Spinosaurus:
+            return SDL_Rect{button_x, 400, button_w, button_h};
         default:
             return SDL_Rect{button_x, 40, button_w, button_h};
     }
@@ -629,6 +637,7 @@ void App::render_tower_menu()   {
     render_tower_button(TowerType::Trex);
     render_tower_button(TowerType::Stegosaurus);
     render_tower_button(TowerType::Velociraptor);
+    render_tower_button(TowerType::Spinosaurus);
 }
 
 float App::cell_center_x(int col) const{
@@ -990,6 +999,15 @@ void App::spawn_projectile(const Tower& tower, const Enemy& target){
     projectile.size = tower.projectile_size;
     projectile.color = tower.projectile_color;
 
+    // For pierce attacks
+    const TowerDefinition& def = get_tower_definition(tower.type);
+    projectile.attack_type = def.attack_type;
+    if (projectile.attack_type == AttackType::Pierce){
+        projectile.pierce_remaining = tower.pierce;
+    } else{
+        projectile.pierce_remaining = 1;
+    }
+
     projectile.alive = true;
 
     // PREDICTIVE AIMING
@@ -1066,11 +1084,55 @@ void App::update_projectiles(float dt){
         // Treat a close approach as an impact
         float impact_distance = static_cast<float>(projectile.size) * 0.5f;
 
-        if (dist <= impact_distance){
-            damage_enemy(*target, projectile.damage);
-            projectile.alive = false;
-            continue;
+        if (projectile.attack_type == AttackType::SingleTarget){
+            if (dist <= impact_distance){
+                damage_enemy(*target, projectile.damage);
+                projectile.alive = false;
+                continue;
+            }
+        } else if (projectile.attack_type == AttackType::Pierce){
+            // Piercing logic
+            for (Enemy& enemy : enemies_){
+                if (!enemy.alive){
+                    continue;
+                }
+
+                // Don't hit the same enemy twice
+                bool already_hit = false;
+                for (int hit_id : projectile.hit_enemy_ids){
+                    if (hit_id == enemy.id){
+                        already_hit = true;
+                        break;
+                    }
+                }
+                if (already_hit){
+                    continue;
+                }
+
+                float enemy_dx = enemy.x - projectile.x;
+                float enemy_dy = enemy.y - projectile.y;
+                float enemy_dist = std::sqrt(enemy_dx * enemy_dx + enemy_dy * enemy_dy);
+
+                if (enemy_dist <= impact_distance){
+                    damage_enemy(enemy, projectile.damage);
+
+                    // Keep track of enemy so we don't hit it again
+                    projectile.hit_enemy_ids.push_back(enemy.id);
+
+                    projectile.pierce_remaining--;
+
+                    // Once a projectile has used all of its pierce, delete it.
+                    if (projectile.pierce_remaining <= 0){
+                        projectile.alive = false;
+                        break;
+                    }
+                }
+            }
+            if (!projectile.alive){
+                continue;
+            }
         }
+
 
         // Remove projectiles that fly off-screen
         if (projectile.x < 0.0f || projectile.x > static_cast<float>(PLAYABLE_WIDTH) ||

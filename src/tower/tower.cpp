@@ -18,6 +18,7 @@ const TowerDefinition& get_tower_definition(TowerType type){
         280.0f, // projectile_speed
         12,     // projectile_size
         SDL_Color{255, 220, 120, 255},
+        1, // pierce
 
         // Attack behavior type
         AttackType::SingleTarget
@@ -37,6 +38,7 @@ const TowerDefinition& get_tower_definition(TowerType type){
         340.0f,
         10,
         SDL_Color{120, 255, 180, 255},
+        1,
 
         AttackType::SingleTarget
     };
@@ -55,14 +57,33 @@ const TowerDefinition& get_tower_definition(TowerType type){
         480.0f,
         9,
         SDL_Color{160, 220, 255, 255},
+        1,
 
         AttackType::SingleTarget
+    };
+
+    static const TowerDefinition spinosaurus{
+        TowerType::Spinosaurus,
+        "Spinosaurus",
+        3, 2,
+        SDL_Color{120, 80, 255, 180},
+        140,
+        22.0f,
+        150.0f,
+        0.85f,
+        360.0f,
+        10,
+        SDL_Color{190, 160, 255, 255},
+        3,
+
+        AttackType::Pierce
     };
 
     switch (type){
         case TowerType::Trex: return trex;
         case TowerType::Stegosaurus: return stegosaurus;
         case TowerType::Velociraptor: return velociraptor;
+        case TowerType::Spinosaurus: return spinosaurus;
         default: throw std::runtime_error("Unknown TowerType\n");
     }
 }

@@ -1,6 +1,8 @@
 #pragma once
 
 #include <SDL.h>
+#include <vector>
+#include "tower/tower.h"
 
 // Projectiles are temporary objects spawned by towers
 // Damage only dealt when a projectile hits a target
@@ -31,4 +33,11 @@ struct Projectile{
 
     // If false, projectile should be removed from the vector
     bool alive = true;
+
+    // Controls attack type
+    AttackType attack_type = AttackType::SingleTarget;
+
+    // For piercing attacks
+    int pierce_remaining = 1;
+    std::vector<int> hit_enemy_ids;
 };

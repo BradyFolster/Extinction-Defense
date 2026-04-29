@@ -5,7 +5,8 @@
 enum class TowerType{
     Trex,
     Stegosaurus,
-    Velociraptor
+    Velociraptor,
+    Spinosaurus
 };
 
 enum class AttackType{
@@ -33,6 +34,7 @@ struct TowerDefinition{
     float projectile_speed; // pixels per second
     int projectile_size; // rendered size in pixels
     SDL_Color projectile_color; // debug render color
+    int pierce; // amount of pierce an enemy has (single target attacks should be 1)
 
     // For future expansion
     AttackType attack_type;
@@ -51,6 +53,7 @@ struct Tower{
     float projectile_speed;
     int projectile_size;
     SDL_Color projectile_color;
+    int pierce;
 
     // Total upgrade level across both paths
     int level = 1;
