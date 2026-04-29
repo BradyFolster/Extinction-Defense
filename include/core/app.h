@@ -67,6 +67,7 @@ class App{
         Enemy* find_target_for_tower(const Tower& tower);
         float tower_center_x(const Tower& tower) const;
         float tower_center_y(const Tower& tower) const;
+        void reset_money_generator_timers();
         // Tower Selection helpers
         int find_tower_at_pixel(int x, int y) const;
         void render_selected_tower_radius() const;

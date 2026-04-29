@@ -1,5 +1,5 @@
 Damage
-- Spinosaurus
+- Spinosaurus -- DONE
 	- Piercing line tower
 - Allosaurus
 	- Burst attacks
@@ -16,7 +16,7 @@ Support
 	- Towers in range target enemies w/ lowest health
 
 Mechanic
-- Parasaurolophus
+- Parasaurolophus -- DONE
 	- Money generator
 - Pteranodon
 	- Regular damage tower

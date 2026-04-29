@@ -19,6 +19,7 @@ const TowerDefinition& get_tower_definition(TowerType type){
         12,     // projectile_size
         SDL_Color{255, 220, 120, 255},
         1, // pierce
+        MoneyGeneratorStats{0, 0.0f, 0.0f,}, // money_generator
 
         // Attack behavior type
         AttackType::SingleTarget
@@ -39,6 +40,7 @@ const TowerDefinition& get_tower_definition(TowerType type){
         10,
         SDL_Color{120, 255, 180, 255},
         1,
+        MoneyGeneratorStats{0, 0.0f, 0.0f,},
 
         AttackType::SingleTarget
     };
@@ -58,6 +60,7 @@ const TowerDefinition& get_tower_definition(TowerType type){
         9,
         SDL_Color{160, 220, 255, 255},
         1,
+        MoneyGeneratorStats{0, 0.0f, 0.0f,},
 
         AttackType::SingleTarget
     };
@@ -75,8 +78,28 @@ const TowerDefinition& get_tower_definition(TowerType type){
         10,
         SDL_Color{190, 160, 255, 255},
         3,
+        MoneyGeneratorStats{0, 0.0f, 0.0f,},
 
         AttackType::Pierce
+    };
+
+    static const TowerDefinition parasaurolophus{
+        TowerType::Parasaurolophus,
+        "Parasaurlophus",
+        2, 2,
+        SDL_Color{240, 200, 80, 180},
+        125,
+        0.0f,
+        0.0f,
+        0.0f,
+        0.0f,
+        0,
+        SDL_Color{240, 220, 120, 255},
+        1,
+
+        MoneyGeneratorStats{10, 5.0f, 0.0f},
+
+        AttackType::SingleTarget
     };
 
     switch (type){
@@ -84,6 +107,7 @@ const TowerDefinition& get_tower_definition(TowerType type){
         case TowerType::Stegosaurus: return stegosaurus;
         case TowerType::Velociraptor: return velociraptor;
         case TowerType::Spinosaurus: return spinosaurus;
+        case TowerType::Parasaurolophus: return parasaurolophus;
         default: throw std::runtime_error("Unknown TowerType\n");
     }
 }

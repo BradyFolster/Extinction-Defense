@@ -130,9 +130,13 @@ void App::process_events(){
                 int mouse_x = event.button.x;
                 int mouse_y = event.button.y;
 
+                // Start wave button
                 if (point_in_rect(mouse_x, mouse_y, get_next_wave_button_rect())){
                     if (wave_manager_.can_start_next_wave()){
-                        wave_manager_.start_next_wave();
+                        if (wave_manager_.start_next_wave()){
+                            // Resets all money generator timers at the start of each wave
+                            reset_money_generator_timers();
+                        }
                     }
                 }
                 else if (mouse_x >= MENU_X) {
@@ -161,6 +165,11 @@ void App::process_events(){
                     else if (point_in_rect(mouse_x, mouse_y, get_tower_button_rect(TowerType::Spinosaurus))) {
                         tower_selected_ = true;
                         selected_tower_type_ = TowerType::Spinosaurus;
+                        selected_tower_index_ = -1;
+                    }
+                    else if (point_in_rect(mouse_x, mouse_y, get_tower_button_rect(TowerType::Parasaurolophus))) {
+                        tower_selected_ = true;
+                        selected_tower_type_ = TowerType::Parasaurolophus;
                         selected_tower_index_ = -1;
                     }
                 }
@@ -515,6 +524,8 @@ bool App::place_selected_tower_if_valid(int center_col, int center_row) {
     tower.projectile_color = def.projectile_color;
     tower.pierce = def.pierce;
     tower.level = 1;
+    // Optional money-generation stats
+    tower.money_generator = def.money_generator;
 
     towers_.push_back(tower);
 
@@ -596,6 +607,8 @@ SDL_Rect App::get_tower_button_rect(TowerType type) const   {
             return SDL_Rect{button_x, 280, button_w, button_h};
         case TowerType::Spinosaurus:
             return SDL_Rect{button_x, 400, button_w, button_h};
+        case TowerType::Parasaurolophus:
+            return SDL_Rect{button_x, 520, button_w, button_h};
         default:
             return SDL_Rect{button_x, 40, button_w, button_h};
     }
@@ -638,6 +651,7 @@ void App::render_tower_menu()   {
     render_tower_button(TowerType::Stegosaurus);
     render_tower_button(TowerType::Velociraptor);
     render_tower_button(TowerType::Spinosaurus);
+    render_tower_button(TowerType::Parasaurolophus);
 }
 
 float App::cell_center_x(int col) const{
@@ -815,6 +829,22 @@ Enemy* App::find_target_for_tower(const Tower& tower){
 
 void App::update_towers(float dt){
     for (Tower& tower : towers_){
+        // Money generator logic
+        if (tower.money_generator.amount > 0 && tower.money_generator.interval > 0.0f){
+            const bool wave_active = wave_manager_.is_spawning() || wave_manager_.is_waiting_for_clear();
+
+            if (wave_active){
+                tower.money_generator.timer += dt;
+
+                if (tower.money_generator.timer >= tower.money_generator.interval){
+                    tower.money_generator.timer = 0.0f;
+                    player_.add_money(tower.money_generator.amount);
+                }
+            }
+            // Skips combat because economy towers don't do combat
+            continue;
+        }
+
         // Tick cooldown towards 0
         if (tower.attack_cooldown > 0.0f){
             tower.attack_cooldown -= dt;
@@ -1320,6 +1350,10 @@ void App::render_selected_tower_radius() const{
     int center_y = static_cast<int>(tower_center_y(tower));
     int radius = static_cast<int>(tower.attack_range);
 
+    if (radius <= 0){
+        radius = 50;
+    }
+
     SDL_SetRenderDrawBlendMode(renderer_, SDL_BLENDMODE_BLEND);
 
 
@@ -1493,4 +1527,10 @@ void App::render_upgrade_button(const Tower& tower, UpgradePath path, int curren
 
     draw_text(next_upgrade->name, text_x, text_y + 28, text_color);
     draw_text("$" + std::to_string(next_upgrade->cost) + " - " + describe_upgrade_effect(*next_upgrade), text_x, text_y + 56, text_color);
+}
+
+void App::reset_money_generator_timers(){
+    for (Tower& tower : towers_){
+        tower.money_generator.timer = 0.0f;
+    }
 }

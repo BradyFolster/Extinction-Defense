@@ -6,13 +6,25 @@ enum class TowerType{
     Trex,
     Stegosaurus,
     Velociraptor,
-    Spinosaurus
+    Spinosaurus,
+    Parasaurolophus
 };
 
 enum class AttackType{
     SingleTarget,
     Splash,
     Pierce
+};
+
+struct MoneyGeneratorStats{
+    // How much money this tower gives for each payout
+    int amount = 0;
+    
+    // How many seconds between payouts
+    float interval = 0.0f;
+
+    // Tracks time since last payout
+    float timer = 0.0f;
 };
 
 struct TowerDefinition{
@@ -36,9 +48,15 @@ struct TowerDefinition{
     SDL_Color projectile_color; // debug render color
     int pierce; // amount of pierce an enemy has (single target attacks should be 1)
 
+    // Optional economy behavior
+    // Stays 0 for non-money towers
+    MoneyGeneratorStats money_generator;
+
     // For future expansion
     AttackType attack_type;
 };
+
+
 
 struct Tower{
     TowerType type;
@@ -63,6 +81,9 @@ struct Tower{
     int utility_path_level = 0;
 
     float attack_cooldown = 0.0f;
+
+    // For money generating towers (Parasaurolophus)
+    MoneyGeneratorStats money_generator;
 };
 
 const TowerDefinition& get_tower_definition(TowerType type);
