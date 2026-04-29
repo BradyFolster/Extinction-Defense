@@ -5,6 +5,8 @@
 #include <queue>
 #include <map>
 #include <set>
+#include <sstream>
+#include <iomanip>
 
 // Default constructor & destructor
 App::App() : window_(nullptr), renderer_(nullptr), running_(false) {}
@@ -491,6 +493,16 @@ bool App::place_selected_tower_if_valid(int center_col, int center_row) {
     tower.type = selected_tower_type_;
     tower.col = start_col;
     tower.row = start_row;
+
+    // Runtime combat stats for later upgrades
+    tower.attack_damage = def.attack_damage;
+    tower.attack_range = def.attack_range;
+    tower.attacks_per_second = def.attacks_per_second;
+    tower.projectile_speed = def.projectile_speed;
+    tower.projectile_size = def.projectile_size;
+    tower.projectile_color = def.projectile_color;
+    tower.level = 1;
+
     towers_.push_back(tower);
 
     for (int r = 0; r < def.footprint_h; ++r) {
@@ -764,11 +776,9 @@ float App::tower_center_y(const Tower& tower) const{
 }
 
 Enemy* App::find_target_for_tower(const Tower& tower){
-    const TowerDefinition& def = get_tower_definition(tower.type);
-
     float tx = tower_center_x(tower);
     float ty = tower_center_y(tower);
-    float range = def.attack_range;
+    float range = tower.attack_range;
     float range_sq = range*range;
 
     for (Enemy& enemy : enemies_){
@@ -789,8 +799,6 @@ Enemy* App::find_target_for_tower(const Tower& tower){
 
 void App::update_towers(float dt){
     for (Tower& tower : towers_){
-        const TowerDefinition& def = get_tower_definition(tower.type);
-
         // Tick cooldown towards 0
         if (tower.attack_cooldown > 0.0f){
             tower.attack_cooldown -= dt;
@@ -814,8 +822,8 @@ void App::update_towers(float dt){
         spawn_projectile(tower, *target);
 
         // Reset attack cooldown
-        if (def.attacks_per_second > 0.0f){
-            tower.attack_cooldown = 1.0f / def.attacks_per_second;
+        if (tower.attacks_per_second > 0.0f){
+            tower.attack_cooldown = 1.0f / tower.attacks_per_second;
         }
     }
 }
@@ -854,6 +862,12 @@ bool App::draw_text(const std::string& text, int x, int y, SDL_Color color) cons
     SDL_DestroyTexture(texture);
 
     return true;
+}
+
+std::string format_float_2dp(float value){
+    std::ostringstream oss;
+    oss << std::fixed << std::setprecision(2) << value;
+    return oss.str();
 }
 
 void App::render_debug_hud() const{
@@ -954,9 +968,6 @@ void App::render_enemy_health_bar(const Enemy& enemy, const SDL_Rect& enemy_rect
 }
 
 void App::spawn_projectile(const Tower& tower, const Enemy& target){
-    // Read the tower's stats so the projectile inherits its speed, size, color, and damage
-    const TowerDefinition& def = get_tower_definition(tower.type);
-
     Projectile projectile;
 
     // Lock this projectile onto the enemy's unique ID
@@ -967,10 +978,10 @@ void App::spawn_projectile(const Tower& tower, const Enemy& target){
     projectile.y = tower_center_y(tower);
 
     // Copy projectile behavior from tower data
-    projectile.speed = def.projectile_speed;
-    projectile.damage = def.attack_damage;
-    projectile.size = def.projectile_size;
-    projectile.color = def.projectile_color;
+    projectile.speed = tower.projectile_speed;
+    projectile.damage = tower.attack_damage;
+    projectile.size = tower.projectile_size;
+    projectile.color = tower.projectile_color;
 
     projectile.alive = true;
 
@@ -1147,9 +1158,9 @@ void App::damage_enemy(Enemy& enemy, float damage){
     if (enemy.health <= 0.0f){
         enemy.alive = false;
 
-        // TEMPORARY 
+        const EnemyDefinition& def = get_enemy_definition(enemy.type);
         // reward for killing enemy
-        player_.add_money(10);
+        player_.add_money(def.reward);
     }
 }
 
@@ -1235,11 +1246,10 @@ void App::render_selected_tower_radius() const{
     }
 
     const Tower& tower = towers_[selected_tower_index_];
-    const TowerDefinition& def = get_tower_definition(tower.type);
 
     int center_x = static_cast<int>(tower_center_x(tower));
     int center_y = static_cast<int>(tower_center_y(tower));
-    int radius = static_cast<int>(def.attack_range);
+    int radius = static_cast<int>(tower.attack_range);
 
     SDL_SetRenderDrawBlendMode(renderer_, SDL_BLENDMODE_BLEND);
 
@@ -1289,13 +1299,16 @@ void App::render_selected_tower_menu(){
     draw_text(def.name, x, y, title_color);
     y += line_height * 2;
 
-    draw_text("Damage: " + std::to_string(static_cast<int>(def.attack_damage)), x, y, text_color);
+    draw_text("Level: " + std::to_string(static_cast<int>(tower.level)), x, y, text_color);
     y += line_height;
 
-    draw_text("Range: " + std::to_string(static_cast<int>(def.attack_range)), x, y, text_color);
+    draw_text("Damage: " + std::to_string(static_cast<int>(tower.attack_damage)), x, y, text_color);
     y += line_height;
 
-    draw_text("Attack Speed: " + std::to_string(static_cast<int>(def.attacks_per_second)), x, y, text_color);
+    draw_text("Range: " + std::to_string(static_cast<int>(tower.attack_range)), x, y, text_color);
+    y += line_height;
+
+    draw_text("Attack Speed: " + format_float_2dp(tower.attacks_per_second), x, y, text_color);
     y += line_height;
 
     draw_text("Cost: $" + std::to_string(def.cost), x, y, text_color);

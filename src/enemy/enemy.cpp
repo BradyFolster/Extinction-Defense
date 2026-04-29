@@ -7,6 +7,7 @@ const EnemyDefinition& get_enemy_definition(EnemyType type){
         60.0f, // max_health
         90.0f, // speed
         1, // goal damage
+        10, // reward
         SDL_Color{139, 90, 43, 255}
     };
     
@@ -15,6 +16,7 @@ const EnemyDefinition& get_enemy_definition(EnemyType type){
         40.0f,
         120.0f,
         1,
+        10,
         SDL_Color{80, 170, 80, 255}
     };
 
@@ -23,6 +25,7 @@ const EnemyDefinition& get_enemy_definition(EnemyType type){
         120.0f,
         75.0f,
         2,
+        20,
         SDL_Color{160, 160, 180, 255}
     };
 

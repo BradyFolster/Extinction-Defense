@@ -43,6 +43,16 @@ struct Tower{
     int col;
     int row;
 
+    // Runtime combat stats for a tower that can be used instead of the TowerDefinition object
+    // Makes upgrades possible
+    float attack_damage;
+    float attack_range;
+    float attacks_per_second;
+    float projectile_speed;
+    int projectile_size;
+    SDL_Color projectile_color;
+    int level = 1;
+
     float attack_cooldown = 0.0f;
 };
 

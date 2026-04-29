@@ -14,6 +14,7 @@ struct EnemyDefinition{
     float max_health;
     float speed;
     int goal_damage;
+    int reward;
     SDL_Color debug_color;
 };
 
