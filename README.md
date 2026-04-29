@@ -7,7 +7,10 @@ modular gameplay systems and eventual Steam release.
 - Modular enemy / wave / tower systems
 - Tile-based map support
 - Cross-platform SDL build
-- Planned upgrades, projectiles, and UI
+- Dual upgrade trees
+- Different projectile types
+	- Burst attacks
+	- Splash damage
 
 ## Tech Stack
 - C++
@@ -22,12 +25,18 @@ modular gameplay systems and eventual Steam release.
 - JSON-based map generation pipeline
 - Predictive projectile system
 - AssetManager that handles loading/deletion of all assets
+- Different attack types
+- Two different upgrade trees 
+	- Damage path
+	- Utility path
 
 ## Motivation
 This project was build to deepen my understanding of systems programming,
 game architecture, and real-time application design in C++.
 
 ## Recent Accomplishments
+- Attack types
+- Upgrade paths
 - AssetManager
 - Selected tower & attack radius
 - Predictive targeting
@@ -35,7 +44,6 @@ game architecture, and real-time application design in C++.
 
 ## Current Status
 Core gameplay loop implemented. Actively working on:
-- Selected tower menu
 - More Waves / Enemy Variety
 - Basic UI
 - Basic Art Implementation

@@ -1,7 +1,7 @@
 Damage
 - Spinosaurus -- DONE
 	- Piercing line tower
-- Allosaurus
+- Allosaurus -- DONE
 	- Burst attacks
 - Sarcosuchus -- DONE
 	- Slow heavy projectile
