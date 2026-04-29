@@ -154,6 +154,7 @@ void App::process_events(){
                     if (tower_selected_) {
                         // Build mode takes priority
                         place_selected_tower_if_valid(mouse_x / CELL_SIZE, mouse_y / CELL_SIZE);
+                        tower_selected_ = false;
                     } else{
                         int clicked_tower_index = find_tower_at_pixel(mouse_x, mouse_y);
 
