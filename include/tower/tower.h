@@ -16,6 +16,7 @@ enum class AttackType{
 
 struct TowerDefinition{
     TowerType type;
+    const char* name;
     // How many spaces it occupies
     int footprint_w;
     int footprint_h;

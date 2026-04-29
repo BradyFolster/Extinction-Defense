@@ -13,12 +13,16 @@ App::~App() { shutdown(); }
 // Initializes SDL
 bool App::init(){
     // Starts up desired systems
-    if (SDL_Init(SDL_INIT_VIDEO) != 0){
+    if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO) != 0){
         std::cerr << "SDL_Init failed: " << SDL_GetError() << "\n";
         return false;
     }
     if (!(IMG_Init(IMG_INIT_PNG) & IMG_INIT_PNG)){
         std::cerr << "IMG_Init failed: " << IMG_GetError() << "\n";
+        return false;
+    }
+    if (Mix_OpenAudio(4410, MIX_DEFAULT_FORMAT, 2, 2048) != 0){
+        std::cerr << "Mix_OpenAudio failed: " << Mix_GetError() << "\n";
         return false;
     }
     // Creates a window and a renderer attached to said window
@@ -154,7 +158,11 @@ void App::process_events(){
                         int clicked_tower_index = find_tower_at_pixel(mouse_x, mouse_y);
 
                         if (clicked_tower_index != -1){
-                            selected_tower_index_ = clicked_tower_index;
+                            if (selected_tower_index_ == clicked_tower_index){
+                                selected_tower_index_ = -1;
+                            } else {
+                                selected_tower_index_ = clicked_tower_index;
+                            }
                         } else {
                             selected_tower_index_ = -1;
                         }
@@ -243,8 +251,12 @@ void App::render(){
     // Start next wave button
     render_next_wave_button();
 
-    // Renders menu
-    render_tower_menu();
+    // Renders build menu or the tower-specific menu
+    if (selected_tower_index_ >= 0){
+        render_selected_tower_menu();
+    } else{
+        render_tower_menu();
+    }
 
     // Debug menu
     render_debug_hud();
@@ -266,6 +278,8 @@ void App::shutdown(){
         SDL_DestroyWindow(window_);
         window_ = nullptr;
     }
+
+    Mix_CloseAudio();
 
     TTF_Quit();
     IMG_Quit();
@@ -1243,4 +1257,45 @@ void App::render_selected_tower_radius() const{
 
     SDL_SetRenderDrawColor(renderer_, 255, 255, 255, 220);
     SDL_RenderFillRect(renderer_, &center_marker);
+}
+
+void App::render_selected_tower_menu(){
+    SDL_Rect panel{MENU_X, 0, MENU_WIDTH, WORLD_HEIGHT};
+
+    SDL_SetRenderDrawColor(renderer_, 30, 34, 40, 255);
+    SDL_RenderFillRect(renderer_, &panel);
+
+    SDL_SetRenderDrawColor(renderer_, 80, 90, 100, 255);
+    SDL_RenderDrawRect(renderer_, &panel);
+
+    if (selected_tower_index_ < 0 || selected_tower_index_ >= static_cast<int>(towers_.size())){
+        return;
+    }
+
+    const Tower& tower = towers_[selected_tower_index_];
+    const TowerDefinition& def = get_tower_definition(tower.type);
+
+    SDL_Color title_color{255, 255, 255, 255};
+    SDL_Color text_color{210, 220, 230, 255};
+
+    int x = MENU_X + 24;
+    int y = 40;
+    int line_height = 32;
+
+    draw_text("Selected Tower", x, y, title_color);
+    y += line_height * 2;
+
+    draw_text(def.name, x, y, title_color);
+    y += line_height * 2;
+
+    draw_text("Damage: " + std::to_string(static_cast<int>(def.attack_damage)), x, y, text_color);
+    y += line_height;
+
+    draw_text("Range: " + std::to_string(static_cast<int>(def.attack_range)), x, y, text_color);
+    y += line_height;
+
+    draw_text("Attack Speed: " + std::to_string(static_cast<int>(def.attacks_per_second)), x, y, text_color);
+    y += line_height;
+
+    draw_text("Cost: $" + std::to_string(def.cost), x, y, text_color);
 }

@@ -6,6 +6,7 @@
 const TowerDefinition& get_tower_definition(TowerType type){
     static const TowerDefinition trex{
         TowerType::Trex,
+        "T. Rex",
         3, 3,
         SDL_Color{255, 80, 80, 180},
         150,    // cost
@@ -24,6 +25,7 @@ const TowerDefinition& get_tower_definition(TowerType type){
 
     static const TowerDefinition stegosaurus{
         TowerType::Stegosaurus,
+        "Stegosaurus",
         3, 2,
         SDL_Color{80, 220, 120, 180},
         120,
@@ -41,6 +43,7 @@ const TowerDefinition& get_tower_definition(TowerType type){
 
     static const TowerDefinition velociraptor{
         TowerType::Velociraptor,
+        "Velociraptor",
         2, 2,
         SDL_Color{80, 160, 255, 180},
         90,

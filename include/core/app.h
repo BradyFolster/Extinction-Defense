@@ -63,8 +63,6 @@ class App{
         SDL_Rect get_tower_button_rect(TowerType type) const;
         bool point_in_rect(int x, int y, const SDL_Rect& rect) const;
         bool place_selected_tower_if_valid(int center_col, int center_row);
-        void render_tower_menu();
-        void render_tower_button(TowerType type);
         void update_towers(float dt);
         Enemy* find_target_for_tower(const Tower& tower);
         float tower_center_x(const Tower& tower) const;
@@ -73,6 +71,10 @@ class App{
         int find_tower_at_pixel(int x, int y) const;
         void render_selected_tower_radius() const;
         void draw_filled_circle(int center_x, int center_y, int radius) const;
+        // Menu helpers
+        void render_tower_menu();
+        void render_tower_button(TowerType type);
+        void render_selected_tower_menu();
 
         // Enemy helpers
         void spawn_enemy(EnemyType type);
