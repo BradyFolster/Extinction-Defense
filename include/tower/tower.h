@@ -10,7 +10,8 @@ enum class TowerType{
     Parasaurolophus,
     Ankylosaurus,
     Sarcosuchus,
-    Allosaurus
+    Allosaurus,
+    Dilophosaurus
 };
 
 enum class AttackType{
@@ -63,6 +64,11 @@ struct BurstAttackStats{
     float shot_timer = 0.0f;
 };
 
+struct AuraStats{
+    // How much to add to APS to towers in range
+    float attacks_per_second_bonus = 0.0f;
+};
+
 struct TowerDefinition{
     TowerType type;
     const char* name;
@@ -96,6 +102,9 @@ struct TowerDefinition{
 
     // Optional burst attack behavior
     BurstAttackStats burst_attack;
+
+    // Optional APS bonus aura behavior
+    AuraStats aura;
 
     // For future expansion
     AttackType attack_type;
@@ -138,6 +147,9 @@ struct Tower{
 
     // For burst attacks (Allosaurus)
     BurstAttackStats burst_attack;
+
+    // For APS aura (Dilophosaurus)
+    AuraStats aura;
 };
 
 const TowerDefinition& get_tower_definition(TowerType type);

@@ -8,7 +8,7 @@ Damage
 	- Splash damage
 
 Support
-- Dilophosaurus
+- Dilophosaurus -- DONE
 	- +APS to towers in range
 - Ankylosaurus -- DONE
 	- Stunner

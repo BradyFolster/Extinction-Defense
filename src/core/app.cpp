@@ -187,6 +187,11 @@ void App::process_events(){
                         selected_tower_type_ = TowerType::Allosaurus;
                         selected_tower_index_ = -1;
                     }
+                    else if (point_in_rect(mouse_x, mouse_y, get_tower_button_rect(TowerType::Dilophosaurus))) {
+                        tower_selected_ = true;
+                        selected_tower_type_ = TowerType::Dilophosaurus;
+                        selected_tower_index_ = -1;
+                    }
                 }
                 else {
                     if (tower_selected_) {
@@ -547,6 +552,8 @@ bool App::place_selected_tower_if_valid(int center_col, int center_row) {
     tower.splash_damage = def.splash_damage;
     // Optional burst damage stats
     tower.burst_attack = def.burst_attack;
+    // Optional aura stats
+    tower.aura = def.aura;
 
     towers_.push_back(tower);
 
@@ -617,25 +624,27 @@ void App::render_tower_preview() {
 SDL_Rect App::get_tower_button_rect(TowerType type) const   {
     const int button_x = MENU_X + 20;
     const int button_w = MENU_WIDTH - 40;
-    const int button_h = 100;
+    const int button_h = 60;
 
     switch (type){
         case TowerType::Trex:
             return SDL_Rect{button_x, 40, button_w, button_h};
         case TowerType::Stegosaurus:
-            return SDL_Rect{button_x, 160, button_w, button_h};
+            return SDL_Rect{button_x, 120, button_w, button_h};
         case TowerType::Velociraptor:
-            return SDL_Rect{button_x, 280, button_w, button_h};
+            return SDL_Rect{button_x, 200, button_w, button_h};
         case TowerType::Spinosaurus:
-            return SDL_Rect{button_x, 400, button_w, button_h};
+            return SDL_Rect{button_x, 280, button_w, button_h};
         case TowerType::Parasaurolophus:
-            return SDL_Rect{button_x, 520, button_w, button_h};
+            return SDL_Rect{button_x, 360, button_w, button_h};
         case TowerType::Ankylosaurus:
-            return SDL_Rect{button_x, 640, button_w, button_h};
+            return SDL_Rect{button_x, 440, button_w, button_h};
         case TowerType::Sarcosuchus:
-            return SDL_Rect{button_x, 760, button_w, button_h};
+            return SDL_Rect{button_x, 520, button_w, button_h};
         case TowerType::Allosaurus:
-            return SDL_Rect{button_x, 880, button_w, button_h};
+            return SDL_Rect{button_x, 600, button_w, button_h};
+        case TowerType::Dilophosaurus:
+            return SDL_Rect{button_x, 680, button_w, button_h};
         default:
             return SDL_Rect{button_x, 40, button_w, button_h};
     }
@@ -682,6 +691,7 @@ void App::render_tower_menu()   {
     render_tower_button(TowerType::Ankylosaurus);
     render_tower_button(TowerType::Sarcosuchus);
     render_tower_button(TowerType::Allosaurus);
+    render_tower_button(TowerType::Dilophosaurus);
 }
 
 float App::cell_center_x(int col) const{
@@ -891,6 +901,11 @@ void App::update_towers(float dt){
             continue;
         }
 
+        // Skips aura towers
+        if (tower.aura.attacks_per_second_bonus > 0.0f && tower.attack_damage <= 0.0f && tower.attacks_per_second <= 0.0f){
+            continue;
+        }
+
         // Continue an active burst before starting a new attack
         if (tower.burst_attack.shots_remaining > 0){
             tower.burst_attack.shot_timer -= dt;
@@ -906,14 +921,22 @@ void App::update_towers(float dt){
                     if (tower.burst_attack.shots_remaining > 0){
                         tower.burst_attack.shot_timer = tower.burst_attack.shot_interval;
                     } else if (tower.attacks_per_second > 0.0f){
-                        tower.attack_cooldown = 1.0f / tower.attacks_per_second;
+                        const float effective_attacks_per_second = tower.attacks_per_second + get_attack_speed_bonus_for_tower(i);
+
+                        if (effective_attacks_per_second > 0.0f){
+                            tower.attack_cooldown = 1.0f / effective_attacks_per_second;
+                        }
                     }
                 } else{
                     tower.burst_attack.shots_remaining = 0;
                     tower.burst_attack.shot_timer = 0.0f;
 
                     if (tower.attacks_per_second > 0.0f){
-                        tower.attack_cooldown = 1.0f / tower.attacks_per_second;
+                        const float effective_attacks_per_second = tower.attacks_per_second + get_attack_speed_bonus_for_tower(i);
+
+                        if (effective_attacks_per_second > 0.0f){
+                            tower.attack_cooldown = 1.0f / effective_attacks_per_second;
+                        }                    
                     }
                 }
             }
@@ -956,7 +979,11 @@ void App::update_towers(float dt){
         }
         // Normal non-burst towers just go straight onto cooldown.
         else if (tower.attacks_per_second > 0.0f){
-            tower.attack_cooldown = 1.0f / tower.attacks_per_second;
+            const float effective_attacks_per_second = tower.attacks_per_second + get_attack_speed_bonus_for_tower(i);
+
+            if (effective_attacks_per_second > 0.0f){
+                tower.attack_cooldown = 1.0f / effective_attacks_per_second;
+            }       
         }
     }
 }
@@ -1549,8 +1576,15 @@ void App::render_selected_tower_menu(){
     draw_text("Range: " + std::to_string(static_cast<int>(tower.attack_range)), x, y, text_color);
     y += line_height;
 
-    draw_text("Attack Speed: " + format_float_2dp(tower.attacks_per_second), x, y, text_color);
+    float aura_bonus = get_attack_speed_bonus_for_tower(selected_tower_index_);
+    float effective_aps = tower.attacks_per_second + aura_bonus;
+    draw_text("Attack Speed: " + format_float_2dp(effective_aps), x, y, text_color);
     y += line_height;
+    // Show the aura bonus separately so it is obvious Dilophosaurus is working.
+    if (aura_bonus > 0.0f){
+        draw_text("Aura Bonus: +" + format_float_2dp(aura_bonus), x, y, text_color);
+        y += line_height;
+    }
 
     draw_text("Cost: $" + std::to_string(def.cost), x, y, text_color);
 
@@ -1671,4 +1705,42 @@ void App::reset_money_generator_timers(){
     for (Tower& tower : towers_){
         tower.money_generator.timer = 0.0f;
     }
+}
+
+float App::get_attack_speed_bonus_for_tower(int tower_index) const{
+    const Tower& target_tower = towers_[tower_index];
+
+    float total_bonus = 0.0f;
+
+    const float target_x = tower_center_x(target_tower);
+    const float target_y = tower_center_y(target_tower);
+
+    for (int i = 0; i < static_cast<int>(towers_.size()); ++i){
+        if (i == tower_index){
+            continue;
+        }
+
+        const Tower& aura_tower = towers_[i];
+
+        // Towers with no APS aura don't effect nearby towers
+        if (aura_tower.aura.attacks_per_second_bonus <= 0.0f){
+            continue;
+        }
+
+        const float aura_x = tower_center_x(aura_tower);
+        const float aura_y = tower_center_y(aura_tower);
+
+        const float dx = target_x - aura_x;
+        const float dy = target_y - aura_y;
+        const float dist_sq = dx * dx + dy * dy;
+
+        // Aura range uses normal attack range
+        const float range = aura_tower.attack_range;
+        const float range_sq = range * range;
+
+        if (dist_sq <= range_sq){
+            total_bonus += aura_tower.aura.attacks_per_second_bonus;
+        }
+    }
+    return total_bonus;
 }

@@ -68,6 +68,7 @@ class App{
         float tower_center_x(const Tower& tower) const;
         float tower_center_y(const Tower& tower) const;
         void reset_money_generator_timers();
+        float get_attack_speed_bonus_for_tower(int tower_index) const;
         // Tower Selection helpers
         int find_tower_at_pixel(int x, int y) const;
         void render_selected_tower_radius() const;
