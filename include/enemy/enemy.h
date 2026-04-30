@@ -4,9 +4,24 @@
 #include "map/map_data.h"
 
 enum class EnemyType{
-    CaveMan,
-    Farmer,
-    Knight
+    EggScout,
+    NestRunner,
+    Warden,
+    TamedCompyPack,
+    RaptorRider,
+    EggCartCaravan,
+    BoneDoctor,
+    ShieldbackRaider,
+    TrikeRamTeam,
+    NestSmokeShaman,
+    ArmoredAnkylosaur,
+    BallistaCrew,
+    ChromeClawRaptor,
+    IroncrestTriceratops,
+    BioSurgeonDoctor,
+    RoboRaptor,
+    RoboStegoBulwark,
+    EggbreakerTitan
 };
 
 struct EnemyDefinition{
