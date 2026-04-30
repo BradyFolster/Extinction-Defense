@@ -105,6 +105,11 @@ class App{
         void render_selected_manual_target() const;
         SDL_Rect get_manual_target_button_rect() const;
         void spawn_projectile_at_point(const Tower& tower, int tower_index, float target_x, float target_y);
+        // Reposition helpers
+        void enter_reposition_mode(int tower_index);
+        bool move_selected_tower_if_valid(int center_col, int center_row);
+        void render_reposition_preview();
+        SDL_Rect get_reposition_button_rect() const;
 
         // Start wave helpers
         SDL_Rect get_next_wave_button_rect() const;
@@ -185,4 +190,8 @@ class App{
         // Manual targeting mode (Oviraptor)
         bool manual_targeting_mode_ = false;
         int manual_targeting_tower_index_ = -1;
+
+        // Repositioning (Pterodon)
+        bool reposition_mode_ = false;
+        int reposition_tower_index_ = -1;
 };

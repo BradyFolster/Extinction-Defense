@@ -13,7 +13,8 @@ enum class TowerType{
     Allosaurus,
     Dilophosaurus,
     Troodon,
-    Oviraptor
+    Oviraptor,
+    Pteranodon
 };
 
 enum class AttackType{
@@ -83,6 +84,15 @@ struct ManualTargetingStats{
     bool has_target = false;
 };
 
+struct RepositionStats{
+    // If true, this tower can be moved after intial placement
+    bool enabled = true;
+    float cooldown = 0.0f;
+
+    // Runtime timer
+    float cooldown_remaining = 0.f;
+};
+
 struct TowerDefinition{
     TowerType type;
     const char* name;
@@ -122,6 +132,9 @@ struct TowerDefinition{
 
     // Optional manual targeting behavior
     ManualTargetingStats manual_targeting;
+
+    // Optional repositionable tower behavior
+    RepositionStats reposition;
 
     // For future expansion
     AttackType attack_type;
@@ -170,6 +183,9 @@ struct Tower{
 
     // For manual targeting (Oviraptor)
     ManualTargetingStats manual_targeting;
+
+    // For repositionable towers (Pteranodon)
+    RepositionStats reposition;
 };
 
 const TowerDefinition& get_tower_definition(TowerType type);

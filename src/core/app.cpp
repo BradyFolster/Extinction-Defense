@@ -141,7 +141,10 @@ void App::process_events(){
                 }
                 else if (mouse_x >= MENU_X) {
                     if (selected_tower_index_ >= 0){
-                        if (point_in_rect(mouse_x, mouse_y, get_manual_target_button_rect())){
+                        if (point_in_rect(mouse_x, mouse_y, get_reposition_button_rect())){
+                            enter_reposition_mode(selected_tower_index_);
+                        }
+                        else if (point_in_rect(mouse_x, mouse_y, get_manual_target_button_rect())){
                             enter_manual_targeting_mode(selected_tower_index_);
                         }
                         else if (point_in_rect(mouse_x, mouse_y, get_upgrade_button_rect(UpgradePath::Damage))){
@@ -206,9 +209,17 @@ void App::process_events(){
                         selected_tower_type_ = TowerType::Oviraptor;
                         selected_tower_index_ = -1;
                     }
+                    else if (point_in_rect(mouse_x, mouse_y, get_tower_button_rect(TowerType::Pteranodon))) {
+                        tower_selected_ = true;
+                        selected_tower_type_ = TowerType::Pteranodon;
+                        selected_tower_index_ = -1;
+                    }
                 }
                 else {
-                    if (manual_targeting_mode_){
+                    if (reposition_mode_){
+                        move_selected_tower_if_valid(mouse_x / CELL_SIZE, mouse_y / CELL_SIZE);
+                    }
+                    else if (manual_targeting_mode_){
                         set_manual_target_for_selected_tower(mouse_x, mouse_y);
                     }
                     else if (tower_selected_) {
@@ -235,6 +246,8 @@ void App::process_events(){
                 selected_tower_index_ = -1;
                 manual_targeting_mode_ = false;
                 manual_targeting_tower_index_ = -1;
+                reposition_mode_ = false;
+                reposition_tower_index_ = -1;
             }
         }
     }
@@ -301,6 +314,9 @@ void App::render(){
 
     // Placement preview before a tower is placed
     render_tower_preview();
+
+    // Reposition preview
+    render_reposition_preview();
 
     // Manual targeting target 
     render_manual_target_preview();
@@ -580,6 +596,9 @@ bool App::place_selected_tower_if_valid(int center_col, int center_row) {
     tower.aura = def.aura;
     // Optional manual targeting stats
     tower.manual_targeting = def.manual_targeting;
+    // Optional reposition behavior stats
+    tower.reposition = def.reposition;
+    tower.reposition.cooldown_remaining = def.reposition.cooldown;
 
     towers_.push_back(tower);
 
@@ -682,6 +701,8 @@ SDL_Rect App::get_tower_button_rect(TowerType type) const   {
             return SDL_Rect{button_x, 760, button_w, button_h};
         case TowerType::Oviraptor: 
             return SDL_Rect{button_x, 840, button_w, button_h};
+        case TowerType::Pteranodon:
+            return SDL_Rect{button_x, 920, button_w, button_h};
         default:
             return SDL_Rect{button_x, 40, button_w, button_h};
     }
@@ -731,6 +752,7 @@ void App::render_tower_menu()   {
     render_tower_button(TowerType::Dilophosaurus);
     render_tower_button(TowerType::Troodon);
     render_tower_button(TowerType::Oviraptor);
+    render_tower_button(TowerType::Pteranodon);
 }
 
 float App::cell_center_x(int col) const{
@@ -940,6 +962,7 @@ Enemy* App::find_target_for_tower(const Tower& tower, int tower_index){
 void App::update_towers(float dt){
     for (int i = 0; i < static_cast<int>(towers_.size()); ++i){
         Tower& tower = towers_[i];
+
         // Money generator logic
         if (tower.money_generator.amount > 0 && tower.money_generator.interval > 0.0f){
             const bool wave_active = wave_manager_.is_spawning() || wave_manager_.is_waiting_for_clear();
@@ -964,6 +987,15 @@ void App::update_towers(float dt){
         const bool wave_active = wave_manager_.is_spawning() || wave_manager_.is_waiting_for_clear();
         if (!wave_active){
             continue;
+        }
+
+        // Reposition cooldown incrementation
+        if (tower.reposition.cooldown_remaining > 0.0f){
+            tower.reposition.cooldown_remaining -= dt;
+
+            if (tower.reposition.cooldown_remaining < 0.0f){
+                tower.reposition.cooldown_remaining = 0.0f;
+            }
         }
 
         // Continue an active burst before starting a new attack
@@ -1733,6 +1765,31 @@ void App::render_selected_tower_menu(){
         draw_text("Set Target", rect.x + 16, rect.y + 18, title_color);
     }
 
+    // Renders reposition button (if the tower uses it)
+    if (tower.reposition.enabled){
+        SDL_Rect rect = get_reposition_button_rect();
+        
+        const bool can_move = tower.reposition.cooldown_remaining <= 0.0f;
+
+        if (can_move){
+            SDL_SetRenderDrawColor(renderer_, 80, 140, 180, 255);
+        } else{
+            SDL_SetRenderDrawColor(renderer_, 80, 80, 80, 255);
+        }
+
+        SDL_RenderFillRect(renderer_, &rect);
+
+        SDL_SetRenderDrawColor(renderer_, 255, 255, 255, 255);
+        SDL_RenderDrawRect(renderer_, &rect);
+
+        if (can_move){
+            draw_text("Move", rect.x + 16, rect.y + 10, title_color);
+        } else{
+            draw_text("Move: " + std::to_string(static_cast<int>(tower.reposition.cooldown_remaining)) + "s",
+                        rect.x + 16, rect.y + 10, title_color);
+        }
+    }
+
     // Render both upgrade paths for the selected tower
     render_upgrade_button(tower, UpgradePath::Damage, tower.damage_path_level);
     render_upgrade_button(tower, UpgradePath::Utility, tower.utility_path_level);
@@ -2045,4 +2102,124 @@ void App::spawn_projectile_at_point(const Tower& tower, int tower_index, float t
     }
 
     projectiles_.push_back(projectile);
+}
+
+void App::enter_reposition_mode(int tower_index){
+    if (tower_index < 0 || tower_index >= static_cast<int>(towers_.size())){
+        return;
+    }
+
+    Tower& tower = towers_[tower_index];
+
+    if (!tower.reposition.enabled){
+        return;
+    }
+
+    if (tower.reposition.cooldown_remaining > 0.0f){
+        return;
+    }
+
+    reposition_mode_ = true;
+    reposition_tower_index_ = tower_index;
+
+    tower_selected_ = false;
+    selected_tower_index_ = tower_index;
+}
+
+bool App::move_selected_tower_if_valid(int center_col, int center_row){
+    if (!reposition_mode_){
+        return false;
+    }
+
+    if (reposition_tower_index_ < 0 || reposition_tower_index_ >= static_cast<int>(towers_.size())){
+        reposition_mode_ = false;
+        reposition_tower_index_ = -1;
+        return false;
+    }
+
+    Tower& tower = towers_[reposition_tower_index_];
+    const TowerDefinition& def = get_tower_definition(tower.type);
+
+    const int new_start_col = center_col - def.footprint_w / 2;
+    const int new_start_row = center_row - def.footprint_h / 2;
+
+    const int old_col = tower.col;
+    const int old_row = tower.row;
+
+    // Temporarily free the tower's current footprint
+    // So it doesn't block itself
+    for (int r = 0; r < def.footprint_h; ++r){
+        for (int c = 0; c < def.footprint_w; ++c){
+            grid_[old_row + r][old_col + c].occupied = false;
+        }
+    }
+
+    if (!can_place_tower(new_start_col, new_start_row, def.footprint_w, def.footprint_h)){
+        // Invalid move so restore the old occupied cells
+        for (int r = 0; r < def.footprint_h; ++r){
+            for (int c = 0; c < def.footprint_w; ++c){
+                grid_[old_row + r][old_col + c].occupied = true;
+            }
+        }
+
+        return false;
+    }
+
+    // Valid move
+    tower.col = new_start_col;
+    tower.row = new_start_row;
+    for (int r = 0; r < def.footprint_h; ++r){
+        for (int c = 0; c < def.footprint_w; ++c){
+            grid_[new_start_row + r][new_start_col + c].occupied = true;
+        }
+    }
+
+    tower.reposition.cooldown_remaining = tower.reposition.cooldown;
+
+    reposition_mode_ = false;
+    reposition_tower_index_ = -1;
+
+    return true;
+}
+
+void App::render_reposition_preview(){
+    if (!reposition_mode_){
+        return;
+    }
+
+    if (reposition_tower_index_ < 0 || reposition_tower_index_ >= static_cast<int>(towers_.size())){
+        return;
+    }
+
+    const Tower& tower = towers_[reposition_tower_index_];
+    const TowerDefinition& def = get_tower_definition(tower.type);
+
+    const int start_col = hovered_col_ - def.footprint_w / 2;
+    const int start_row = hovered_row_ - def.footprint_h / 2;
+
+    const bool valid = can_place_tower(start_col, start_row, def.footprint_w, def.footprint_h);
+
+    if (valid){
+        SDL_SetRenderDrawColor(renderer_, 120, 220, 255, 120);
+    } else{
+        SDL_SetRenderDrawColor(renderer_, 255, 80, 80, 120);
+    }
+
+    SDL_SetRenderDrawBlendMode(renderer_, SDL_BLENDMODE_BLEND);
+
+    SDL_Rect rect{
+        start_col * CELL_SIZE,
+        start_row * CELL_SIZE,
+        def.footprint_w * CELL_SIZE,
+        def.footprint_h * CELL_SIZE
+    };
+
+    SDL_RenderFillRect(renderer_, &rect);
+
+    SDL_SetRenderDrawColor(renderer_, 255, 255, 255, 255);
+    SDL_RenderDrawRect(renderer_, &rect);
+}
+
+SDL_Rect App::get_reposition_button_rect() const{
+    return SDL_Rect{MENU_X + 24, 385, MENU_WIDTH - 38, 40};
 }

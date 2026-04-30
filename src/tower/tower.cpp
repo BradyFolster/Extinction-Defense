@@ -25,6 +25,7 @@ const TowerDefinition& get_tower_definition(TowerType type){
         BurstAttackStats{1, 0.0f, 0, 0.0f}, // burst_attack
         AuraStats{0.0f, false}, // aura
         ManualTargetingStats{false, 0.0f, 0.0f, false}, // manual_targeting
+        RepositionStats{false, 0.0f, 0.0f}, // reposition
 
         // Attack behavior type
         AttackType::SingleTarget
@@ -51,6 +52,7 @@ const TowerDefinition& get_tower_definition(TowerType type){
         BurstAttackStats{1, 0.0f, 0, 0.0f},
         AuraStats{0.0f, false},
         ManualTargetingStats{false, 0.0f, 0.0f, false},
+        RepositionStats{false, 0.0f, 0.0f},
 
         AttackType::SingleTarget
     };
@@ -76,6 +78,7 @@ const TowerDefinition& get_tower_definition(TowerType type){
         BurstAttackStats{1, 0.0f, 0, 0.0f},
         AuraStats{0.0f, false},
         ManualTargetingStats{false, 0.0f, 0.0f, false},
+        RepositionStats{false, 0.0f, 0.0f},
 
         AttackType::SingleTarget
     };
@@ -99,6 +102,7 @@ const TowerDefinition& get_tower_definition(TowerType type){
         BurstAttackStats{1, 0.0f, 0, 0.0f},
         AuraStats{0.0f, false},
         ManualTargetingStats{false, 0.0f, 0.0f, false},
+        RepositionStats{false, 0.0f, 0.0f},
 
         AttackType::Pierce
     };
@@ -123,6 +127,7 @@ const TowerDefinition& get_tower_definition(TowerType type){
         BurstAttackStats{1, 0.0f, 0, 0.0f},
         AuraStats{0.0f, false},
         ManualTargetingStats{false, 0.0f, 0.0f, false},
+        RepositionStats{false, 0.0f, 0.0f},
 
         AttackType::SingleTarget
     };
@@ -146,6 +151,7 @@ const TowerDefinition& get_tower_definition(TowerType type){
         BurstAttackStats{1, 0.0f, 0, 0.0f},
         AuraStats{0.0f, false},
         ManualTargetingStats{false, 0.0f, 0.0f, false},
+        RepositionStats{false, 0.0f, 0.0f},
 
         AttackType::SingleTarget
     };
@@ -169,6 +175,7 @@ const TowerDefinition& get_tower_definition(TowerType type){
         BurstAttackStats{1, 0.0f, 0, 0.0f},
         AuraStats{0.0f, false},
         ManualTargetingStats{false, 0.0f, 0.0f, false},
+        RepositionStats{false, 0.0f, 0.0f},
 
         AttackType::Splash
     };
@@ -192,6 +199,7 @@ const TowerDefinition& get_tower_definition(TowerType type){
         BurstAttackStats{3, 0.12f, 0, 0.0f},
         AuraStats{0.0f, false},
         ManualTargetingStats{false, 0.0f, 0.0f, false},
+        RepositionStats{false, 0.0f, 0.0f},
 
         AttackType::SingleTarget
     };
@@ -215,6 +223,7 @@ const TowerDefinition& get_tower_definition(TowerType type){
         BurstAttackStats{1, 0.0f, 0, 0.0f,},
         AuraStats{0.35f, false},
         ManualTargetingStats{false, 0.0f, 0.0f, false},
+        RepositionStats{false, 0.0f, 0.0f},
 
         AttackType::SingleTarget
     };
@@ -238,6 +247,7 @@ const TowerDefinition& get_tower_definition(TowerType type){
         BurstAttackStats{1, 0.0f, 0, 0.0f},
         AuraStats{0.0f, true},
         ManualTargetingStats{false, 0.0f, 0.0f, false},
+        RepositionStats{false, 0.0f, 0.0f},
 
         AttackType::SingleTarget
     };
@@ -261,8 +271,33 @@ const TowerDefinition& get_tower_definition(TowerType type){
         BurstAttackStats{1, 0.0f, 0, 0.0f},
         AuraStats{0.0f, false},
         ManualTargetingStats{true, 0.0f, 0.0f, false},
+        RepositionStats{false, 0.0f, 0.0f},
 
         AttackType::Splash
+    };
+
+    static const TowerDefinition pteranodon{
+        TowerType::Pteranodon,
+        "Pteranodon",
+        2, 2,
+        SDL_Color{120, 220, 255, 180},
+        175,
+        18.0f,
+        150.0f,
+        0.8f,
+        300.0f,
+        10,
+        SDL_Color{120, 220, 255, 255},
+        1, 
+        MoneyGeneratorStats{0, 0.0f, 0.0f},
+        SlowOnHitStats{1.0f, 0.0f},
+        SplashDamageStats{45.0f, 0.75f},
+        BurstAttackStats{1, 0.0f, 0, 0.0f},
+        AuraStats{0.0f, false},
+        ManualTargetingStats{false, 0.0f, 0.0f, false},
+        RepositionStats{true, 12.0f, 0.0f},
+
+        AttackType::SingleTarget
     };
 
     switch (type){
@@ -277,6 +312,7 @@ const TowerDefinition& get_tower_definition(TowerType type){
         case TowerType::Dilophosaurus: return dilophosaurus;
         case TowerType::Troodon: return troodon;
         case TowerType::Oviraptor: return oviraptor;
+        case TowerType::Pteranodon: return pteranodon;
         default: throw std::runtime_error("Unknown TowerType\n");
     }
 }
