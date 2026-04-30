@@ -12,7 +12,8 @@ enum class TowerType{
     Sarcosuchus,
     Allosaurus,
     Dilophosaurus,
-    Troodon
+    Troodon,
+    Oviraptor
 };
 
 enum class AttackType{
@@ -73,6 +74,15 @@ struct AuraStats{
     bool lowest_health_targeting = false;
 };
 
+struct ManualTargetingStats{
+    bool enabled = false;
+
+    // runtime state
+    float target_x = 0.0f;
+    float target_y = 0.0f;
+    bool has_target = false;
+};
+
 struct TowerDefinition{
     TowerType type;
     const char* name;
@@ -109,6 +119,9 @@ struct TowerDefinition{
 
     // Optional APS bonus aura behavior
     AuraStats aura;
+
+    // Optional manual targeting behavior
+    ManualTargetingStats manual_targeting;
 
     // For future expansion
     AttackType attack_type;
@@ -154,6 +167,9 @@ struct Tower{
 
     // For APS aura (Dilophosaurus)
     AuraStats aura;
+
+    // For manual targeting (Oviraptor)
+    ManualTargetingStats manual_targeting;
 };
 
 const TowerDefinition& get_tower_definition(TowerType type);

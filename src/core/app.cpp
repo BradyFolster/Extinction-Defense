@@ -141,9 +141,13 @@ void App::process_events(){
                 }
                 else if (mouse_x >= MENU_X) {
                     if (selected_tower_index_ >= 0){
-                        if (point_in_rect(mouse_x, mouse_y, get_upgrade_button_rect(UpgradePath::Damage))){
+                        if (point_in_rect(mouse_x, mouse_y, get_manual_target_button_rect())){
+                            enter_manual_targeting_mode(selected_tower_index_);
+                        }
+                        else if (point_in_rect(mouse_x, mouse_y, get_upgrade_button_rect(UpgradePath::Damage))){
                             handle_upgrade_button_click(UpgradePath::Damage);
-                        } else if (point_in_rect(mouse_x, mouse_y, get_upgrade_button_rect(UpgradePath::Utility))){
+                        } 
+                        else if (point_in_rect(mouse_x, mouse_y, get_upgrade_button_rect(UpgradePath::Utility))){
                             handle_upgrade_button_click(UpgradePath::Utility);
                         }
                     }
@@ -197,9 +201,17 @@ void App::process_events(){
                         selected_tower_type_ = TowerType::Troodon;
                         selected_tower_index_ = -1;
                     }
+                    else if (point_in_rect(mouse_x, mouse_y, get_tower_button_rect(TowerType::Oviraptor))) {
+                        tower_selected_ = true;
+                        selected_tower_type_ = TowerType::Oviraptor;
+                        selected_tower_index_ = -1;
+                    }
                 }
                 else {
-                    if (tower_selected_) {
+                    if (manual_targeting_mode_){
+                        set_manual_target_for_selected_tower(mouse_x, mouse_y);
+                    }
+                    else if (tower_selected_) {
                         // Build mode takes priority
                         place_selected_tower_if_valid(mouse_x / CELL_SIZE, mouse_y / CELL_SIZE);
                         tower_selected_ = false;
@@ -221,6 +233,8 @@ void App::process_events(){
             else if (event.button.button == SDL_BUTTON_RIGHT) {
                 tower_selected_ = false;
                 selected_tower_index_ = -1;
+                manual_targeting_mode_ = false;
+                manual_targeting_tower_index_ = -1;
             }
         }
     }
@@ -285,7 +299,12 @@ void App::render(){
     // Radius around selected tower
     render_selected_tower_radius();
 
+    // Placement preview before a tower is placed
     render_tower_preview();
+
+    // Manual targeting target 
+    render_manual_target_preview();
+    render_selected_manual_target();
 
     render_grid_debug();
     // render_hovered_cell();
@@ -559,8 +578,17 @@ bool App::place_selected_tower_if_valid(int center_col, int center_row) {
     tower.burst_attack = def.burst_attack;
     // Optional aura stats
     tower.aura = def.aura;
+    // Optional manual targeting stats
+    tower.manual_targeting = def.manual_targeting;
 
     towers_.push_back(tower);
+
+    int placed_tower_index = static_cast<int>(towers_.size()) - 1;
+    if (towers_[placed_tower_index].manual_targeting.enabled){
+        selected_tower_index_ = placed_tower_index;
+        tower_selected_ = false;
+        enter_manual_targeting_mode(placed_tower_index);
+    }
 
     for (int r = 0; r < def.footprint_h; ++r) {
         for (int c = 0; c < def.footprint_w; ++c) {
@@ -652,6 +680,8 @@ SDL_Rect App::get_tower_button_rect(TowerType type) const   {
             return SDL_Rect{button_x, 680, button_w, button_h};
         case TowerType::Troodon:
             return SDL_Rect{button_x, 760, button_w, button_h};
+        case TowerType::Oviraptor: 
+            return SDL_Rect{button_x, 840, button_w, button_h};
         default:
             return SDL_Rect{button_x, 40, button_w, button_h};
     }
@@ -700,6 +730,7 @@ void App::render_tower_menu()   {
     render_tower_button(TowerType::Allosaurus);
     render_tower_button(TowerType::Dilophosaurus);
     render_tower_button(TowerType::Troodon);
+    render_tower_button(TowerType::Oviraptor);
 }
 
 float App::cell_center_x(int col) const{
@@ -930,6 +961,11 @@ void App::update_towers(float dt){
             continue;
         }
 
+        const bool wave_active = wave_manager_.is_spawning() || wave_manager_.is_waiting_for_clear();
+        if (!wave_active){
+            continue;
+        }
+
         // Continue an active burst before starting a new attack
         if (tower.burst_attack.shots_remaining > 0){
             tower.burst_attack.shot_timer -= dt;
@@ -979,6 +1015,24 @@ void App::update_towers(float dt){
 
         // Can't fire yet
         if (tower.attack_cooldown > 0.0f){
+            continue;
+        }
+
+        // Manual targeting logic
+        if (tower.manual_targeting.enabled){
+            if (!tower.manual_targeting.has_target){
+                continue;
+            }
+
+            spawn_projectile_at_point(tower, i, tower.manual_targeting.target_x, tower.manual_targeting.target_y);
+
+            if (tower.attacks_per_second > 0.0f){
+                const float effective_attacks_per_second = tower.attacks_per_second + get_attack_speed_bonus_for_tower(i);
+
+                if (effective_attacks_per_second > 0.0f){
+                    tower.attack_cooldown = 1.0f / effective_attacks_per_second;
+                }
+            }
             continue;
         }
 
@@ -1236,6 +1290,60 @@ void App::update_projectiles(float dt){
         // Move using fixed velocity
         projectile.x += projectile.vx * dt;
         projectile.y += projectile.vy * dt;
+
+        // Manual targeting logic
+        if (projectile.uses_manaual_target){
+            const float impact_distance = static_cast<float>(projectile.size) * 0.5f;
+
+            for (Enemy& enemy : enemies_){
+                if (!enemy.alive){
+                    continue;
+                }
+
+                float dx = enemy.x - projectile.x;
+                float dy = enemy.y - projectile.y;
+                float dist = std::sqrt(dx * dx + dy * dy);
+
+                if (dist <= impact_distance){
+                    if (projectile.source_tower_index >= 0 && projectile.source_tower_index < static_cast<int>(towers_.size())){
+                        const Tower& source_tower = towers_[projectile.source_tower_index];
+
+                        damage_enemy(enemy, source_tower);
+
+                        // If the tower is a splash tower, splash around the actual enemy impact, not just the target
+                        if (projectile.attack_type == AttackType::Splash){
+                            for (Enemy& splash_enemy : enemies_){
+                                if (!splash_enemy.alive || splash_enemy.id == enemy.id){
+                                    continue;
+                                }
+
+                                float splash_dx = splash_enemy.x - projectile.x;
+                                float splash_dy = splash_enemy.y - projectile.y;
+                                float splash_dist = std::sqrt(splash_dx * splash_dx + splash_dy * splash_dy);
+
+                                if (splash_dist <= projectile.splash_damage.radius){
+                                    Tower splash_source = source_tower;
+                                    splash_source.attack_damage *= projectile.splash_damage.damage_multiplier;
+
+                                    damage_enemy(splash_enemy, splash_source);
+                                }
+                            }
+                        }
+                    }
+
+                    projectile.alive = false;
+                    break;
+                }
+            }
+
+            // Skips normal enemy-id targeting logic
+            if (!projectile.alive){
+                continue;
+            }
+
+            // Lets the normal off-screen cleanup work still
+            continue;
+        }
 
         // Look up the target enemy
         Enemy* target = find_enemy_by_id(projectile.target_enemy_id);
@@ -1612,6 +1720,19 @@ void App::render_selected_tower_menu(){
 
     draw_text("Cost: $" + std::to_string(def.cost), x, y, text_color);
 
+    // Renders manual targeting button (if the tower uses it)
+    if (tower.manual_targeting.enabled){
+        SDL_Rect rect= get_manual_target_button_rect();
+
+        SDL_SetRenderDrawColor(renderer_, 170, 130, 60, 255);
+        SDL_RenderFillRect(renderer_, &rect);
+
+        SDL_SetRenderDrawColor(renderer_, 255, 255, 255, 255);
+        SDL_RenderDrawRect(renderer_, &rect);
+
+        draw_text("Set Target", rect.x + 16, rect.y + 18, title_color);
+    }
+
     // Render both upgrade paths for the selected tower
     render_upgrade_button(tower, UpgradePath::Damage, tower.damage_path_level);
     render_upgrade_button(tower, UpgradePath::Utility, tower.utility_path_level);
@@ -1803,4 +1924,125 @@ bool App::tower_uses_lowest_health_targeting(int tower_index) const{
     }
 
     return false;
+}
+
+void App::enter_manual_targeting_mode(int tower_index){
+    if (tower_index < 0 || tower_index >= static_cast<int>(towers_.size())){
+        return;
+    }
+    if (!towers_[tower_index].manual_targeting.enabled){
+        return;
+    }
+
+    manual_targeting_mode_ = true;
+    manual_targeting_tower_index_ = tower_index;
+    selected_tower_index_ = tower_index;
+    tower_selected_ = false;
+}
+
+void App::set_manual_target_for_selected_tower(int mouse_x, int mouse_y){
+    if (!manual_targeting_mode_){
+        return;
+    }
+
+    if (manual_targeting_tower_index_ < 0 || manual_targeting_tower_index_ >= static_cast<int>(towers_.size())){
+        manual_targeting_mode_ = false;
+        manual_targeting_tower_index_ = -1;
+        return;
+    }
+
+    Tower& tower = towers_[manual_targeting_tower_index_];
+
+    tower.manual_targeting.target_x = static_cast<float>((mouse_x / CELL_SIZE) * CELL_SIZE + CELL_SIZE / 2);
+    tower.manual_targeting.target_y = static_cast<float>((mouse_y / CELL_SIZE) * CELL_SIZE + CELL_SIZE / 2);
+    tower.manual_targeting.has_target = true;
+
+    manual_targeting_mode_ = false;
+    manual_targeting_tower_index_ = -1;
+}
+
+void App::render_manual_target_preview() const{
+    if (!manual_targeting_mode_){
+        return;
+    }
+    if (hovered_col_ < 0 || hovered_row_ < 0){
+        return;
+    }
+
+    SDL_SetRenderDrawBlendMode(renderer_, SDL_BLENDMODE_BLEND);
+    SDL_SetRenderDrawColor(renderer_, 255, 230, 120, 120);
+
+    SDL_Rect rect{
+        hovered_col_ * CELL_SIZE,
+        hovered_row_ * CELL_SIZE,
+        CELL_SIZE,
+        CELL_SIZE
+    };
+
+    SDL_RenderFillRect(renderer_, &rect);
+
+    SDL_SetRenderDrawColor(renderer_, 255, 255, 255, 255);
+    SDL_RenderDrawRect(renderer_, &rect);
+}
+
+void App::render_selected_manual_target() const{
+    if (selected_tower_index_ < 0 || selected_tower_index_ >= static_cast<int>(towers_.size())){
+        return;
+    }
+
+    const Tower& tower = towers_[selected_tower_index_];
+
+    if (!tower.manual_targeting.enabled || !tower.manual_targeting.has_target){
+        return;
+    }
+
+    SDL_SetRenderDrawColor(renderer_, 255, 230, 120, 255);
+
+    SDL_Rect rect{
+        static_cast<int>(tower.manual_targeting.target_x) - CELL_SIZE / 2,
+        static_cast<int>(tower.manual_targeting.target_y) - CELL_SIZE / 2,
+        CELL_SIZE,
+        CELL_SIZE
+    };
+
+    SDL_RenderDrawRect(renderer_, &rect);
+}
+
+SDL_Rect App::get_manual_target_button_rect() const{
+    return SDL_Rect{MENU_X + 24, 320, MENU_WIDTH - 48, 60};
+}
+
+void App::spawn_projectile_at_point(const Tower& tower, int tower_index, float target_x, float target_y){
+    Projectile projectile;
+
+    projectile.target_enemy_id = -1;
+    projectile.uses_manaual_target = true;
+    projectile.manual_target_x = target_x;
+    projectile.manual_target_y = target_y;
+
+    projectile.x = tower_center_x(tower);
+    projectile.y = tower_center_y(tower);
+
+    projectile.speed = tower.projectile_speed;
+    projectile.damage = tower.attack_damage;
+    projectile.size = tower.projectile_size;
+    projectile.color = tower.projectile_color;
+
+    const TowerDefinition& def = get_tower_definition(tower.type);
+    projectile.attack_type = def.attack_type;
+    projectile.pierce_remaining = 1;
+    projectile.splash_damage = tower.splash_damage;
+    projectile.source_tower_index = tower_index;
+    projectile.alive = true;
+
+    float dx = target_x - projectile.x;
+    float dy = target_y - projectile.y;
+    float dist = std::sqrt(dx * dx + dy * dy);
+
+    if (dist > 0.0f){
+        projectile.vx = (dx / dist) * projectile.speed;
+        projectile.vy = (dy / dist) * projectile.speed;
+    }
+
+    projectiles_.push_back(projectile);
 }

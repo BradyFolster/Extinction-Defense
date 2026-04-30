@@ -45,4 +45,10 @@ struct Projectile{
     int source_tower_index = -1;
 
     SplashDamageStats splash_damage;
+
+    // Manual-target projectiles do not chase an enemy
+    // They travel to a fixed position
+    bool uses_manaual_target = false;
+    float manual_target_x = 0.0f;
+    float manual_target_y = 0.0f;
 };

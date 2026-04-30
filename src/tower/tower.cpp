@@ -24,6 +24,7 @@ const TowerDefinition& get_tower_definition(TowerType type){
         SplashDamageStats{0.0f, 1.0f}, // splash_damage
         BurstAttackStats{1, 0.0f, 0, 0.0f}, // burst_attack
         AuraStats{0.0f, false}, // aura
+        ManualTargetingStats{false, 0.0f, 0.0f, false}, // manual_targeting
 
         // Attack behavior type
         AttackType::SingleTarget
@@ -49,6 +50,7 @@ const TowerDefinition& get_tower_definition(TowerType type){
         SplashDamageStats{0.0f, 1.0f},
         BurstAttackStats{1, 0.0f, 0, 0.0f},
         AuraStats{0.0f, false},
+        ManualTargetingStats{false, 0.0f, 0.0f, false},
 
         AttackType::SingleTarget
     };
@@ -73,6 +75,7 @@ const TowerDefinition& get_tower_definition(TowerType type){
         SplashDamageStats{0.0f, 1.0f},
         BurstAttackStats{1, 0.0f, 0, 0.0f},
         AuraStats{0.0f, false},
+        ManualTargetingStats{false, 0.0f, 0.0f, false},
 
         AttackType::SingleTarget
     };
@@ -95,6 +98,7 @@ const TowerDefinition& get_tower_definition(TowerType type){
         SplashDamageStats{0.0f, 1.0f},
         BurstAttackStats{1, 0.0f, 0, 0.0f},
         AuraStats{0.0f, false},
+        ManualTargetingStats{false, 0.0f, 0.0f, false},
 
         AttackType::Pierce
     };
@@ -118,6 +122,7 @@ const TowerDefinition& get_tower_definition(TowerType type){
         SplashDamageStats{0.0f, 1.0f},
         BurstAttackStats{1, 0.0f, 0, 0.0f},
         AuraStats{0.0f, false},
+        ManualTargetingStats{false, 0.0f, 0.0f, false},
 
         AttackType::SingleTarget
     };
@@ -140,6 +145,7 @@ const TowerDefinition& get_tower_definition(TowerType type){
         SplashDamageStats{0.0f, 1.0f},
         BurstAttackStats{1, 0.0f, 0, 0.0f},
         AuraStats{0.0f, false},
+        ManualTargetingStats{false, 0.0f, 0.0f, false},
 
         AttackType::SingleTarget
     };
@@ -162,6 +168,7 @@ const TowerDefinition& get_tower_definition(TowerType type){
         SplashDamageStats{55.0f, 0.60f},
         BurstAttackStats{1, 0.0f, 0, 0.0f},
         AuraStats{0.0f, false},
+        ManualTargetingStats{false, 0.0f, 0.0f, false},
 
         AttackType::Splash
     };
@@ -184,6 +191,7 @@ const TowerDefinition& get_tower_definition(TowerType type){
         SplashDamageStats{0.0f, 1.0f},
         BurstAttackStats{3, 0.12f, 0, 0.0f},
         AuraStats{0.0f, false},
+        ManualTargetingStats{false, 0.0f, 0.0f, false},
 
         AttackType::SingleTarget
     };
@@ -206,6 +214,7 @@ const TowerDefinition& get_tower_definition(TowerType type){
         SplashDamageStats{0.0f, 1.0f},
         BurstAttackStats{1, 0.0f, 0, 0.0f,},
         AuraStats{0.35f, false},
+        ManualTargetingStats{false, 0.0f, 0.0f, false},
 
         AttackType::SingleTarget
     };
@@ -228,8 +237,32 @@ const TowerDefinition& get_tower_definition(TowerType type){
         SplashDamageStats{0.0, 1.0f},
         BurstAttackStats{1, 0.0f, 0, 0.0f},
         AuraStats{0.0f, true},
+        ManualTargetingStats{false, 0.0f, 0.0f, false},
 
         AttackType::SingleTarget
+    };
+
+    static const TowerDefinition oviraptor{
+        TowerType::Oviraptor,
+        "Oviraptor",
+        2, 2,
+        SDL_Color{255, 210, 120, 180},
+        150,
+        22.0f,
+        0.0f,
+        0.65f,
+        260.0f,
+        14,
+        SDL_Color{255, 230, 140, 255},
+        1,
+        MoneyGeneratorStats{0, 0.0f, 0.0f},
+        SlowOnHitStats{1.0f, 0.0f},
+        SplashDamageStats{45.0f, 0.75f},
+        BurstAttackStats{1, 0.0f, 0, 0.0f},
+        AuraStats{0.0f, false},
+        ManualTargetingStats{true, 0.0f, 0.0f, false},
+
+        AttackType::Splash
     };
 
     switch (type){
@@ -243,6 +276,7 @@ const TowerDefinition& get_tower_definition(TowerType type){
         case TowerType::Allosaurus: return allosaurus;
         case TowerType::Dilophosaurus: return dilophosaurus;
         case TowerType::Troodon: return troodon;
+        case TowerType::Oviraptor: return oviraptor;
         default: throw std::runtime_error("Unknown TowerType\n");
     }
 }

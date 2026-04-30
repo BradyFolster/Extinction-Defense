@@ -98,6 +98,13 @@ class App{
         void spawn_projectile(const Tower& tower, int tower_index, const Enemy& target);
         void update_projectiles(float dt);
         void render_projectiles() const;
+        // Manual Targeting helpers
+        void enter_manual_targeting_mode(int tower_index);
+        void set_manual_target_for_selected_tower(int mouse_x, int mouse_y);
+        void render_manual_target_preview() const;
+        void render_selected_manual_target() const;
+        SDL_Rect get_manual_target_button_rect() const;
+        void spawn_projectile_at_point(const Tower& tower, int tower_index, float target_x, float target_y);
 
         // Start wave helpers
         SDL_Rect get_next_wave_button_rect() const;
@@ -174,4 +181,8 @@ class App{
         // Used for SDL_TTF text rendering
         TTF_Font* debug_font_ = nullptr;
         bool show_debug_hud_ = true;
+
+        // Manual targeting mode (Oviraptor)
+        bool manual_targeting_mode_ = false;
+        int manual_targeting_tower_index_ = -1;
 };
