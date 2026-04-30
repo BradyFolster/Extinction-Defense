@@ -64,7 +64,8 @@ class App{
         bool point_in_rect(int x, int y, const SDL_Rect& rect) const;
         bool place_selected_tower_if_valid(int center_col, int center_row);
         void update_towers(float dt);
-        Enemy* find_target_for_tower(const Tower& tower);
+        Enemy* find_target_for_tower(const Tower& tower, int tower_index);
+        bool tower_uses_lowest_health_targeting(int tower_index) const;
         float tower_center_x(const Tower& tower) const;
         float tower_center_y(const Tower& tower) const;
         void reset_money_generator_timers();

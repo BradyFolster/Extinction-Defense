@@ -11,7 +11,8 @@ enum class TowerType{
     Ankylosaurus,
     Sarcosuchus,
     Allosaurus,
-    Dilophosaurus
+    Dilophosaurus,
+    Troodon
 };
 
 enum class AttackType{
@@ -67,6 +68,9 @@ struct BurstAttackStats{
 struct AuraStats{
     // How much to add to APS to towers in range
     float attacks_per_second_bonus = 0.0f;
+
+    // Targeting modifier
+    bool lowest_health_targeting = false;
 };
 
 struct TowerDefinition{

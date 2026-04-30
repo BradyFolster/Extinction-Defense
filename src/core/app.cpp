@@ -192,6 +192,11 @@ void App::process_events(){
                         selected_tower_type_ = TowerType::Dilophosaurus;
                         selected_tower_index_ = -1;
                     }
+                    else if (point_in_rect(mouse_x, mouse_y, get_tower_button_rect(TowerType::Troodon))) {
+                        tower_selected_ = true;
+                        selected_tower_type_ = TowerType::Troodon;
+                        selected_tower_index_ = -1;
+                    }
                 }
                 else {
                     if (tower_selected_) {
@@ -645,6 +650,8 @@ SDL_Rect App::get_tower_button_rect(TowerType type) const   {
             return SDL_Rect{button_x, 600, button_w, button_h};
         case TowerType::Dilophosaurus:
             return SDL_Rect{button_x, 680, button_w, button_h};
+        case TowerType::Troodon:
+            return SDL_Rect{button_x, 760, button_w, button_h};
         default:
             return SDL_Rect{button_x, 40, button_w, button_h};
     }
@@ -692,6 +699,7 @@ void App::render_tower_menu()   {
     render_tower_button(TowerType::Sarcosuchus);
     render_tower_button(TowerType::Allosaurus);
     render_tower_button(TowerType::Dilophosaurus);
+    render_tower_button(TowerType::Troodon);
 }
 
 float App::cell_center_x(int col) const{
@@ -860,11 +868,16 @@ float App::tower_center_y(const Tower& tower) const{
     return static_cast<float>(tower.row * CELL_SIZE + (def.footprint_h * CELL_SIZE) / 2);
 }
 
-Enemy* App::find_target_for_tower(const Tower& tower){
+Enemy* App::find_target_for_tower(const Tower& tower, int tower_index){
     float tx = tower_center_x(tower);
     float ty = tower_center_y(tower);
     float range = tower.attack_range;
     float range_sq = range*range;
+
+    Enemy* best_target = nullptr;
+
+    // Check aura-based targeting modifier
+    const bool use_lowest_health = tower_uses_lowest_health_targeting(tower_index);
 
     for (Enemy& enemy : enemies_){
         if (!enemy.alive){
@@ -873,13 +886,24 @@ Enemy* App::find_target_for_tower(const Tower& tower){
 
         float dx = enemy.x - tx;
         float dy = enemy.y - ty;
-        float dist_sq = dx*dx + dy*dy;
+        float dist_sq = dx * dx + dy * dy;
 
-        if (dist_sq <= range_sq){
+        if (dist_sq > range_sq){
+            continue;
+        }
+
+        // Defualt behavior
+        if (!use_lowest_health){
             return &enemy;
         }
+
+        // Troodon behavior
+        if (best_target == nullptr || enemy.health < best_target->health){
+            best_target = &enemy;
+        }
     }
-    return nullptr;
+
+    return best_target;
 }
 
 void App::update_towers(float dt){
@@ -902,7 +926,7 @@ void App::update_towers(float dt){
         }
 
         // Skips aura towers
-        if (tower.aura.attacks_per_second_bonus > 0.0f && tower.attack_damage <= 0.0f && tower.attacks_per_second <= 0.0f){
+        if ((tower.aura.attacks_per_second_bonus > 0.0f || tower.aura.lowest_health_targeting) && tower.attack_damage <= 0.0f && tower.attacks_per_second <= 0.0f){
             continue;
         }
 
@@ -911,7 +935,7 @@ void App::update_towers(float dt){
             tower.burst_attack.shot_timer -= dt;
 
             if (tower.burst_attack.shot_timer <= 0.0f){
-                Enemy* burst_target = find_target_for_tower(tower);
+                Enemy* burst_target = find_target_for_tower(tower, i);
 
                 if (burst_target != nullptr){
                     spawn_projectile(tower, i, *burst_target);
@@ -959,7 +983,7 @@ void App::update_towers(float dt){
         }
 
         // Find a target
-        Enemy* target = find_target_for_tower(tower);
+        Enemy* target = find_target_for_tower(tower, i);
         if (target == nullptr){
             continue;
         }
@@ -1743,4 +1767,40 @@ float App::get_attack_speed_bonus_for_tower(int tower_index) const{
         }
     }
     return total_bonus;
+}
+
+bool App::tower_uses_lowest_health_targeting(int tower_index) const{
+    const Tower& target_tower = towers_[tower_index];
+
+    const float target_x = tower_center_x(target_tower);
+    const float target_y = tower_center_y(target_tower);
+
+    for (int i = 0; i < static_cast<int>(towers_.size()); ++i){
+        if (i == tower_index){
+            continue;
+        }
+
+        const Tower& support_tower = towers_[i];
+
+        // Skip towers that do not provide this aura
+        if (!support_tower.aura.lowest_health_targeting){
+            continue;
+        }
+
+        const float support_x = tower_center_x(support_tower);
+        const float support_y = tower_center_y(support_tower);
+
+        const float dx = target_x - support_x;
+        const float dy = target_y - support_y;
+        const float dist_sq = dx * dx + dy * dy;
+
+        const float range = support_tower.attack_range;
+        const float range_sq = range * range;
+
+        if (dist_sq <= range_sq){
+            return true;
+        }
+    }
+
+    return false;
 }

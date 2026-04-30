@@ -23,7 +23,7 @@ const TowerDefinition& get_tower_definition(TowerType type){
         SlowOnHitStats{1.0f, 0.0f}, // slow_on_hit
         SplashDamageStats{0.0f, 1.0f}, // splash_damage
         BurstAttackStats{1, 0.0f, 0, 0.0f}, // burst_attack
-        AuraStats{0.0f}, // aura
+        AuraStats{0.0f, false}, // aura
 
         // Attack behavior type
         AttackType::SingleTarget
@@ -48,7 +48,7 @@ const TowerDefinition& get_tower_definition(TowerType type){
         SlowOnHitStats{1.0f, 0.0f},
         SplashDamageStats{0.0f, 1.0f},
         BurstAttackStats{1, 0.0f, 0, 0.0f},
-        AuraStats{0.0f},
+        AuraStats{0.0f, false},
 
         AttackType::SingleTarget
     };
@@ -72,7 +72,7 @@ const TowerDefinition& get_tower_definition(TowerType type){
         SlowOnHitStats{1.0f, 0.0f},
         SplashDamageStats{0.0f, 1.0f},
         BurstAttackStats{1, 0.0f, 0, 0.0f},
-        AuraStats{0.0f},
+        AuraStats{0.0f, false},
 
         AttackType::SingleTarget
     };
@@ -94,7 +94,7 @@ const TowerDefinition& get_tower_definition(TowerType type){
         SlowOnHitStats{1.0f, 0.0f},
         SplashDamageStats{0.0f, 1.0f},
         BurstAttackStats{1, 0.0f, 0, 0.0f},
-        AuraStats{0.0f},
+        AuraStats{0.0f, false},
 
         AttackType::Pierce
     };
@@ -117,7 +117,7 @@ const TowerDefinition& get_tower_definition(TowerType type){
         SlowOnHitStats{1.0f, 0.0f},
         SplashDamageStats{0.0f, 1.0f},
         BurstAttackStats{1, 0.0f, 0, 0.0f},
-        AuraStats{0.0f},
+        AuraStats{0.0f, false},
 
         AttackType::SingleTarget
     };
@@ -139,7 +139,7 @@ const TowerDefinition& get_tower_definition(TowerType type){
         SlowOnHitStats{0.50f, 2.0f},
         SplashDamageStats{0.0f, 1.0f},
         BurstAttackStats{1, 0.0f, 0, 0.0f},
-        AuraStats{0.0f},
+        AuraStats{0.0f, false},
 
         AttackType::SingleTarget
     };
@@ -161,7 +161,7 @@ const TowerDefinition& get_tower_definition(TowerType type){
         SlowOnHitStats{1.0f, 0.0f},
         SplashDamageStats{55.0f, 0.60f},
         BurstAttackStats{1, 0.0f, 0, 0.0f},
-        AuraStats{0.0f},
+        AuraStats{0.0f, false},
 
         AttackType::Splash
     };
@@ -183,7 +183,7 @@ const TowerDefinition& get_tower_definition(TowerType type){
         SlowOnHitStats{1.0, 0.0f},
         SplashDamageStats{0.0f, 1.0f},
         BurstAttackStats{3, 0.12f, 0, 0.0f},
-        AuraStats{0.0f},
+        AuraStats{0.0f, false},
 
         AttackType::SingleTarget
     };
@@ -205,7 +205,29 @@ const TowerDefinition& get_tower_definition(TowerType type){
         SlowOnHitStats{1.0, 0.0f},
         SplashDamageStats{0.0f, 1.0f},
         BurstAttackStats{1, 0.0f, 0, 0.0f,},
-        AuraStats{0.35f},
+        AuraStats{0.35f, false},
+
+        AttackType::SingleTarget
+    };
+
+    static const TowerDefinition troodon{
+        TowerType::Troodon,
+        "Troodon",
+        2, 2,
+        SDL_Color{180, 120, 255, 180},
+        145,
+        0.0f,
+        130.0f,
+        0.0f,
+        0.0f,
+        0,
+        SDL_Color{180, 120, 255, 255},
+        1,
+        MoneyGeneratorStats{0, 0.0f, 0.0f},
+        SlowOnHitStats{1.0, 0.0f},
+        SplashDamageStats{0.0, 1.0f},
+        BurstAttackStats{1, 0.0f, 0, 0.0f},
+        AuraStats{0.0f, true},
 
         AttackType::SingleTarget
     };
@@ -220,6 +242,7 @@ const TowerDefinition& get_tower_definition(TowerType type){
         case TowerType::Sarcosuchus: return sarcosuchus;
         case TowerType::Allosaurus: return allosaurus;
         case TowerType::Dilophosaurus: return dilophosaurus;
+        case TowerType::Troodon: return troodon;
         default: throw std::runtime_error("Unknown TowerType\n");
     }
 }
