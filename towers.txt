@@ -13,7 +13,7 @@ Support
 - Ankylosaurus -- DONE
 	- Stunner
 	- Slows enemies when hit
-- Troodon
+- Troodon -- DONE
 	- Towers in range target enemies w/ lowest health
 
 Mechanic
@@ -22,5 +22,5 @@ Mechanic
 - Pteranodon
 	- Regular damage tower
 	- Can change position (on a cooldown)
-- Oviraptor
+- Oviraptor -- DONE
 	- Can aim attack at one place
