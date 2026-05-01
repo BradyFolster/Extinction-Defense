@@ -2256,6 +2256,12 @@ SDL_Rect App::get_reposition_button_rect() const{
 }
 
 float App::get_enemy_aura_speed_bonus(const Enemy& target_enemy) const{
+    const EnemyDefinition& target_def = get_enemy_definition(target_enemy.type);
+    // Shamans don't recieve speed buffs
+    if (target_def.aura.radius > 0.0f){
+        return 1.0f;
+    }
+
     float multiplier = 1.0f;
 
     for (const Enemy& aura_enemy : enemies_){
