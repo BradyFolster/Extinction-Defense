@@ -4,29 +4,41 @@
 const EnemyDefinition& get_enemy_definition(EnemyType type){
     static const EnemyDefinition egg_scout{
         EnemyType::EggScout,
-        60.0f, // max_health
+        55.0f, // max_health
         90.0f, // speed
         1, // goal damage
         10, // reward
-        SDL_Color{139, 90, 43, 255}
+        SDL_Color{139, 90, 43, 255},
+        ArmorStats{},
+        SlowResistanceStats{},
+        HealingStats{},
+        EnemyAuraStats{}
     };
     
     static const EnemyDefinition nest_runner{
         EnemyType::NestRunner,
-        40.0f,
-        120.0f,
+        38.0f,
+        125.0f,
         1,
-        10,
-        SDL_Color{80, 170, 80, 255}
+        9,
+        SDL_Color{80, 170, 80, 255},
+        ArmorStats{},
+        SlowResistanceStats{},
+        HealingStats{},
+        EnemyAuraStats{}
     };
 
     static const EnemyDefinition warden{
         EnemyType::Warden,
-        120.0f,
+        125.0f,
         75.0f,
         2,
-        20,
-        SDL_Color{160, 160, 180, 255}
+        22,
+        SDL_Color{160, 160, 180, 255},
+        ArmorStats{},
+        SlowResistanceStats{},
+        HealingStats{},
+        EnemyAuraStats{}
     };
 
     static const EnemyDefinition tamed_compy_pack{
@@ -35,7 +47,11 @@ const EnemyDefinition& get_enemy_definition(EnemyType type){
         150.0f,
         1,
         14,
-        SDL_Color{120, 220, 120, 255}
+        SDL_Color{120, 220, 120, 255},
+        ArmorStats{},
+        SlowResistanceStats{},
+        HealingStats{},
+        EnemyAuraStats{}
     };
 
     static const EnemyDefinition raptor_rider{
@@ -44,7 +60,11 @@ const EnemyDefinition& get_enemy_definition(EnemyType type){
         112.0f,
         2,
         28,
-        SDL_Color{200, 120, 80, 255}
+        SDL_Color{200, 120, 80, 255},
+        ArmorStats{},
+        SlowResistanceStats{},
+        HealingStats{},
+        EnemyAuraStats{}
     };
 
     static const EnemyDefinition egg_cart_caravan{
@@ -53,7 +73,11 @@ const EnemyDefinition& get_enemy_definition(EnemyType type){
         63.0f,
         3,
         45,
-        SDL_Color{180, 140, 60, 255}
+        SDL_Color{180, 140, 60, 255},
+        ArmorStats{},
+        SlowResistanceStats{},
+        HealingStats{},
+        EnemyAuraStats{}
     };
 
     static const EnemyDefinition bone_doctor{
@@ -62,7 +86,11 @@ const EnemyDefinition& get_enemy_definition(EnemyType type){
         84.0f,
         2,
         42,
-        SDL_Color{140, 60, 180, 255}
+        SDL_Color{140, 60, 180, 255},
+        ArmorStats{},
+        SlowResistanceStats{},
+        HealingStats{90.0f, 18.0f, 0.0f, 0, true},
+        EnemyAuraStats{}
     };
 
     static const EnemyDefinition shieldback_raider{
@@ -71,7 +99,11 @@ const EnemyDefinition& get_enemy_definition(EnemyType type){
         82.0f,
         3,
         62,
-        SDL_Color{90, 10, 160, 255}
+        SDL_Color{90, 10, 160, 255},
+        ArmorStats{0.15f, 0.0f},
+        SlowResistanceStats{},
+        HealingStats{},
+        EnemyAuraStats{}
     };
 
     static const EnemyDefinition trike_ram_team{
@@ -80,7 +112,11 @@ const EnemyDefinition& get_enemy_definition(EnemyType type){
         68.0f,
         5,
         90,
-        SDL_Color{150, 90, 40, 255}
+        SDL_Color{150, 90, 40, 255},
+        ArmorStats{},
+        SlowResistanceStats{},
+        HealingStats{},
+        EnemyAuraStats{}
     };
 
     static const EnemyDefinition nest_smoke_shaman{
@@ -89,7 +125,11 @@ const EnemyDefinition& get_enemy_definition(EnemyType type){
         96.0f,
         3,
         78,
-        SDL_Color{200, 200, 200, 255}
+        SDL_Color{200, 200, 200, 255},
+        ArmorStats{},
+        SlowResistanceStats{},
+        HealingStats{},
+        EnemyAuraStats{100.0f, 0.08f, 0.80f}
     };
 
     static const EnemyDefinition armored_ankylosaur{
@@ -98,7 +138,11 @@ const EnemyDefinition& get_enemy_definition(EnemyType type){
         60.0f,
         6,
         110,
-        SDL_Color{70, 90, 120, 255}
+        SDL_Color{70, 90, 120, 255},
+        ArmorStats{0.25f, 0.0f},
+        SlowResistanceStats{0.60f},
+        HealingStats{},
+        EnemyAuraStats{}
     };
 
     static const EnemyDefinition ballista_crew{
@@ -107,7 +151,11 @@ const EnemyDefinition& get_enemy_definition(EnemyType type){
         78.0f,
         5,
         95,
-        SDL_Color{160, 160, 100, 255}
+        SDL_Color{160, 160, 100, 255},
+        ArmorStats{},
+        SlowResistanceStats{},
+        HealingStats{},
+        EnemyAuraStats{}
     };
 
     static const EnemyDefinition chrome_claw_raptor{
@@ -116,7 +164,11 @@ const EnemyDefinition& get_enemy_definition(EnemyType type){
         145.0f,
         4,
         105,
-        SDL_Color{220, 80, 80, 255}
+        SDL_Color{220, 80, 80, 255},
+        ArmorStats{0.10f, 0.0f},
+        SlowResistanceStats{0.70f},
+        HealingStats{},
+        EnemyAuraStats{}
     };
 
     static const EnemyDefinition ironcrest_triceratops{
@@ -125,7 +177,11 @@ const EnemyDefinition& get_enemy_definition(EnemyType type){
         66.0f,
         8,
         150,
-        SDL_Color{100, 70, 40, 255}
+        SDL_Color{100, 70, 40, 255},
+        ArmorStats{0.20f, 0.0f},
+        SlowResistanceStats{},
+        HealingStats{},
+        EnemyAuraStats{}
     };
 
     static const EnemyDefinition bio_surgeon_doctor{
@@ -134,7 +190,11 @@ const EnemyDefinition& get_enemy_definition(EnemyType type){
         88.0f,
         5,
         145,
-        SDL_Color{180, 60, 140, 255}
+        SDL_Color{180, 60, 140, 255},
+        ArmorStats{},
+        SlowResistanceStats{},
+        HealingStats{130.0f, 80.0f, 2.5f, 3, false},
+        EnemyAuraStats{}
     };
 
     static const EnemyDefinition robo_raptor{
@@ -143,7 +203,11 @@ const EnemyDefinition& get_enemy_definition(EnemyType type){
         155.0f,
         6,
         170,
-        SDL_Color{80, 200, 220, 255}
+        SDL_Color{80, 200, 220, 255},
+        ArmorStats{},
+        SlowResistanceStats{0.65f},
+        HealingStats{},
+        EnemyAuraStats{}
     };
 
     static const EnemyDefinition robo_stego_bulwark{
@@ -152,7 +216,11 @@ const EnemyDefinition& get_enemy_definition(EnemyType type){
         58.0f,
         10,
         280,
-        SDL_Color{60, 160, 200, 255}
+        SDL_Color{60, 160, 200, 255},
+        ArmorStats{0.30f, 0.15f},
+        SlowResistanceStats{},
+        HealingStats{},
+        EnemyAuraStats{}
     };
 
     static const EnemyDefinition eggbreaker_titan{
@@ -161,7 +229,11 @@ const EnemyDefinition& get_enemy_definition(EnemyType type){
         48.0f,
         22,
         560,
-        SDL_Color{255, 140, 40, 255}
+        SDL_Color{255, 140, 40, 255},
+        ArmorStats{0.35f, 0.0f},
+        SlowResistanceStats{},
+        HealingStats{},
+        EnemyAuraStats{}
     };
 
     switch(type){

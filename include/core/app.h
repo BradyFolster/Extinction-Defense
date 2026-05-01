@@ -94,6 +94,9 @@ class App{
         void rebuild_enemy_index();
         void damage_enemy(Enemy& enemy, const Tower& source_tower);
         void get_enemy_velocity(const Enemy& enemy, float& out_vx, float& out_vy) const;
+        void update_enemy_healers(float dt);
+        float get_enemy_aura_speed_bonus(const Enemy& target_enemy) const;
+        float get_enemy_aura_slow_duration_multiplier(const Enemy& target_enemy) const;
         // Projectile helpers
         void spawn_projectile(const Tower& tower, int tower_index, const Enemy& target);
         void update_projectiles(float dt);
@@ -181,7 +184,7 @@ class App{
         WaveManager wave_manager_;
 
         // Player object containing (health, money)
-        Player player_{30, 420};
+        Player player_{100000, 500};
 
         // Used for SDL_TTF text rendering
         TTF_Font* debug_font_ = nullptr;
@@ -194,4 +197,7 @@ class App{
         // Repositioning (Pterodon)
         bool reposition_mode_ = false;
         int reposition_tower_index_ = -1;
+
+        // For easier 2x speed
+        float game_speed = 1.0f;
 };

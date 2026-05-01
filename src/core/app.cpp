@@ -125,6 +125,12 @@ void App::process_events(){
                     hovered_row_ = -1;
                 }
         }
+        // Example: press 'F' to toggle 1x / 2x speed
+        else if (event.type == SDL_KEYDOWN){
+            if (event.key.keysym.sym == SDLK_f){
+                game_speed = (game_speed == 1.0f) ? 2.0f : 1.0f;
+            }
+        }
         else if (event.type == SDL_MOUSEBUTTONDOWN) {
             if (event.button.button == SDL_BUTTON_LEFT) {
                 int mouse_x = event.button.x;
@@ -255,8 +261,11 @@ void App::process_events(){
 
 // Updates game logic
 void App::update(float dt){
+    // For game speed multipliers
+    float scaled_dt = dt * game_speed;
+
     // Let the wave manager advance its timers/spawn logic
-    wave_manager_.update(dt);
+    wave_manager_.update(scaled_dt);
 
     // Spawn any enemies the wave manager says should appear this frame
     while (wave_manager_.should_spawn_enemy()){
@@ -266,14 +275,17 @@ void App::update(float dt){
 
     // Update tower attack logic first
     // Towers may create new projectiles here
-    update_towers(dt);
+    update_towers(scaled_dt);
 
     // Move enemies along the path
-    update_enemies(dt);
+    update_enemies(scaled_dt);
+
+    // Updates healer enemies
+    update_enemy_healers(scaled_dt);
 
     // Move projectiles after enemies move
     // Makes it so projectiles track enemies based on their updated positions
-    update_projectiles(dt);
+    update_projectiles(scaled_dt);
 
     // If the wave is waiting for everything to die/reach the end,
     // and there are no enemies left, then the wave is cleared
@@ -834,6 +846,10 @@ void App::update_enemies(float dt){
         }
         // Moves enemy based on slow effect and dt
         float current_speed = def.speed;
+
+        // Shaman speed effect
+        current_speed *= get_enemy_aura_speed_bonus(enemy);
+
         if (enemy.slow_timer > 0.0f){
             current_speed *= enemy.slow_multiplier;
         }
@@ -1573,20 +1589,35 @@ void App::damage_enemy(Enemy& enemy, const Tower& source_tower){
         return;
     }
 
-    // Apply this tower's runtime damage
-    enemy.health -= source_tower.attack_damage;
+    const EnemyDefinition& def = get_enemy_definition(enemy.type);
 
-    // Apply optional slow-on-hit behavior
-    if (source_tower.slow_on_hit.duration > 0.0f){
-        enemy.slow_timer = source_tower.slow_on_hit.duration;
-        enemy.slow_multiplier = source_tower.slow_on_hit.speed_multiplier;
+    float final_damage = source_tower.attack_damage;
+
+    // Applies enemy armor
+    if (def.armor.damage_reduction > 0.0f){
+        final_damage *= (1.0f - def.armor.damage_reduction);
     }
 
-    // If health is zero, kill the enemy and give reward money
+    enemy.health -= final_damage;
+
+    // Optional slow-on-hit behavior
+    if (source_tower.slow_on_hit.duration > 0.0f){
+        float final_slow_multiplier = source_tower.slow_on_hit.speed_multiplier;
+
+        if (def.slow_resistance.minimum_slow_multiplier > 0.0f){
+            final_slow_multiplier = std::max(final_slow_multiplier, def.slow_resistance.minimum_slow_multiplier);
+        }
+
+        // Shaman reduces slow resistance for enemies in aura
+        const float duration_multiplier = get_enemy_aura_slow_duration_multiplier(enemy);
+
+        enemy.slow_timer = source_tower.slow_on_hit.duration * duration_multiplier;
+        enemy.slow_multiplier = final_slow_multiplier;
+    }
+
+    // If health is 0, kill the enemy and give the player reward money
     if (enemy.health <= 0.0f){
         enemy.alive = false;
-
-        const EnemyDefinition& def = get_enemy_definition(enemy.type);
         player_.add_money(def.reward);
     }
 }
@@ -2222,4 +2253,148 @@ void App::render_reposition_preview(){
 
 SDL_Rect App::get_reposition_button_rect() const{
     return SDL_Rect{MENU_X + 24, 385, MENU_WIDTH - 38, 40};
+}
+
+float App::get_enemy_aura_speed_bonus(const Enemy& target_enemy) const{
+    float multiplier = 1.0f;
+
+    for (const Enemy& aura_enemy : enemies_){
+        if (!aura_enemy.alive || aura_enemy.id == target_enemy.id){
+            continue;
+        }
+
+        const EnemyDefinition& aura_def = get_enemy_definition(aura_enemy.type);
+
+        if (aura_def.aura.radius <= 0.0f){
+            continue;
+        }
+
+        float dx = aura_enemy.x - target_enemy.x;
+        float dy = aura_enemy.y - target_enemy.y;
+        float dist_sq = dx * dx + dy * dy;
+        float radius_sq = aura_def.aura.radius * aura_def.aura.radius;
+
+        if (dist_sq <= radius_sq){
+            multiplier += aura_def.aura.speed_multiplier_bonus;
+        }
+    }
+
+    return multiplier;
+}
+
+float App::get_enemy_aura_slow_duration_multiplier(const Enemy& target_enemy) const{
+    float multiplier = 0.0f;
+
+    for (const Enemy& aura_enemy : enemies_){
+        if (!aura_enemy.alive || aura_enemy.id == target_enemy.id){
+            continue;
+        }
+
+        const EnemyDefinition& aura_def = get_enemy_definition(aura_enemy.type);
+
+        if (aura_def.aura.radius <= 0.0f){
+            continue;
+        }
+
+        float dx = aura_enemy.x - target_enemy.x;
+        float dy = aura_enemy.y - target_enemy.y;
+        float dist_sq = dx * dx + dy * dy;
+        float radius_sq = aura_def.aura.radius * aura_def.aura.radius;
+
+        if (dist_sq <= radius_sq){
+            multiplier + aura_def.aura.slow_duration_multiplier;
+        }
+    }
+
+    return multiplier;
+}
+
+void App::update_enemy_healers(float dt){
+    for (Enemy& healer : enemies_){
+        if (!healer.alive){
+            continue;
+        }
+
+        const EnemyDefinition& healer_def = get_enemy_definition(healer.type);
+
+        if (healer_def.healing.amount <= 0.0f || healer_def.healing.radius <= 0.0f){
+            continue;
+        }
+
+        // Continuous healer (Bone Doctor)
+        if (healer_def.healing.interval <= 0.0f){
+            for (Enemy& target : enemies_){
+                if (!target.alive){
+                    continue;
+                }
+
+                if (target.id == healer.id && !healer_def.healing.can_heal_self_below_half){
+                    continue;
+                }
+
+                const EnemyDefinition& target_def = get_enemy_definition(target.type);
+
+                if (target.id == healer.id && target.health > target_def.max_health * 0.5f){
+                    continue;
+                }
+
+                const float dx = target.x - healer.x;
+                const float dy = target.y - healer.y;
+                const float dist = std::sqrt(dx * dx + dy * dy);
+
+                if (dist <= healer_def.healing.radius){
+                    target.health += healer_def.healing.amount * dt;
+
+                    if (target.health >= target_def.max_health){
+                        target.health = target_def.max_health;
+                    }
+                }
+            }
+
+            continue;
+        }
+
+        // Periodic healer 
+        healer.healing_timer += dt;
+
+        if (healer.healing_timer < healer_def.healing.interval){
+            continue;
+        }
+
+        healer.healing_timer = 0.0f;
+
+        int healed_targets = 0;
+
+        for (Enemy& target : enemies_){
+            if (!target.alive || target.id == healer.id){
+                continue;
+            }
+
+            const EnemyDefinition& target_def = get_enemy_definition(target.type);
+
+            if (target.health >= target_def.max_health){
+                continue;
+            }
+            const float dx = target.x - healer.x;
+            const float dy = target.y - healer.y;
+            const float dist = std::sqrt(dx * dx + dy * dy);
+
+            if (dist <= healer_def.healing.radius){
+                continue;
+            }
+
+            target.health += healer_def.healing.amount;
+
+            if (target.health >= target_def.max_health){
+                target.health = target_def.max_health;
+            }
+
+            healed_targets++;
+
+            if (healed_targets >= healer_def.healing.max_targets){
+                break;
+            }
+
+        }
+    }
 }
