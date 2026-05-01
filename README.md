@@ -52,13 +52,13 @@ game architecture, and real-time application design in C++.
 - Attack visualization
 
 ## Current Status
-Core gameplay systems are fully implemented:
+**Core gameplay systems are fully implemented:**
 - 120-wave system complete
 - 18 enemy types implemented
 - All tower types and core mechanics functional
 - Modular architecture finalized
 
-Currently working on:
+**Currently working on:**
 - Enemy trait systems (armor, healing, auras)
 - Full upgrade system integration
 - UI improvements
