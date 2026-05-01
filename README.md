@@ -70,7 +70,7 @@ The projectile follows a modular, system-driven design:
 	- `TowerDefinition` and `EnemyDefinition` are immutable blueprints
 	- Runtime state lives on `Tower` and `Enemy` instances
 - **Centralized combat system**
-	- All damage flows through a single function (`damage_enemy()`)
+	- All damage flows through a single function `damage_enemy()`
 	- Enables consistent handling of effects like slow, armor, and rewards
 - **Projectile-based combat**
 	- Projectiles snapshot tower stats at fire time
