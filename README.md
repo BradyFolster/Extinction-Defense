@@ -4,13 +4,22 @@ A cross-platform tower defense game built in C++ and SDL, focused on
 modular gameplay systems and eventual Steam release.
 
 ## Features
-- Modular enemy / wave / tower systems
-- Tile-based map support
-- Cross-platform SDL build
-- Dual upgrade trees
-- Different projectile types
-	- Burst attacks
+- Full 120-wave progression system with designed difficulty curve
+- 18 unique enemy types with distinct roles (swarms, tanks, healers, bosses)
+- Modular tower system with multiple attack types:
+	- Single target
 	- Splash damage
+	- Pierce (multi-hit projectiles)
+	- Burst attacks
+- Advanced gameplay mechanics:
+	- Predictive projectile targeting
+	- Manual targeting (player-controlled artillery)
+	- Repositionable towers with cooldowns
+	- Aura-based support systems
+- Dual upgrade trees per tower (damage + utility paths)
+- Data-driven design for easy expansion and balancing
+- Tile-based map and pathing system
+- Cross-platform support through SDL2
 
 ## Tech Stack
 - C++
@@ -43,10 +52,34 @@ game architecture, and real-time application design in C++.
 - Attack visualization
 
 ## Current Status
-Core gameplay loop implemented. Actively working on:
-- More Waves / Enemy Variety
-- Basic UI
-- Basic Art Implementation
+Core gameplay systems are fully implemented:
+- 120-wave system complete
+- 18 enemy types implemented
+- All tower types and core mechanics functional
+- Modular architecture finalized
+
+Currently working on:
+- Enemy trait systems (armor, healing, auras)
+- Full upgrade system integration
+- UI improvements
+- Visual polish and art
+
+## Architecture
+The projectile follows a modular, system-driven design:
+- **Data-driven definitions**
+	- `TowerDefinition` and `EnemyDefinition` are immutable blueprints
+	- Runtime state lives on `Tower` and `Enemy` instances
+- **Centralized combat system**
+	- All damage flows through a single function (`damage_enemy()`)
+	- Enables consistent handling of effects like slow, armor, and rewards
+- **Projectile-based combat**
+	- Projectiles snapshot tower stats at fire time
+	- No shared mutable state between systems
+- **Optional behavior pattern**
+	- Features like splash, slow, burst, aura, and economy are encapsulated in structs
+	- Systems are modular and easily extendable
+- **Wave-driven gameplay**
+	- 120 waves that slowly introduce mechanics to the player over time
 
 ## Demo
 (coming soon)
