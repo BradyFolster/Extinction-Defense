@@ -30,18 +30,31 @@ bool App::init(){
     // Creates a window and a renderer attached to said window
     // Title, resolution (width x height), flags
     // Pass the pointers so that SDL assigns them correctly
-    if (SDL_CreateWindowAndRenderer(1280, 720, SDL_WINDOW_SHOWN | SDL_WINDOW_RESIZABLE
-                                    , &window_, &renderer_) != 0){
-        const char* error = SDL_GetError();
-        
-        std::cerr << "SDL_CreateWindowAndRenderer failed";
-        if (error != nullptr && error[0] != '\0'){
-            std::cerr << ": " << error;
-        } else{
-            std::cerr << ": <no SDL error messages>";
-        }
-        std::cerr << "\n";
+    build_resolution_options();
+    const ResolutionOption& initial_resolution = resolution_options_[resolution_index_];
+    window_ = SDL_CreateWindow(
+        "Extinction Defense",
+        SDL_WINDOWPOS_CENTERED,
+        SDL_WINDOWPOS_CENTERED,
+        initial_resolution.width,
+        initial_resolution.height,
+        SDL_WINDOW_SHOWN | SDL_WINDOW_RESIZABLE
+    );
+    if (window_ == nullptr){
+        std::cerr << "SDL_CreateWindow failed: " << SDL_GetError() << "\n";
+        return false;
+    }
 
+
+    Uint32 renderer_flags = SDL_RENDERER_ACCELERATED;
+
+    if (vsync_enabled_){
+        renderer_flags |= SDL_RENDERER_PRESENTVSYNC;
+    }
+
+    renderer_ = SDL_CreateRenderer(window_, -1, renderer_flags);
+    if (renderer_ == nullptr){
+        std::cerr << "SDL_CreateRenderer failed: " << SDL_GetError() << "\n";
         return false;
     }
     // SDL2 has to make a title string separately
@@ -125,17 +138,21 @@ void App::process_events(){
                     hovered_row_ = -1;
                 }
         }
-        // Example: press 'F' to toggle 1x / 2x speed
         else if (event.type == SDL_KEYDOWN){
+            // Pause menu & settings menu
             if (event.key.keysym.sym == SDLK_ESCAPE){
-                // Toggles pause menu
-                paused_ = !paused_;
+                if (settings_menu_open_){
+                    settings_menu_open_ = false;
+                }
+                else{
+                    paused_ = !paused_;
 
-                tower_selected_ = false;
-                manual_targeting_mode_ = false;
-                manual_targeting_tower_index_ = -1;
-                reposition_mode_ = false;
-                reposition_tower_index_ = -1;
+                    tower_selected_ = false;
+                    manual_targeting_mode_ = false;
+                    manual_targeting_tower_index_ = -1;
+                    reposition_mode_ = false;
+                    reposition_tower_index_ = -1;
+                }
             }
             if (event.key.keysym.sym == SDLK_f){
                 game_speed = (game_speed == 1.0f) ? 2.0f : 1.0f;
@@ -154,14 +171,63 @@ void App::process_events(){
 
                 // Stops if te game is paused
                 if (paused_){
+                    if (settings_menu_open_){
+                        if (point_in_rect(mouse_x, mouse_y, get_settings_back_button_rect())){
+                            settings_menu_open_ = false;
+                        }
+                        else if (point_in_rect(mouse_x, mouse_y, get_fullscreen_button_rect())){
+                            toggle_fullscreen();
+                        }
+                        else if (point_in_rect(mouse_x, mouse_y, get_debug_hud_button_rect())){
+                            show_debug_hud_ = !show_debug_hud_;
+                        }
+                        else if (point_in_rect(mouse_x, mouse_y, get_resolution_button_rect())){
+                            if (!fullscreen_){
+                                cycle_resolution();
+                            }
+                        }
+                        else if (point_in_rect(mouse_x, mouse_y, get_vsync_button_rect())){
+                            vsync_enabled_ = !vsync_enabled_;
+                            SDL_RenderSetVSync(renderer_, vsync_enabled_ ? 1 : 0);
+                        }
+                        else if (point_in_rect(mouse_x, mouse_y, get_master_volume_down_rect())){
+                            master_volume_ = std::max(0, master_volume_ - 10);
+                            apply_audio_settings();
+                        }
+                        else if (point_in_rect(mouse_x, mouse_y, get_master_volume_up_rect())){
+                            master_volume_ = std::min(100, master_volume_ + 10);
+                            apply_audio_settings();
+                        }
+                        else if (point_in_rect(mouse_x, mouse_y, get_music_volume_down_rect())){
+                            music_volume_ = std::max(0, music_volume_ - 10);
+                            apply_audio_settings();
+                        }
+                        else if (point_in_rect(mouse_x, mouse_y, get_music_volume_up_rect())){
+                            music_volume_ = std::min(100, music_volume_ + 10);
+                            apply_audio_settings();
+                        }
+                        else if (point_in_rect(mouse_x, mouse_y, get_sfx_volume_down_rect())){
+                            sfx_volume_ = std::max(0, sfx_volume_ - 10);
+                            apply_audio_settings();
+                        }
+                        else if (point_in_rect(mouse_x, mouse_y, get_sfx_volume_up_rect())){
+                            sfx_volume_ = std::min(100, sfx_volume_ + 10);
+                            apply_audio_settings();
+                        }
+
+                        continue;
+                    }
+
                     if (point_in_rect(mouse_x, mouse_y, get_resume_button_rect())){
                         paused_ = false;
+                    }
+                    else if (point_in_rect(mouse_x, mouse_y, get_settings_button_rect())){
+                        settings_menu_open_ = true;
                     }
                     else if (point_in_rect(mouse_x, mouse_y, get_quit_button_rect())){
                         running_ = false;
                     }
 
-                    // Do not allow gameplay/build/menu clicks while paused.
                     continue;
                 }
 
@@ -451,8 +517,14 @@ void App::render(){
     render_debug_hud();
 
     // Renders the pause menu if the game is paused
+    // Renders the settings menu if the menu is opened
     if (paused_){
-        render_pause_menu();
+        if (settings_menu_open_){
+            render_settings_menu();
+        }
+        else{
+            render_pause_menu();
+        }
     }
 
     // Present the finished frame to the screen
@@ -2569,7 +2641,7 @@ SDL_Rect App::get_resume_button_rect() const{
 SDL_Rect App::get_quit_button_rect() const{
     return SDL_Rect{
         WORLD_WIDTH / 2 - 140,
-        WORLD_HEIGHT / 2 + 60,
+        WORLD_HEIGHT / 2 + 140,
         280,
         60
     };
@@ -2584,7 +2656,7 @@ void App::render_pause_menu(){
     SDL_RenderFillRect(renderer_, &overlay);
 
     // Small centered pause panel.
-    SDL_Rect panel{WORLD_WIDTH / 2 - 220, WORLD_HEIGHT / 2 - 160, 440, 340};
+    SDL_Rect panel{WORLD_WIDTH / 2 - 220, WORLD_HEIGHT / 2 - 190, 440, 420};
 
     SDL_SetRenderDrawColor(renderer_, 30, 34, 40, 245);
     SDL_RenderFillRect(renderer_, &panel);
@@ -2604,10 +2676,352 @@ void App::render_pause_menu(){
     SDL_RenderDrawRect(renderer_, &resume_rect);
     draw_text("Resume", resume_rect.x + 95, resume_rect.y + 18, text_color);
 
+    SDL_Rect settings_rect = get_settings_button_rect();
+    SDL_SetRenderDrawColor(renderer_, 70, 80, 110, 255);
+    SDL_RenderFillRect(renderer_, &settings_rect);
+    SDL_SetRenderDrawColor(renderer_, 220, 220, 220, 255);
+    SDL_RenderDrawRect(renderer_, &settings_rect);
+    draw_text("Settings", settings_rect.x + 85, settings_rect.y + 18, text_color);
+
     SDL_Rect quit_rect = get_quit_button_rect();
     SDL_SetRenderDrawColor(renderer_, 110, 70, 70, 255);
     SDL_RenderFillRect(renderer_, &quit_rect);
     SDL_SetRenderDrawColor(renderer_, 220, 220, 220, 255);
     SDL_RenderDrawRect(renderer_, &quit_rect);
     draw_text("Quit", quit_rect.x + 115, quit_rect.y + 18, text_color);
+}
+
+SDL_Rect App::get_settings_button_rect() const{
+    return SDL_Rect{
+        WORLD_WIDTH / 2 - 140,
+        WORLD_HEIGHT / 2 + 60,
+        280,
+        60
+    };
+}
+
+SDL_Rect App::get_settings_back_button_rect() const{
+    return SDL_Rect{60, 60, 180, 55};
+}
+
+SDL_Rect App::get_fullscreen_button_rect() const{
+    return SDL_Rect{WORLD_WIDTH / 2 - 250, 700, 500, 60};
+}
+
+SDL_Rect App::get_debug_hud_button_rect() const{
+    return SDL_Rect{WORLD_WIDTH / 2 - 250, 780, 500, 60};
+}
+
+void App::toggle_fullscreen(){
+    fullscreen_ = !fullscreen_;
+
+    if (fullscreen_){
+        SDL_SetWindowFullscreen(window_, SDL_WINDOW_FULLSCREEN_DESKTOP);
+    }
+    else{
+        SDL_SetWindowFullscreen(window_, 0);
+    }
+}
+
+void App::render_settings_menu(){
+    SDL_SetRenderDrawBlendMode(renderer_, SDL_BLENDMODE_BLEND);
+
+    SDL_SetRenderDrawColor(renderer_, 18, 22, 28, 255);
+    SDL_Rect background{0, 0, WORLD_WIDTH, WORLD_HEIGHT};
+    SDL_RenderFillRect(renderer_, &background);
+
+    SDL_Color title_color{240, 240, 240, 255};
+    SDL_Color text_color{220, 220, 220, 255};
+
+    draw_text("Settings", WORLD_WIDTH / 2 - 80, 120, title_color);
+
+    SDL_Rect back_rect = get_settings_back_button_rect();
+    SDL_SetRenderDrawColor(renderer_, 80, 80, 90, 255);
+    SDL_RenderFillRect(renderer_, &back_rect);
+    SDL_SetRenderDrawColor(renderer_, 220, 220, 220, 255);
+    SDL_RenderDrawRect(renderer_, &back_rect);
+    draw_text("Back", back_rect.x + 55, back_rect.y + 15, text_color);
+
+    std::string resolution_text = get_resolution_label();
+
+    SDL_Rect resolution_rect = get_resolution_button_rect();
+    SDL_SetRenderDrawColor(renderer_, 50, 60, 70, 255);
+    SDL_RenderFillRect(renderer_, &resolution_rect);
+    SDL_SetRenderDrawColor(renderer_, 220, 220, 220, 255);
+    SDL_RenderDrawRect(renderer_, &resolution_rect);
+    draw_text(resolution_text, resolution_rect.x + 110, resolution_rect.y + 18, text_color);
+
+    SDL_Rect vsync_rect = get_vsync_button_rect();
+    SDL_SetRenderDrawColor(renderer_, 50, 60, 70, 255);
+    SDL_RenderFillRect(renderer_, &vsync_rect);
+    SDL_SetRenderDrawColor(renderer_, 220, 220, 220, 255);
+    SDL_RenderDrawRect(renderer_, &vsync_rect);
+
+    std::string vsync_text = vsync_enabled_ ? "V-Sync: ON" : "V-Sync: OFF";
+    draw_text(vsync_text, vsync_rect.x + 180, vsync_rect.y + 18, text_color);
+
+    SDL_Rect fullscreen_rect = get_fullscreen_button_rect();
+    SDL_SetRenderDrawColor(renderer_, 50, 60, 70, 255);
+    SDL_RenderFillRect(renderer_, &fullscreen_rect);
+    SDL_SetRenderDrawColor(renderer_, 220, 220, 220, 255);
+    SDL_RenderDrawRect(renderer_, &fullscreen_rect);
+
+    draw_text("Master Volume: " + std::to_string(master_volume_) + "%",
+          WORLD_WIDTH / 2 - 120,
+          435,
+          text_color);
+
+    draw_text("Music Volume: " + std::to_string(music_volume_) + "%",
+            WORLD_WIDTH / 2 - 110,
+            515,
+            text_color);
+
+    draw_text("SFX Volume: " + std::to_string(sfx_volume_) + "%",
+            WORLD_WIDTH / 2 - 100,
+            595,
+            text_color);
+
+    SDL_Rect master_down = get_master_volume_down_rect();
+    SDL_Rect master_up = get_master_volume_up_rect();
+    SDL_Rect music_down = get_music_volume_down_rect();
+    SDL_Rect music_up = get_music_volume_up_rect();
+    SDL_Rect sfx_down = get_sfx_volume_down_rect();
+    SDL_Rect sfx_up = get_sfx_volume_up_rect();
+
+    SDL_Rect volume_buttons[] = {
+        master_down, master_up,
+        music_down, music_up,
+        sfx_down, sfx_up
+    };
+
+    for (const SDL_Rect& button : volume_buttons){
+        SDL_SetRenderDrawColor(renderer_, 50, 60, 70, 255);
+        SDL_RenderFillRect(renderer_, &button);
+        SDL_SetRenderDrawColor(renderer_, 220, 220, 220, 255);
+        SDL_RenderDrawRect(renderer_, &button);
+    }
+
+    draw_text("-", master_down.x + 28, master_down.y + 18, text_color);
+    draw_text("+", master_up.x + 25, master_up.y + 18, text_color);
+
+    draw_text("-", music_down.x + 28, music_down.y + 18, text_color);
+    draw_text("+", music_up.x + 25, music_up.y + 18, text_color);
+
+    draw_text("-", sfx_down.x + 28, sfx_down.y + 18, text_color);
+    draw_text("+", sfx_up.x + 25, sfx_up.y + 18, text_color);
+
+    std::string fullscreen_text = fullscreen_ ? "Fullscreen: ON" : "Fullscreen: OFF";
+    draw_text(fullscreen_text, fullscreen_rect.x + 110, fullscreen_rect.y + 22, text_color);
+
+    SDL_Rect debug_rect = get_debug_hud_button_rect();
+    SDL_SetRenderDrawColor(renderer_, 50, 60, 70, 255);
+    SDL_RenderFillRect(renderer_, &debug_rect);
+    SDL_SetRenderDrawColor(renderer_, 220, 220, 220, 255);
+    SDL_RenderDrawRect(renderer_, &debug_rect);
+
+    std::string debug_text = show_debug_hud_ ? "Debug HUD: ON" : "Debug HUD: OFF";
+    draw_text(debug_text, debug_rect.x + 115, debug_rect.y + 22, text_color);
+}
+
+SDL_Rect App::get_resolution_button_rect() const{
+    return SDL_Rect{WORLD_WIDTH / 2 - 250, 220, 500, 60};
+}
+
+SDL_Rect App::get_vsync_button_rect() const{
+    return SDL_Rect{WORLD_WIDTH / 2 - 250, 300, 500, 60};
+}
+
+SDL_Rect App::get_master_volume_down_rect() const{
+    return SDL_Rect{WORLD_WIDTH / 2 - 250, 420, 70, 60};
+}
+
+SDL_Rect App::get_master_volume_up_rect() const{
+    return SDL_Rect{WORLD_WIDTH / 2 + 180, 420, 70, 60};
+}
+
+SDL_Rect App::get_music_volume_down_rect() const{
+    return SDL_Rect{WORLD_WIDTH / 2 - 250, 500, 70, 60};
+}
+
+SDL_Rect App::get_music_volume_up_rect() const{
+    return SDL_Rect{WORLD_WIDTH / 2 + 180, 500, 70, 60};
+}
+
+SDL_Rect App::get_sfx_volume_down_rect() const{
+    return SDL_Rect{WORLD_WIDTH / 2 - 250, 580, 70, 60};
+}
+
+SDL_Rect App::get_sfx_volume_up_rect() const{
+    return SDL_Rect{WORLD_WIDTH / 2 + 180, 580, 70, 60};
+}
+
+void App::cycle_resolution(){
+    if (resolution_options_.empty()){
+        return;
+    }
+
+    // Resolution changes should only affect normal windowed mode.
+    // If the window is fullscreen/maximized, SDL may ignore the visible resize.
+    if (fullscreen_){
+        return;
+    }
+
+    resolution_index_ =
+        (resolution_index_ + 1) % static_cast<int>(resolution_options_.size());
+
+    const ResolutionOption& option = resolution_options_[resolution_index_];
+
+    // Make sure the window is in a normal resizable state before changing size.
+    SDL_SetWindowFullscreen(window_, 0);
+    SDL_RestoreWindow(window_);
+
+    SDL_SetWindowSize(window_, option.width, option.height);
+    SDL_SetWindowPosition(window_, SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED);
+}
+
+void App::apply_audio_settings(){
+    const int sdl_mixer_max = MIX_MAX_VOLUME;
+
+    int effective_music = (music_volume_ * master_volume_ * sdl_mixer_max) / 10000;
+    int effective_sfx = (sfx_volume_ * master_volume_ * sdl_mixer_max) / 10000;
+
+    Mix_VolumeMusic(effective_music);
+    Mix_Volume(-1, effective_sfx);
+}
+
+void App::build_resolution_options(){
+    resolution_options_.clear();
+
+    SDL_DisplayMode desktop_mode{};
+
+    if (SDL_GetDesktopDisplayMode(0, &desktop_mode) != 0){
+        resolution_options_.push_back({1280, 720});
+        resolution_options_.push_back({1600, 900});
+        resolution_options_.push_back({1920, 1080});
+    }
+    else{
+        const float desktop_aspect =
+            static_cast<float>(desktop_mode.w) / static_cast<float>(desktop_mode.h);
+
+        // 16:9 monitor
+        if (std::abs(desktop_aspect - (16.0f / 9.0f)) < 0.03f){
+            resolution_options_.push_back({1280, 720});
+            resolution_options_.push_back({1600, 900});
+            resolution_options_.push_back({1920, 1080});
+            resolution_options_.push_back({2560, 1440});
+        }
+        // 16:10 monitor
+        else if (std::abs(desktop_aspect - (16.0f / 10.0f)) < 0.03f){
+            resolution_options_.push_back({1280, 800});
+            resolution_options_.push_back({1440, 900});
+            resolution_options_.push_back({1680, 1050});
+            resolution_options_.push_back({1920, 1200});
+        }
+        // 4:3 monitor
+        else if (std::abs(desktop_aspect - (4.0f / 3.0f)) < 0.03f){
+            resolution_options_.push_back({1024, 768});
+            resolution_options_.push_back({1280, 960});
+            resolution_options_.push_back({1600, 1200});
+        }
+        // Unknown aspect ratio: use scaled desktop sizes.
+        else{
+            resolution_options_.push_back({
+                static_cast<int>(desktop_mode.w * 0.60f),
+                static_cast<int>(desktop_mode.h * 0.60f)
+            });
+
+            resolution_options_.push_back({
+                static_cast<int>(desktop_mode.w * 0.75f),
+                static_cast<int>(desktop_mode.h * 0.75f)
+            });
+
+            resolution_options_.push_back({
+                static_cast<int>(desktop_mode.w * 0.90f),
+                static_cast<int>(desktop_mode.h * 0.90f)
+            });
+        }
+
+        // Remove anything larger than the desktop.
+        resolution_options_.erase(
+            std::remove_if(
+                resolution_options_.begin(),
+                resolution_options_.end(),
+                [desktop_mode](const ResolutionOption& option){
+                    return option.width > desktop_mode.w ||
+                           option.height > desktop_mode.h;
+                }
+            ),
+            resolution_options_.end()
+        );
+    }
+
+    if (resolution_options_.empty()){
+        resolution_options_.push_back({1280, 720});
+    }
+
+    // Start on the largest available windowed option.
+    resolution_index_ = static_cast<int>(resolution_options_.size()) - 1;
+}
+
+std::string App::get_resolution_label() const{
+    if (resolution_options_.empty()){
+        return "Resolution: Unknown";
+    }
+
+    if (fullscreen_){
+        return "Resolution: Fullscreen";
+    }
+
+    const ResolutionOption& option = resolution_options_[resolution_index_];
+
+    return "Resolution: " +
+           std::to_string(option.width) +
+           " x " +
+           std::to_string(option.height);
+}
+
+ResolutionOption App::get_initial_window_resolution() const{
+    SDL_DisplayMode desktop_mode{};
+
+    // If SDL cannot read the monitor, fall back to a safe 16:9 size.
+    if (SDL_GetDesktopDisplayMode(0, &desktop_mode) != 0){
+        return ResolutionOption{1600, 900};
+    }
+
+    const float desktop_aspect =
+        static_cast<float>(desktop_mode.w) / static_cast<float>(desktop_mode.h);
+
+    // 16:9 monitors
+    if (std::abs(desktop_aspect - (16.0f / 9.0f)) < 0.03f){
+        if (desktop_mode.w >= 2560 && desktop_mode.h >= 1440){
+            return ResolutionOption{1920, 1080};
+        }
+
+        if (desktop_mode.w >= 1920 && desktop_mode.h >= 1080){
+            return ResolutionOption{1600, 900};
+        }
+
+        return ResolutionOption{1280, 720};
+    }
+
+    // 16:10 monitors
+    if (std::abs(desktop_aspect - (16.0f / 10.0f)) < 0.03f){
+        if (desktop_mode.w >= 1920 && desktop_mode.h >= 1200){
+            return ResolutionOption{1680, 1050};
+        }
+
+        return ResolutionOption{1440, 900};
+    }
+
+    // 4:3 monitors
+    if (std::abs(desktop_aspect - (4.0f / 3.0f)) < 0.03f){
+        return ResolutionOption{1280, 960};
+    }
+
+    // Unknown aspect ratio fallback:
+    // start at about 80% of the desktop size.
+    return ResolutionOption{
+        static_cast<int>(desktop_mode.w * 0.8f),
+        static_cast<int>(desktop_mode.h * 0.8f)
+    };
 }

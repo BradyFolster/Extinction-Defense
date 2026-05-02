@@ -17,6 +17,11 @@
 #include <string>
 #include <unordered_map>
 
+struct ResolutionOption{
+    int width = 1280;
+    int height = 720;
+};
+
 // Each grid cell - has room for more variables (terrain type, blocked, reserved_for_path, etc.)
 struct GridCell{
     CellType type =CellType::Buildable;
@@ -99,6 +104,7 @@ class App{
         void update_enemy_healers(float dt);
         float get_enemy_aura_speed_bonus(const Enemy& target_enemy) const;
         float get_enemy_aura_slow_duration_multiplier(const Enemy& target_enemy) const;
+        ResolutionOption get_initial_window_resolution() const;
         // Projectile helpers
         void spawn_projectile(const Tower& tower, int tower_index, const Enemy& target);
         void update_projectiles(float dt);
@@ -124,6 +130,25 @@ class App{
         void render_pause_menu();
         SDL_Rect get_resume_button_rect() const;
         SDL_Rect get_quit_button_rect() const;
+        // Settings menu helpers
+        SDL_Rect get_settings_button_rect() const;
+        SDL_Rect get_settings_back_button_rect() const;
+        SDL_Rect get_fullscreen_button_rect() const;
+        SDL_Rect get_debug_hud_button_rect() const;
+        SDL_Rect get_resolution_button_rect() const;
+        void build_resolution_options();
+        std::string get_resolution_label() const;
+        SDL_Rect get_vsync_button_rect() const;
+        SDL_Rect get_master_volume_down_rect() const;
+        SDL_Rect get_master_volume_up_rect() const;
+        SDL_Rect get_music_volume_down_rect() const;
+        SDL_Rect get_music_volume_up_rect() const;
+        SDL_Rect get_sfx_volume_down_rect() const;
+        SDL_Rect get_sfx_volume_up_rect() const;
+        void cycle_resolution();
+        void apply_audio_settings();
+        void render_settings_menu();
+        void toggle_fullscreen();
 
         // Debug rendering
         void render_path_debug();
@@ -143,6 +168,17 @@ class App{
         bool running_;
         // Pause menu
         bool paused_ = false;
+        // Settings menu
+        bool settings_menu_open_ = false;
+
+        // SDL setting states
+        bool fullscreen_ = false;
+        bool vsync_enabled_ = true;
+        std::vector<ResolutionOption> resolution_options_;
+        int resolution_index_ = 0;
+        int master_volume_ = 100;
+        int music_volume_ = 100;
+        int sfx_volume_ = 100;
 
         // Logical world size
         static constexpr int WORLD_WIDTH = 1920;
