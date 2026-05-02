@@ -1882,7 +1882,7 @@ std::string App::describe_upgrade_effect(const TowerUpgradeDefinition& upgrade) 
         if (!effect.empty()) effect += ", ";
         effect += "+" + format_float_2dp(upgrade.attacks_per_second_bonus) + " APS";
     }
-    if (upgrade.projectile_size_bonus != 0.0f){
+    if (upgrade.projectile_speed_bonus != 0.0f){
         if (!effect.empty()) effect += ", ";
         effect += "+" + std::to_string(static_cast<int>(upgrade.projectile_speed_bonus)) + " proj speed";
     }

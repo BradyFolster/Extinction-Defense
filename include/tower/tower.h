@@ -209,6 +209,27 @@ struct TowerUpgradeDefinition{
     float attacks_per_second_bonus = 0.0f;
     float projectile_speed_bonus = 0.0f;
     int projectile_size_bonus = 0;
+
+    // Bahavior specific upgrade bonuses
+    int pierce_bonus = 0;
+
+    int money_amount_bonus = 0;
+    float money_interval_delta = 0.0f;
+    int money_max_payouts_bonus = 0;
+
+    float slow_multiplier_delta = 0.0f;
+    float slow_duration_bonus = 0.0f;
+
+    float splash_radius_bonus = 0.0f;
+    float splash_multiplier_bonus = 0.0f;
+
+    int burst_shots_bonus = 0;
+    float burst_interval_delta = 0.0f;
+
+    float aura_aps_bonus = 0.0f;
+    float aura_mark_damage_bonus = 0.0f;
+
+    float reposition_cooldown_delta = 0.0f;
 };
 
 const TowerUpgradeDefinition* get_upgrade_path(TowerType type, UpgradePath path);
