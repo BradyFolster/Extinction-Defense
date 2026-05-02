@@ -186,6 +186,10 @@ struct Tower{
 
     // For repositionable towers (Pteranodon)
     RepositionStats reposition;
+
+    // Runtime build stats
+    int footprint_w = 1;
+    int footprint_h = 1;
 };
 
 const TowerDefinition& get_tower_definition(TowerType type);

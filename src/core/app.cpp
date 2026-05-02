@@ -131,6 +131,12 @@ void App::process_events(){
                 game_speed = (game_speed == 1.0f) ? 2.0f : 1.0f;
             }
         }
+        else if (event.type == SDL_MOUSEWHEEL){
+            // Only rotate while the player is actively placing a tower.
+            if (tower_selected_){
+                build_rotation_swapped_ = !build_rotation_swapped_;
+            }
+        }
         else if (event.type == SDL_MOUSEBUTTONDOWN) {
             if (event.button.button == SDL_BUTTON_LEFT) {
                 int mouse_x = event.button.x;
@@ -161,64 +167,124 @@ void App::process_events(){
                         }
                     }
                     else if (point_in_rect(mouse_x, mouse_y, get_tower_button_rect(TowerType::Trex))) {
-                        tower_selected_ = true;
-                        selected_tower_type_ = TowerType::Trex;
-                        selected_tower_index_ = -1;
+                        const TowerDefinition& def = get_tower_definition(TowerType::Trex);
+
+                        if (player_.can_afford(def.cost)){
+                            tower_selected_ = true;
+                            selected_tower_type_ = TowerType::Trex;
+                            selected_tower_index_ = -1;
+                            build_rotation_swapped_ = false;
+                        }
                     }
                     else if (point_in_rect(mouse_x, mouse_y, get_tower_button_rect(TowerType::Stegosaurus))) {
-                        tower_selected_ = true;
-                        selected_tower_type_ = TowerType::Stegosaurus;
-                        selected_tower_index_ = -1;
+                        const TowerDefinition& def = get_tower_definition(TowerType::Stegosaurus);
+
+                        if (player_.can_afford(def.cost)){
+                            tower_selected_ = true;
+                            selected_tower_type_ = TowerType::Stegosaurus;
+                            selected_tower_index_ = -1;
+                            build_rotation_swapped_ = false;
+                        }
                     }
                     else if (point_in_rect(mouse_x, mouse_y, get_tower_button_rect(TowerType::Velociraptor))) {
-                        tower_selected_ = true;
-                        selected_tower_type_ = TowerType::Velociraptor;
-                        selected_tower_index_ = -1;
+                        const TowerDefinition& def = get_tower_definition(TowerType::Velociraptor);
+
+                        if (player_.can_afford(def.cost)){
+                            tower_selected_ = true;
+                            selected_tower_type_ = TowerType::Velociraptor;
+                            selected_tower_index_ = -1;
+                            build_rotation_swapped_ = false;
+                        }
                     }
                     else if (point_in_rect(mouse_x, mouse_y, get_tower_button_rect(TowerType::Spinosaurus))) {
-                        tower_selected_ = true;
-                        selected_tower_type_ = TowerType::Spinosaurus;
-                        selected_tower_index_ = -1;
+                        const TowerDefinition& def = get_tower_definition(TowerType::Spinosaurus);
+
+                        if (player_.can_afford(def.cost)){
+                            tower_selected_ = true;
+                            selected_tower_type_ = TowerType::Spinosaurus;
+                            selected_tower_index_ = -1;
+                            build_rotation_swapped_ = false;
+                        }
                     }
                     else if (point_in_rect(mouse_x, mouse_y, get_tower_button_rect(TowerType::Parasaurolophus))) {
-                        tower_selected_ = true;
-                        selected_tower_type_ = TowerType::Parasaurolophus;
-                        selected_tower_index_ = -1;
+                        const TowerDefinition& def = get_tower_definition(TowerType::Parasaurolophus);
+
+                        if (player_.can_afford(def.cost)){
+                            tower_selected_ = true;
+                            selected_tower_type_ = TowerType::Parasaurolophus;
+                            selected_tower_index_ = -1;
+                            build_rotation_swapped_ = false;
+                        }
                     }
                     else if (point_in_rect(mouse_x, mouse_y, get_tower_button_rect(TowerType::Ankylosaurus))) {
-                        tower_selected_ = true;
-                        selected_tower_type_ = TowerType::Ankylosaurus;
-                        selected_tower_index_ = -1;
+                        const TowerDefinition& def = get_tower_definition(TowerType::Ankylosaurus);
+
+                        if (player_.can_afford(def.cost)){
+                            tower_selected_ = true;
+                            selected_tower_type_ = TowerType::Ankylosaurus;
+                            selected_tower_index_ = -1;
+                            build_rotation_swapped_ = false;
+                        }
                     }
                     else if (point_in_rect(mouse_x, mouse_y, get_tower_button_rect(TowerType::Sarcosuchus))) {
-                        tower_selected_ = true;
-                        selected_tower_type_ = TowerType::Sarcosuchus;
-                        selected_tower_index_ = -1;
+                        const TowerDefinition& def = get_tower_definition(TowerType::Sarcosuchus);
+
+                        if (player_.can_afford(def.cost)){
+                            tower_selected_ = true;
+                            selected_tower_type_ = TowerType::Sarcosuchus;
+                            selected_tower_index_ = -1;
+                            build_rotation_swapped_ = false;
+                        }
                     }
                     else if (point_in_rect(mouse_x, mouse_y, get_tower_button_rect(TowerType::Allosaurus))) {
-                        tower_selected_ = true;
-                        selected_tower_type_ = TowerType::Allosaurus;
-                        selected_tower_index_ = -1;
+                        const TowerDefinition& def = get_tower_definition(TowerType::Allosaurus);
+
+                        if (player_.can_afford(def.cost)){
+                            tower_selected_ = true;
+                            selected_tower_type_ = TowerType::Allosaurus;
+                            selected_tower_index_ = -1;
+                            build_rotation_swapped_ = false;
+                        }
                     }
                     else if (point_in_rect(mouse_x, mouse_y, get_tower_button_rect(TowerType::Dilophosaurus))) {
-                        tower_selected_ = true;
-                        selected_tower_type_ = TowerType::Dilophosaurus;
-                        selected_tower_index_ = -1;
+                        const TowerDefinition& def = get_tower_definition(TowerType::Dilophosaurus);
+
+                        if (player_.can_afford(def.cost)){
+                            tower_selected_ = true;
+                            selected_tower_type_ = TowerType::Dilophosaurus;
+                            selected_tower_index_ = -1;
+                            build_rotation_swapped_ = false;
+                        }
                     }
                     else if (point_in_rect(mouse_x, mouse_y, get_tower_button_rect(TowerType::Troodon))) {
-                        tower_selected_ = true;
-                        selected_tower_type_ = TowerType::Troodon;
-                        selected_tower_index_ = -1;
+                        const TowerDefinition& def = get_tower_definition(TowerType::Troodon);
+
+                        if (player_.can_afford(def.cost)){
+                            tower_selected_ = true;
+                            selected_tower_type_ = TowerType::Troodon;
+                            selected_tower_index_ = -1;
+                            build_rotation_swapped_ = false;
+                        }
                     }
                     else if (point_in_rect(mouse_x, mouse_y, get_tower_button_rect(TowerType::Oviraptor))) {
-                        tower_selected_ = true;
-                        selected_tower_type_ = TowerType::Oviraptor;
-                        selected_tower_index_ = -1;
+                        const TowerDefinition& def = get_tower_definition(TowerType::Oviraptor);
+
+                        if (player_.can_afford(def.cost)){
+                            tower_selected_ = true;
+                            selected_tower_type_ = TowerType::Oviraptor;
+                            selected_tower_index_ = -1;
+                            build_rotation_swapped_ = false;
+                        }
                     }
                     else if (point_in_rect(mouse_x, mouse_y, get_tower_button_rect(TowerType::Pteranodon))) {
-                        tower_selected_ = true;
-                        selected_tower_type_ = TowerType::Pteranodon;
-                        selected_tower_index_ = -1;
+                        const TowerDefinition& def = get_tower_definition(TowerType::Pteranodon);
+
+                        if (player_.can_afford(def.cost)){
+                            tower_selected_ = true;
+                            selected_tower_type_ = TowerType::Pteranodon;
+                            selected_tower_index_ = -1;
+                            build_rotation_swapped_ = false;
+                        }
                     }
                 }
                 else {
@@ -570,10 +636,13 @@ bool App::place_selected_tower_if_valid(int center_col, int center_row) {
 
     const TowerDefinition& def = get_tower_definition(selected_tower_type_);
 
-    int start_col = center_col - (def.footprint_w / 2);
-    int start_row = center_row - (def.footprint_h / 2);
+    const int footprint_w = get_selected_build_footprint_w();
+    const int footprint_h = get_selected_build_footprint_h();
 
-    if (!can_place_tower(start_col, start_row, def.footprint_w, def.footprint_h)) {
+    int start_col = center_col - (footprint_w / 2);
+    int start_row = center_row - (footprint_h / 2);
+
+    if (!can_place_tower(start_col, start_row, footprint_w, footprint_h)) {
         return false;
     }
 
@@ -586,6 +655,9 @@ bool App::place_selected_tower_if_valid(int center_col, int center_row) {
     tower.type = selected_tower_type_;
     tower.col = start_col;
     tower.row = start_row;
+
+    tower.footprint_w = footprint_w;
+    tower.footprint_h = footprint_h;
 
     // Runtime combat stats for later upgrades
     tower.attack_damage = def.attack_damage;
@@ -621,8 +693,8 @@ bool App::place_selected_tower_if_valid(int center_col, int center_row) {
         enter_manual_targeting_mode(placed_tower_index);
     }
 
-    for (int r = 0; r < def.footprint_h; ++r) {
-        for (int c = 0; c < def.footprint_w; ++c) {
+    for (int r = 0; r < tower.footprint_h; ++r) {
+        for (int c = 0; c < tower.footprint_w; ++c) {
             grid_[start_row + r][start_col + c].occupied = true;
         }
     }
@@ -646,8 +718,8 @@ void App::render_towers() {
         SDL_Rect rect{
             tower.col * CELL_SIZE,
             tower.row * CELL_SIZE,
-            def.footprint_w * CELL_SIZE,
-            def.footprint_h * CELL_SIZE
+            tower.footprint_w * CELL_SIZE,
+            tower.footprint_h * CELL_SIZE
         };
 
         SDL_RenderFillRect(renderer_, &rect);
@@ -661,16 +733,22 @@ void App::render_tower_preview() {
 
     const TowerDefinition& def = get_tower_definition(selected_tower_type_);
 
-    int start_col = hovered_col_ - (def.footprint_w / 2);
-    int start_row = hovered_row_ - (def.footprint_h / 2);
+    const int footprint_w = get_selected_build_footprint_w();
+    const int footprint_h = get_selected_build_footprint_h();
 
-    bool valid = can_place_tower(start_col, start_row, def.footprint_w, def.footprint_h);
+    const int start_col = hovered_col_ - (footprint_w / 2);
+    const int start_row = hovered_row_ - (footprint_h / 2);
 
-    SDL_Color color = def.preview_color;
+    const bool valid = can_place_tower(start_col, start_row, footprint_w, footprint_h);
+
     SDL_SetRenderDrawBlendMode(renderer_, SDL_BLENDMODE_BLEND);
 
     if (valid) {
-        SDL_SetRenderDrawColor(renderer_, color.r, color.g, color.b, 120);
+        SDL_SetRenderDrawColor(renderer_,
+                               def.preview_color.r,
+                               def.preview_color.g,
+                               def.preview_color.b,
+                               120);
     } else {
         SDL_SetRenderDrawColor(renderer_, 255, 0, 0, 120);
     }
@@ -678,46 +756,33 @@ void App::render_tower_preview() {
     SDL_Rect rect{
         start_col * CELL_SIZE,
         start_row * CELL_SIZE,
-        def.footprint_w * CELL_SIZE,
-        def.footprint_h * CELL_SIZE
+        footprint_w * CELL_SIZE,
+        footprint_h * CELL_SIZE
     };
 
     SDL_RenderFillRect(renderer_, &rect);
 }
 
-SDL_Rect App::get_tower_button_rect(TowerType type) const   {
-    const int button_x = MENU_X + 20;
-    const int button_w = MENU_WIDTH - 40;
-    const int button_h = 60;
+SDL_Rect App::get_tower_button_rect(TowerType type) const {
+    const int button_w = 120;
+    const int button_h = 140;
 
-    switch (type){
-        case TowerType::Trex:
-            return SDL_Rect{button_x, 40, button_w, button_h};
-        case TowerType::Stegosaurus:
-            return SDL_Rect{button_x, 120, button_w, button_h};
-        case TowerType::Velociraptor:
-            return SDL_Rect{button_x, 200, button_w, button_h};
-        case TowerType::Spinosaurus:
-            return SDL_Rect{button_x, 280, button_w, button_h};
-        case TowerType::Parasaurolophus:
-            return SDL_Rect{button_x, 360, button_w, button_h};
-        case TowerType::Ankylosaurus:
-            return SDL_Rect{button_x, 440, button_w, button_h};
-        case TowerType::Sarcosuchus:
-            return SDL_Rect{button_x, 520, button_w, button_h};
-        case TowerType::Allosaurus:
-            return SDL_Rect{button_x, 600, button_w, button_h};
-        case TowerType::Dilophosaurus:
-            return SDL_Rect{button_x, 680, button_w, button_h};
-        case TowerType::Troodon:
-            return SDL_Rect{button_x, 760, button_w, button_h};
-        case TowerType::Oviraptor: 
-            return SDL_Rect{button_x, 840, button_w, button_h};
-        case TowerType::Pteranodon:
-            return SDL_Rect{button_x, 920, button_w, button_h};
-        default:
-            return SDL_Rect{button_x, 40, button_w, button_h};
-    }
+    const int start_x = MENU_X + 30;
+    const int start_y = 40;
+
+    const int gap_x = 30;
+    const int gap_y = 35;
+
+    const int index = static_cast<int>(type);
+    const int col = index % 2;
+    const int row = index / 2;
+
+    return SDL_Rect{
+        start_x + col * (button_w + gap_x),
+        start_y + row * (button_h + gap_y),
+        button_w,
+        button_h
+    };
 }
 
 bool App::point_in_rect(int x, int y, const SDL_Rect& rect) const   {
@@ -731,17 +796,38 @@ void App::render_tower_button(TowerType type){
     SDL_Rect rect = get_tower_button_rect(type);
     const TowerDefinition& def = get_tower_definition(type);
 
-    SDL_SetRenderDrawColor(renderer_,
-                            def.preview_color.r,
-                            def.preview_color.g,
-                            def.preview_color.b,
-                            255);
+    const bool can_afford = player_.can_afford(def.cost);
+
+    SDL_SetRenderDrawColor(renderer_, 50, 60, 70, 255);
     SDL_RenderFillRect(renderer_, &rect);
+
+    if (!can_afford){
+        SDL_SetRenderDrawBlendMode(renderer_, SDL_BLENDMODE_BLEND);
+        SDL_SetRenderDrawColor(renderer_, 0, 0, 0, 120);
+        SDL_RenderFillRect(renderer_, &rect);
+    }
 
     if (tower_selected_ && selected_tower_type_ == type){
         SDL_SetRenderDrawColor(renderer_, 255, 255, 255, 255);
-        SDL_RenderDrawRect(renderer_, &rect);
+    } else {
+        SDL_SetRenderDrawColor(renderer_, 90, 100, 110, 255);
     }
+    SDL_RenderDrawRect(renderer_, &rect);
+
+    SDL_Color cost_color = can_afford ? SDL_Color{80, 255, 100, 255} : SDL_Color{255, 70, 70, 255};
+
+    std::string cost_text = "$" + std::to_string(def.cost);
+
+    const int estimated_char_w = 10;
+    const int estimated_text_h = 20;
+
+    const int estimated_text_w = static_cast<int>(cost_text.length()) * estimated_char_w;
+
+    const int center_x = (rect.x + rect.w / 2) - 5;
+    const int padding_bottom = 10;
+    const int center_y = rect.y + rect.h - padding_bottom - (estimated_text_h / 2);
+
+    draw_text(cost_text, center_x - estimated_text_w / 2, center_y - estimated_text_h / 2, cost_color);
 }
 
 void App::render_tower_menu()   {
@@ -928,13 +1014,15 @@ void App::render_next_wave_button(){
 }
 
 float App::tower_center_x(const Tower& tower) const{
-    const TowerDefinition& def = get_tower_definition(tower.type);
-    return static_cast<float>(tower.col * CELL_SIZE + (def.footprint_w * CELL_SIZE) / 2);
+    return static_cast<float>(
+        tower.col * CELL_SIZE + (tower.footprint_w * CELL_SIZE) / 2
+    );
 }
 
 float App::tower_center_y(const Tower& tower) const{
-    const TowerDefinition& def = get_tower_definition(tower.type);
-    return static_cast<float>(tower.row * CELL_SIZE + (def.footprint_h * CELL_SIZE) / 2);
+    return static_cast<float>(
+        tower.row * CELL_SIZE + (tower.footprint_h * CELL_SIZE) / 2
+    );
 }
 
 Enemy* App::find_target_for_tower(const Tower& tower, int tower_index){
@@ -1659,13 +1747,12 @@ int App::find_tower_at_pixel(int x, int y) const {
     // Search from back to front
     for (int i = static_cast<int>(towers_.size()) - 1; i >= 0; --i){
         const Tower& tower = towers_[i];
-        const TowerDefinition& def = get_tower_definition(tower.type);
 
         SDL_Rect tower_rect{
             tower.col * CELL_SIZE,
             tower.row * CELL_SIZE,
-            def.footprint_w * CELL_SIZE,
-            def.footprint_h * CELL_SIZE
+            tower.footprint_w * CELL_SIZE,
+            tower.footprint_h * CELL_SIZE
         };
 
         if (point_in_rect(x, y, tower_rect)){
@@ -2169,26 +2256,25 @@ bool App::move_selected_tower_if_valid(int center_col, int center_row){
     }
 
     Tower& tower = towers_[reposition_tower_index_];
-    const TowerDefinition& def = get_tower_definition(tower.type);
 
-    const int new_start_col = center_col - def.footprint_w / 2;
-    const int new_start_row = center_row - def.footprint_h / 2;
+    const int new_start_col = center_col - tower.footprint_w / 2;
+    const int new_start_row = center_row - tower.footprint_h / 2;
 
     const int old_col = tower.col;
     const int old_row = tower.row;
 
     // Temporarily free the tower's current footprint
     // So it doesn't block itself
-    for (int r = 0; r < def.footprint_h; ++r){
-        for (int c = 0; c < def.footprint_w; ++c){
+    for (int r = 0; r < tower.footprint_h; ++r){
+        for (int c = 0; c < tower.footprint_w; ++c){
             grid_[old_row + r][old_col + c].occupied = false;
         }
     }
 
-    if (!can_place_tower(new_start_col, new_start_row, def.footprint_w, def.footprint_h)){
+    if (!can_place_tower(new_start_col, new_start_row, tower.footprint_w, tower.footprint_h)){
         // Invalid move so restore the old occupied cells
-        for (int r = 0; r < def.footprint_h; ++r){
-            for (int c = 0; c < def.footprint_w; ++c){
+        for (int r = 0; r < tower.footprint_h; ++r){
+            for (int c = 0; c < tower.footprint_w; ++c){
                 grid_[old_row + r][old_col + c].occupied = true;
             }
         }
@@ -2199,8 +2285,8 @@ bool App::move_selected_tower_if_valid(int center_col, int center_row){
     // Valid move
     tower.col = new_start_col;
     tower.row = new_start_row;
-    for (int r = 0; r < def.footprint_h; ++r){
-        for (int c = 0; c < def.footprint_w; ++c){
+    for (int r = 0; r < tower.footprint_h; ++r){
+        for (int c = 0; c < tower.footprint_w; ++c){
             grid_[new_start_row + r][new_start_col + c].occupied = true;
         }
     }
@@ -2223,12 +2309,11 @@ void App::render_reposition_preview(){
     }
 
     const Tower& tower = towers_[reposition_tower_index_];
-    const TowerDefinition& def = get_tower_definition(tower.type);
 
-    const int start_col = hovered_col_ - def.footprint_w / 2;
-    const int start_row = hovered_row_ - def.footprint_h / 2;
+    const int start_col = hovered_col_ - tower.footprint_w / 2;
+    const int start_row = hovered_row_ - tower.footprint_h / 2;
 
-    const bool valid = can_place_tower(start_col, start_row, def.footprint_w, def.footprint_h);
+    const bool valid = can_place_tower(start_col, start_row, tower.footprint_w, tower.footprint_h);
 
     if (valid){
         SDL_SetRenderDrawColor(renderer_, 120, 220, 255, 120);
@@ -2241,8 +2326,8 @@ void App::render_reposition_preview(){
     SDL_Rect rect{
         start_col * CELL_SIZE,
         start_row * CELL_SIZE,
-        def.footprint_w * CELL_SIZE,
-        def.footprint_h * CELL_SIZE
+        tower.footprint_w * CELL_SIZE,
+        tower.footprint_h * CELL_SIZE
     };
 
     SDL_RenderFillRect(renderer_, &rect);
@@ -2403,4 +2488,16 @@ void App::update_enemy_healers(float dt){
 
         }
     }
+}
+
+int App::get_selected_build_footprint_w() const{
+    const TowerDefinition& def = get_tower_definition(selected_tower_type_);
+
+    return build_rotation_swapped_ ? def.footprint_h : def.footprint_w;
+}
+
+int App::get_selected_build_footprint_h() const{
+    const TowerDefinition& def = get_tower_definition(selected_tower_type_);
+
+    return build_rotation_swapped_ ? def.footprint_w : def.footprint_h;
 }

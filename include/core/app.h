@@ -70,6 +70,8 @@ class App{
         float tower_center_y(const Tower& tower) const;
         void reset_money_generator_timers();
         float get_attack_speed_bonus_for_tower(int tower_index) const;
+        int get_selected_build_footprint_w() const;
+        int get_selected_build_footprint_h() const;
         // Tower Selection helpers
         int find_tower_at_pixel(int x, int y) const;
         void render_selected_tower_radius() const;
@@ -200,4 +202,7 @@ class App{
 
         // For easier 2x speed
         float game_speed = 1.0f;
+
+        // For tower rotations in build mode
+        bool build_rotation_swapped_ = false;
 };
