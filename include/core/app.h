@@ -184,7 +184,7 @@ class App{
         WaveManager wave_manager_;
 
         // Player object containing (health, money)
-        Player player_{35, 500};
+        Player player_{35, 500000};
 
         // Used for SDL_TTF text rendering
         TTF_Font* debug_font_ = nullptr;

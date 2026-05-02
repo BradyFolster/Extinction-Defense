@@ -111,7 +111,7 @@ const TowerDefinition& get_tower_definition(TowerType type){
 
     static const TowerDefinition parasaurolophus{
         TowerType::Parasaurolophus,
-        "Parasaurlophus",
+        "Parasaurolophus",
         2, 2,
         SDL_Color{240, 200, 80, 180},
         145,    // cost
@@ -152,7 +152,7 @@ const TowerDefinition& get_tower_definition(TowerType type){
         SDL_Color{210, 170, 100, 255},
         1,      // pierce
         MoneyGeneratorStats{0, 0.0f, 0.0f},
-        SlowOnHitStats{0.50f, 2.0f},
+        SlowOnHitStats{0.55f, 2.25f},
         SplashDamageStats{0.0f, 1.0f},
         BurstAttackStats{1, 0.0f, 0, 0.0f},
         AuraStats{0.0f, false},
@@ -179,7 +179,7 @@ const TowerDefinition& get_tower_definition(TowerType type){
         1,      // pierce
         MoneyGeneratorStats{0, 0.0f, 0.0f},
         SlowOnHitStats{1.0f, 0.0f},
-        SplashDamageStats{55.0f, 0.60f},
+        SplashDamageStats{60.0f, 0.55f},
         BurstAttackStats{1, 0.0f, 0, 0.0f},
         AuraStats{0.0f, false},
         ManualTargetingStats{false, 0.0f, 0.0f, false},
@@ -206,7 +206,7 @@ const TowerDefinition& get_tower_definition(TowerType type){
         MoneyGeneratorStats{0, 0.0f, 0.0f},
         SlowOnHitStats{1.0, 0.0f},
         SplashDamageStats{0.0f, 1.0f},
-        BurstAttackStats{3, 0.12f, 0, 0.0f},
+        BurstAttackStats{3, 0.11f, 0, 0.0f},
         AuraStats{0.0f, false},
         ManualTargetingStats{false, 0.0f, 0.0f, false},
         RepositionStats{false, 0.0f, 0.0f},
@@ -233,7 +233,7 @@ const TowerDefinition& get_tower_definition(TowerType type){
         SlowOnHitStats{1.0, 0.0f},
         SplashDamageStats{0.0f, 1.0f},
         BurstAttackStats{1, 0.0f, 0, 0.0f,},
-        AuraStats{0.35f, false},
+        AuraStats{0.25f, false},
         ManualTargetingStats{false, 0.0f, 0.0f, false},
         RepositionStats{false, 0.0f, 0.0f},
 
@@ -283,7 +283,7 @@ const TowerDefinition& get_tower_definition(TowerType type){
         1,      // pierce
         MoneyGeneratorStats{0, 0.0f, 0.0f},
         SlowOnHitStats{1.0f, 0.0f},
-        SplashDamageStats{45.0f, 0.75f},
+        SplashDamageStats{50.0f, 0.70f},
         BurstAttackStats{1, 0.0f, 0, 0.0f},
         AuraStats{0.0f, false},
         ManualTargetingStats{true, 0.0f, 0.0f, false},
@@ -309,11 +309,11 @@ const TowerDefinition& get_tower_definition(TowerType type){
         1,      // pierce
         MoneyGeneratorStats{0, 0.0f, 0.0f},
         SlowOnHitStats{1.0f, 0.0f},
-        SplashDamageStats{45.0f, 0.75f},
+        SplashDamageStats{0.0f, 1.0f},
         BurstAttackStats{1, 0.0f, 0, 0.0f},
         AuraStats{0.0f, false},
         ManualTargetingStats{false, 0.0f, 0.0f, false},
-        RepositionStats{true, 12.0f, 0.0f},
+        RepositionStats{true, 18.0f, 0.0f},
 
         AttackType::SingleTarget
     };
@@ -405,6 +405,180 @@ const TowerUpgradeDefinition* get_upgrade_path(TowerType type, UpgradePath path)
         {"Feeding Frenzy", 610, 0.0f, 20.0f, 0.85f}
     };
 
+    // =================================================
+    // Spinosaurus
+    // =================================================
+    static const TowerUpgradeDefinition spino_damage[] = {
+        {"Serrated Sail", 95, 8.0f},
+        {"River Ambush", 165, 10.0f},
+        {"Bone Spear", 285, 14.0f},
+        {"Deepwater Hunter", 500, 20.0f},
+        {"Spinebreaker Shot", 880, 30.0f}
+    };
+
+    static const TowerUpgradeDefinition spino_utility[] = {
+        {"Narrow Channel", 90, 0.0f, 0.0f, 0.0f, 0.0f, 0, 1},
+        {"Long River", 160, 0.0f, 20.0f, 0.0f, 60.0f},
+        {"Sharper Angle", 275, 0.0f, 0.0f, 0.10f},
+        {"Flood Line", 480, 0.0f, 25.0f, 0.0f, 0.0f, 2, 1},
+        {"River Tyrant", 840, 0.0f, 25.0f, 0.15f, 0.0f, 0, 1}
+    };
+
+
+    // =================================================
+    // Parasaurolophus
+    // =================================================
+    static const TowerUpgradeDefinition para_damage[] = {
+        {"Friendly Calls", 80, 0.0f, 0.0f, 0.0f, 0.0f, 0, 0, 5},
+        {"Seed Pouch", 140, 0.0f, 0.0f, 0.0f, 0.0f, 0, 0, 6},
+        {"Trade Routes", 240, 0.0f, 0.0f, 0.0f, 0.0f, 0, 0, 8},
+        {"Festival Horn", 420, 0.0f, 0.0f, 0.0f, 0.0f, 0, 0, 10},
+        {"Golden Herd", 730, 0.0f, 0.0f, 0.0f, 0.0f, 0, 0, 14}
+    };
+
+    static const TowerUpgradeDefinition para_utility[] = {
+        {"Better Timing", 85, 0.0f, 0.0f, 0.0f, 0.0f, 0, 0, 0, -0.40f},
+        {"Stored Supplies", 150, 0.0f, 0.0f, 0.0f, 0.0f, 0, 0, 0, 0.0f, 1},
+        {"Faster Hymn", 255, 0.0f, 0.0f, 0.0f, 0.0f, 0, 0, 0, -0.50f},
+        {"Safe Nesting", 440, 0.0f, 0.0f, 0.0f, 0.0f, 0, 0, 0, 0.0f, 1},
+        {"Endless Chorus", 760, 0.0f, 0.0f, 0.0f, 0.0f, 0, 0, 0, -0.60f, 2}
+    };
+
+    // =================================================
+    // Ankylosaurus
+    // =================================================
+    static const TowerUpgradeDefinition anky_damage[] = {
+        {"Heavy Knob", 70, 4.0f},
+        {"Cracked Armor", 120, 6.0f},
+        {"Staggering Blow", 205, 9.0f},
+        {"Bone Shaker", 360, 13.0f},
+        {"Worldbreaker Club", 630, 20.0f}
+    };
+
+    static const TowerUpgradeDefinition anky_utility[] = {
+        {"Lingering Bruise", 80, 0.0f, 0.0f, 0.0f, 0.0f, 0, 0, 0, 0.0f, 0, 0.0f, 0.50f},
+        {"Wider Patrol", 140, 0.0f, 20.0f},
+        {"Deep Stun", 240, 0.0f, 0.0f, 0.0f, 0.0f, 0, 0, 0, 0.0f, 0, -0.06f, 0.25f},
+        {"Cripplig Impact", 410, 0.0f, 0.0f, 0.20f, 0.0f, 2},
+        {"Fossil Lock", 710, 0.0f, 15.0f, 0.0f, 0.0f, 0, 0, 0, 0.0f, 0, -0.08f, 1.00f}
+    };
+
+    // =================================================
+    // Sarcosuchus
+    // =================================================
+    static const TowerUpgradeDefinition sarco_damage[] = {
+        {"Jaw Pressure", 105, 12.0f},
+        {"River Snap", 180, 16.0f},
+        {"Bone-Cruncher", 310, 22.0f},
+        {"Death Roll", 540, 32.0f},
+        {"Ancient Maw", 940, 48.0f}
+    };
+
+    static const TowerUpgradeDefinition sarco_utility[] = {
+        {"Wider Wake", 100, 0.0f, 0.0f, 0.0f, 0.0f, 0, 0, 0, 0.0f, 0, 0.0f, 0.0f, 10.0f},
+        {"Faster Lunge", 170, 0.0f, 0.0f, 0.10f},
+        {"Mud Burst", 295, 0.0f, 0.0f, 0.0f, 0.0f, 0, 0, 0, 0.0f, 0, 0.0f, 0.0f, 20.0f, 0.08f},
+        {"Huge Projectile", 515, 0.0f, 0.0f, 0.0f, 70.0f, 2},
+        {"Swamp Collapse", 900, 0.0f, 0.0f, 0.10f, 0.0f, 0, 0, 0, 0.0f, 0, 0.0f, 0.0f, 20.0f, 0.08f}
+    };
+
+    // =================================================
+    // Allosaurus
+    // =================================================
+    static const TowerUpgradeDefinition allo_damage[] = {
+        {"Open Wounds", 90, 5.0f},
+        {"Frenzy Teeth", 155, 7.0f},
+        {"Pack Tear", 265, 10.0f},
+        {"Brutal Combo", 465, 14.0f},
+        {"Feeding Frenzy", 810, 22.0f}
+    };
+    static const TowerUpgradeDefinition allo_utility[] = {
+        {"Clean Follow-Through", 95, 0.0f, 0.0f, 0.0f, 0.0f, 0, 0, 0, 0.0f, 0, 0.0f, 0.0f, 0.0f, 0.0f, 0, -0.02f},
+        {"Faster Reset", 165, 0.0f, 0.0f, 0.08f},
+        {"Fourth Strike", 285, 0.0f, 0.0f, 0.0f, 0.0f, 0, 0, 0, 0.0f, 0, 0.0f, 0.0f, 0.0f, 0.0f, 1},
+        {"Hunter's Rhythm", 500, 0.0f, 15.0f, 0.12f},
+        {"Fifth Strike", 870, 0.0f, 0.0f, 0.04f, 0.0f, 2, 0, 0, 0.0f, 0, 0.0f, 0.0f, 0.0f, 0.0f, 1}
+    };
+
+    // =================================================
+    // Dilophosaurus
+    // =================================================
+    static const TowerUpgradeDefinition dilo_damage[] = {
+        {"Brighter Frill", 95, 0.0f, 0.0f, 0.0f, 0.0f, 0, 0, 0, 0.0f, 0, 0.0f, 0.0f, 0.0f, 0.0f, 0, 0.0f, 0.07f},
+        {"Venom Rhythm", 165, 0.0f, 0.0f, 0.0f, 0.0f, 0, 0, 0, 0.0f, 0, 0.0f, 0.0f, 0.0f, 0.0f, 0, 0.0f, 0.08f},
+        {"Rally Cry", 280, 0.0f, 0.0f, 0.0f, 0.0f, 0, 0, 0, 0.0f, 0, 0.0f, 0.0f, 0.0f, 0.0f, 0, 0.0f, 0.09f},
+        {"Hunting Pulse", 490, 0.0f, 0.0f, 0.0f, 0.0f, 0, 0, 0, 0.0f, 0, 0.0f, 0.0f, 0.0f, 0.0f, 0, 0.0f, 0.10f},
+        {"Prime Chorus", 850, 0.0f, 0.0f, 0.0f, 0.0f, 0, 0, 0, 0.0f, 0, 0.0f, 0.0f, 0.0f, 0.0f, 0, 0.0f, 0.12f}
+    };
+
+    static const TowerUpgradeDefinition dilo_utility[] = {
+        {"Tall Crest", 90, 0.0f, 20.0f},
+        {"Sharper Call", 160, 0.0f, 15.0f, 0.0f, 0.0f, 0, 0, 0, 0.0f, 0, 0.0f, 0.0f, 0.0f, 0.0f, 0, 0.0f, 0.03f},
+        {"Battle Tempo", 275, 0.0f, 20.0f},
+        {"Echoing Frill", 480, 0.0f, 20.0f, 0.0f, 0.0f, 0, 0, 0, 0.0f, 0, 0.0f, 0.0f, 0.0f, 0.0f, 0, 0.0f, 0.04f},
+        {"Pack Conductor", 830, 0.0f, 25.0f, 0.0f, 0.0f, 0, 0, 0, 0.0f, 0, 0.0f, 0.0f, 0.0f, 0.0f, 0, 0.0f, 0.05f}
+    };
+
+
+    // =================================================
+    // Troodon
+    // =================================================
+    static const TowerUpgradeDefinition troodon_damage[] = {
+        {"Weakness Read", 90, 0.0f, 0.0f, 0.0f, 0.0f, 0, 0, 0, 0.0f, 0, 0.0f, 0.0f, 0.0f, 0.0f, 0, 0.0f, 0.0f, 0.04f},
+        {"Pack Signals", 155, 0.0f, 0.0f, 0.0f, 0.0f, 0, 0, 0, 0.0f, 0, 0.0f, 0.0f, 0.0f, 0.0f, 0, 0.0f, 0.0f, 0.04f},
+        {"Soft Spot", 265, 0.0f, 0.0f, 0.0f, 0.0f, 0, 0, 0, 0.0f, 0, 0.0f, 0.0f, 0.0f, 0.0f, 0, 0.0f, 0.0f, 0.04f},
+        {"Finisher Math", 460, 0.0f, 0.0f, 0.0f, 0.0f, 0, 0, 0, 0.0f, 0, 0.0f, 0.0f, 0.0f, 0.0f, 0, 0.0f, 0.0f, 0.04f},
+        {"Perfect Prediction", 800, 0.0f, 0.0f, 0.0f, 0.0f, 0, 0, 0, 0.0f, 0, 0.0f, 0.0f, 0.0f, 0.0f, 0, 0.0f, 0.0f, 0.04f}
+    };
+
+    static const TowerUpgradeDefinition troodon_utility[] = {
+        {"Watchful Eyes", 85, 0.0f, 20.0f},
+        {"Fast Decisions", 150, 0.0f, 15.0f, 0.0f, 0.0f, 0, 0, 0, 0.0f, 0, 0.0f, 0.0f, 0.0f, 0.0f, 0, 0.0f, 0.0f, 0.02f},
+        {"Battlefield Map", 255, 0.0f, 25.0f},
+        {"Kill Confirmation", 440, 0.0f, 20.0f},
+        {"Pack Oracle", 760, 0.0f, 25.0f, 0.0f, 0.0f, 0, 0, 0, 0.0f, 0, 0.0f, 0.0f, 0.0f, 0.0f, 0, 0.0f, 0.0f, 0.03f}
+    };
+
+
+    // =================================================
+    // Oviraptor
+    // =================================================
+    static const TowerUpgradeDefinition oviraptor_damage[] = {
+        {"Weighted Pebbles", 95, 10.0f},
+        {"Nest Bombs", 165, 13.0f},
+        {"Shellbreaker", 285, 18.0f},
+        {"Boulder Cache", 500, 26.0f},
+        {"Meteor Nest", 870, 39.0f}
+    };
+
+    static const TowerUpgradeDefinition oviraptor_utility[] = {
+        {"Longer Sling", 90, 0.0f, 0.0f, 0.0f, 60.0f},
+        {"Bigger Blast", 155, 0.0f, 0.0f, 0.0f, 0.0f, 0, 0, 0, 0.0f, 0, 0.0f, 0.0f, 10.0f},
+        {"Better Reload", 270, 0.0f, 0.0f, 0.08f},
+        {"Cluster Shell", 470, 0.0f, 0.0f, 0.0f, 0.0f, 2, 0, 0, 0.0f, 0, 0.0f, 0.0f, 15.0f, 0.05f},
+        {"True Volley", 820, 0.0f, 0.0f, 0.12f, 0.0f, 0, 0, 0, 0.0f, 0, 0.0f, 0.0f, 20.0f, 0.05f}
+    };
+
+
+    // =================================================
+    // Pteranodon
+    // =================================================
+    static const TowerUpgradeDefinition pteranodon_damage[] = {
+        {"Claw Dive", 85, 6.0f},
+        {"Razor Wings", 145, 9.0f},
+        {"Falling Strike", 250, 12.0f},
+        {"Storm Talons", 435, 17.0f},
+        {"Sky Terror", 760, 26.0f}
+    };
+
+    static const TowerUpgradeDefinition pteranodon_utility[] = {
+        {"Better Lift", 90, 0.0f, 0.0f, 0.0f, 0.0f, 0, 0, 0, 0.0f, 0, 0.0f, 0.0f, 0.0f, 0.0f, 0, 0.0f, 0.0f, 0.0f, -2.0f},
+        {"High Thermals", 155, 0.0f, 25.0f, 0.0f, 60.0f},
+        {"Fast Flap", 270, 0.0f, 0.0f, 0.15f},
+        {"Precision Landing", 470, 0.0f, 0.0f, 0.0f, 0.0f, 2, 0, 0, 0.0f, 0, 0.0f, 0.0f, 0.0f, 0.0f, 0, 0.0f, 0.0f, 0.0f, -3.0f},
+        {"Apex Migration", 820, 0.0f, 25.0f, 0.20f, 0.0f, 0, 0, 0, 0.0f, 0, 0.0f, 0.0f, 0.0f, 0.0f, 0, 0.0f, 0.0f, 0.0f, -4.0f}
+    };
+
     // Returns the correct 5-upgrade-array based on type and tower
     switch (type){
         case TowerType::Trex:
@@ -413,6 +587,24 @@ const TowerUpgradeDefinition* get_upgrade_path(TowerType type, UpgradePath path)
             return path == UpgradePath::Damage ? stego_damage : stego_utility;
         case TowerType::Velociraptor:
             return path == UpgradePath::Damage ? raptor_damage : raptor_utility;
+        case TowerType::Spinosaurus:
+            return path == UpgradePath::Damage ? spino_damage : spino_utility;
+        case TowerType::Parasaurolophus:
+            return path == UpgradePath::Damage ? para_damage : para_utility;
+        case TowerType::Ankylosaurus:
+            return path == UpgradePath::Damage ? anky_damage : anky_utility;
+        case TowerType::Sarcosuchus:
+            return path == UpgradePath::Damage ? sarco_damage : sarco_utility;
+        case TowerType::Allosaurus:
+            return path == UpgradePath::Damage ? allo_damage : allo_utility;
+        case TowerType::Dilophosaurus:
+            return path == UpgradePath::Damage ? dilo_damage : dilo_utility;
+        case TowerType::Troodon:
+            return path == UpgradePath::Damage ? troodon_damage : troodon_utility;
+        case TowerType::Oviraptor:
+            return path == UpgradePath::Damage ? oviraptor_damage : oviraptor_utility;
+        case TowerType::Pteranodon:
+            return path == UpgradePath::Damage ? pteranodon_damage : pteranodon_utility;
         default:
             return nullptr;
     }
