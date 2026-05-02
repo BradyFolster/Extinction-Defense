@@ -761,6 +761,24 @@ void App::render_tower_preview() {
     };
 
     SDL_RenderFillRect(renderer_, &rect);
+
+    // Renders attack radius preview
+    int center_x = start_col * CELL_SIZE + (footprint_w * CELL_SIZE) / 2;
+    int center_y = start_row * CELL_SIZE + (footprint_h * CELL_SIZE) / 2;
+
+    int radius = static_cast<int>(def.attack_range);
+
+    if (radius <= 0){
+        radius = 50;
+    }
+
+    if (valid){
+        SDL_SetRenderDrawColor(renderer_, 0, 255, 0, 45);
+    } else {
+        SDL_SetRenderDrawColor(renderer_, 255, 0, 0, 45);
+    }
+
+    draw_filled_circle(center_x, center_y, radius);
 }
 
 SDL_Rect App::get_tower_button_rect(TowerType type) const {
