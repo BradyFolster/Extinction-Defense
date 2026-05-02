@@ -133,3 +133,31 @@ void AssetManager::cleanup(){
     sounds_.clear();
     sound_index_by_name_.clear();
 }
+
+void AssetManager::unload_texture(const std::string& name){
+    auto it = texture_index_by_name_.find(name);
+
+    // If the texture is not loaded, there is nothing to unload.
+    if (it == texture_index_by_name_.end()){
+        return;
+    }
+
+    size_t index = it->second;
+
+    // Destroy the SDL texture before removing it from our storage.
+    // This prevents a memory leak when changing/reloading maps.
+    SDL_DestroyTexture(textures_[index]);
+
+    // Remove the texture from the vector.
+    textures_.erase(textures_.begin() + index);
+
+    // Remove the name lookup.
+    texture_index_by_name_.erase(it);
+
+    // Rebuild indices because erasing from a vector shifts later elements.
+    for (auto& pair : texture_index_by_name_){
+        if (pair.second > index){
+            pair.second--;
+        }
+    }
+}

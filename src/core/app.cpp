@@ -134,10 +134,10 @@ void App::process_events(){
         else if (event.type == SDL_KEYDOWN){
             // Pause menu & settings menu
             if (event.key.keysym.sym == SDLK_ESCAPE){
-                if (settings_menu_open_){
-                    settings_menu_open_ = false;
+                if (screen_ == AppScreen::Settings || screen_ == AppScreen::MapSelect || screen_ == AppScreen::DifficultySelect){
+                    pop_screen();
                 }
-                else{
+                else if (screen_ == AppScreen::Gameplay){
                     paused_ = !paused_;
 
                     tower_selected_ = false;
@@ -161,61 +161,125 @@ void App::process_events(){
             if (event.button.button == SDL_BUTTON_LEFT) {
                 int mouse_x = event.button.x;
                 int mouse_y = event.button.y;
+                if (screen_ == AppScreen::MainMenu){
+                    if (point_in_rect(mouse_x, mouse_y, get_main_play_button_rect())){
+                        push_screen(AppScreen::MapSelect);
+                    }
+                    else if (point_in_rect(mouse_x, mouse_y, get_main_settings_button_rect())){
+                        push_screen(AppScreen::Settings);
+                    }
+                    else if (point_in_rect(mouse_x, mouse_y, get_main_quit_button_rect())){
+                        running_ = false;
+                    }
 
-                // Stops if te game is paused
-                if (paused_){
-                    if (settings_menu_open_){
-                        if (point_in_rect(mouse_x, mouse_y, get_settings_back_button_rect())){
-                            settings_menu_open_ = false;
-                        }
-                        else if (point_in_rect(mouse_x, mouse_y, get_fullscreen_button_rect())){
-                            toggle_fullscreen();
-                        }
-                        else if (point_in_rect(mouse_x, mouse_y, get_debug_hud_button_rect())){
-                            show_debug_hud_ = !show_debug_hud_;
-                        }
-                        else if (point_in_rect(mouse_x, mouse_y, get_resolution_button_rect())){
-                            if (!fullscreen_){
-                                cycle_resolution();
-                            }
-                        }
-                        else if (point_in_rect(mouse_x, mouse_y, get_vsync_button_rect())){
-                            vsync_enabled_ = !vsync_enabled_;
-                            SDL_RenderSetVSync(renderer_, vsync_enabled_ ? 1 : 0);
-                        }
-                        else if (point_in_rect(mouse_x, mouse_y, get_master_volume_down_rect())){
-                            master_volume_ = std::max(0, master_volume_ - 10);
-                            apply_audio_settings();
-                        }
-                        else if (point_in_rect(mouse_x, mouse_y, get_master_volume_up_rect())){
-                            master_volume_ = std::min(100, master_volume_ + 10);
-                            apply_audio_settings();
-                        }
-                        else if (point_in_rect(mouse_x, mouse_y, get_music_volume_down_rect())){
-                            music_volume_ = std::max(0, music_volume_ - 10);
-                            apply_audio_settings();
-                        }
-                        else if (point_in_rect(mouse_x, mouse_y, get_music_volume_up_rect())){
-                            music_volume_ = std::min(100, music_volume_ + 10);
-                            apply_audio_settings();
-                        }
-                        else if (point_in_rect(mouse_x, mouse_y, get_sfx_volume_down_rect())){
-                            sfx_volume_ = std::max(0, sfx_volume_ - 10);
-                            apply_audio_settings();
-                        }
-                        else if (point_in_rect(mouse_x, mouse_y, get_sfx_volume_up_rect())){
-                            sfx_volume_ = std::min(100, sfx_volume_ + 10);
-                            apply_audio_settings();
-                        }
+                    continue;
+                }
 
+                if (screen_ == AppScreen::MapSelect){
+                    if (point_in_rect(mouse_x, mouse_y, get_back_button_rect())){
+                        pop_screen();
                         continue;
                     }
 
+                    for (int i = 0; i < static_cast<int>(map_options_.size()); ++i){
+                        if (point_in_rect(mouse_x, mouse_y, get_map_button_rect(i))){
+                            selected_map_index_ = i;
+                            push_screen(AppScreen::DifficultySelect);
+                        }
+                    }
+
+                    continue;
+                }
+
+                if (screen_ == AppScreen::DifficultySelect){
+                    if (point_in_rect(mouse_x, mouse_y, get_back_button_rect())){
+                        pop_screen();
+                        continue;
+                    }
+
+                    if (selected_map_index_ >= 0){
+                        if (point_in_rect(mouse_x, mouse_y, get_difficulty_button_rect(Difficulty::Easy))){
+                            start_game(map_options_[selected_map_index_], Difficulty::Easy);
+                        }
+                        else if (point_in_rect(mouse_x, mouse_y, get_difficulty_button_rect(Difficulty::Medium))){
+                            start_game(map_options_[selected_map_index_], Difficulty::Medium);
+                        }
+                        else if (point_in_rect(mouse_x, mouse_y, get_difficulty_button_rect(Difficulty::Hard))){
+                            start_game(map_options_[selected_map_index_], Difficulty::Hard);
+                        }
+                    }
+
+                    continue;
+                }
+
+                if (screen_ == AppScreen::Settings){
+                    if (point_in_rect(mouse_x, mouse_y, get_back_button_rect())){
+                        pop_screen();
+                    }
+                    else if (point_in_rect(mouse_x, mouse_y, get_fullscreen_button_rect())){
+                        toggle_fullscreen();
+                    }
+                    else if (point_in_rect(mouse_x, mouse_y, get_debug_hud_button_rect())){
+                        show_debug_hud_ = !show_debug_hud_;
+                    }
+                    else if (point_in_rect(mouse_x, mouse_y, get_resolution_button_rect())){
+                        if (!fullscreen_){
+                            cycle_resolution();
+                        }
+                    }
+                    else if (point_in_rect(mouse_x, mouse_y, get_vsync_button_rect())){
+                        vsync_enabled_ = !vsync_enabled_;
+                        SDL_RenderSetVSync(renderer_, vsync_enabled_ ? 1 : 0);
+                    }
+                    else if (point_in_rect(mouse_x, mouse_y, get_master_volume_down_rect())){
+                        master_volume_ = std::max(0, master_volume_ - 10);
+                        apply_audio_settings();
+                    }
+                    else if (point_in_rect(mouse_x, mouse_y, get_master_volume_up_rect())){
+                        master_volume_ = std::min(100, master_volume_ + 10);
+                        apply_audio_settings();
+                    }
+                    else if (point_in_rect(mouse_x, mouse_y, get_music_volume_down_rect())){
+                        music_volume_ = std::max(0, music_volume_ - 10);
+                        apply_audio_settings();
+                    }
+                    else if (point_in_rect(mouse_x, mouse_y, get_music_volume_up_rect())){
+                        music_volume_ = std::min(100, music_volume_ + 10);
+                        apply_audio_settings();
+                    }
+                    else if (point_in_rect(mouse_x, mouse_y, get_sfx_volume_down_rect())){
+                        sfx_volume_ = std::max(0, sfx_volume_ - 10);
+                        apply_audio_settings();
+                    }
+                    else if (point_in_rect(mouse_x, mouse_y, get_sfx_volume_up_rect())){
+                        sfx_volume_ = std::min(100, sfx_volume_ + 10);
+                        apply_audio_settings();
+                    }
+
+                    continue;
+                }
+
+                // Stops if te game is paused
+                if (screen_ == AppScreen::Gameplay && paused_){
                     if (point_in_rect(mouse_x, mouse_y, get_resume_button_rect())){
                         paused_ = false;
                     }
                     else if (point_in_rect(mouse_x, mouse_y, get_settings_button_rect())){
-                        settings_menu_open_ = true;
+                        push_screen(AppScreen::Settings);
+                    }
+                    else if (point_in_rect(mouse_x, mouse_y, get_main_menu_button_rect())){
+                        paused_ = false;
+
+                        tower_selected_ = false;
+                        selected_tower_index_ = -1;
+                        selected_tower_ = nullptr;
+
+                        manual_targeting_mode_ = false;
+                        manual_targeting_tower_index_ = -1;
+                        reposition_mode_ = false;
+                        reposition_tower_index_ = -1;
+
+                        screen_ = AppScreen::MainMenu;
                     }
                     else if (point_in_rect(mouse_x, mouse_y, get_quit_button_rect())){
                         running_ = false;
@@ -409,6 +473,10 @@ void App::process_events(){
 
 // Updates game logic
 void App::update(float dt){
+    if (screen_ != AppScreen::Gameplay){
+        return;
+    }
+
     if (paused_){
         return;
     }
@@ -453,6 +521,31 @@ void App::render(){
 
     // Clears the window to the current draw color
     SDL_RenderClear(renderer_);
+
+    // Renders different game states
+    if (screen_ == AppScreen::MainMenu){
+        render_main_menu();
+        SDL_RenderPresent(renderer_);
+        return;
+    }
+
+    if (screen_ == AppScreen::MapSelect){
+        render_map_select_menu();
+        SDL_RenderPresent(renderer_);
+        return;
+    }
+
+    if (screen_ == AppScreen::DifficultySelect){
+        render_difficulty_select_menu();
+        SDL_RenderPresent(renderer_);
+        return;
+    }
+
+    if (screen_ == AppScreen::Settings){
+        render_settings_menu();
+        SDL_RenderPresent(renderer_);
+        return;
+    }
 
     // Renders the map image
     SDL_Texture* map_texture = assets_.get_texture("map_background");
@@ -511,13 +604,8 @@ void App::render(){
 
     // Renders the pause menu if the game is paused
     // Renders the settings menu if the menu is opened
-    if (paused_){
-        if (settings_menu_open_){
-            render_settings_menu();
-        }
-        else{
-            render_pause_menu();
-        }
+    if (screen_ == AppScreen::Gameplay && paused_){
+        render_pause_menu();
     }
 
     // Present the finished frame to the screen
@@ -549,11 +637,6 @@ bool App::load_assets(){
     // =======================================================
     //            ADD MORE ASSETS BELOW (same format)
     // =======================================================
-
-    if (!initialize_map_from_json("assets/maps/map1.json")){
-        std::cerr << "Failed to intialize map assets.\n";
-        return false;
-    }
 
     if (!assets_.load_font("debug_font", "assets/fonts/Roboto-Regular.ttf", 24)){
         std::cerr << "failed to load debug font.\n";
@@ -626,6 +709,8 @@ void App::render_occupied_cells(){
 }
 
 bool App::load_map_texture(const char* file_path){
+    assets_.unload_texture("map_background");
+
     return assets_.load_texture(renderer_, "map_background", file_path);
 }
 
@@ -2625,7 +2710,25 @@ int App::get_selected_build_footprint_h() const{
 SDL_Rect App::get_resume_button_rect() const{
     return SDL_Rect{
         WORLD_WIDTH / 2 - 140,
-        WORLD_HEIGHT / 2 - 20,
+        WORLD_HEIGHT / 2 - 70,
+        280,
+        60
+    };
+}
+
+SDL_Rect App::get_settings_button_rect() const{
+    return SDL_Rect{
+        WORLD_WIDTH / 2 - 140,
+        WORLD_HEIGHT / 2 + 10,
+        280,
+        60
+    };
+}
+
+SDL_Rect App::get_main_menu_button_rect() const{
+    return SDL_Rect{
+        WORLD_WIDTH / 2 - 140,
+        WORLD_HEIGHT / 2 + 90,
         280,
         60
     };
@@ -2634,7 +2737,7 @@ SDL_Rect App::get_resume_button_rect() const{
 SDL_Rect App::get_quit_button_rect() const{
     return SDL_Rect{
         WORLD_WIDTH / 2 - 140,
-        WORLD_HEIGHT / 2 + 140,
+        WORLD_HEIGHT / 2 + 170,
         280,
         60
     };
@@ -2649,7 +2752,7 @@ void App::render_pause_menu(){
     SDL_RenderFillRect(renderer_, &overlay);
 
     // Small centered pause panel.
-    SDL_Rect panel{WORLD_WIDTH / 2 - 220, WORLD_HEIGHT / 2 - 190, 440, 420};
+    SDL_Rect panel{WORLD_WIDTH / 2 - 220, WORLD_HEIGHT / 2 - 230, 440, 520};
 
     SDL_SetRenderDrawColor(renderer_, 30, 34, 40, 245);
     SDL_RenderFillRect(renderer_, &panel);
@@ -2676,6 +2779,13 @@ void App::render_pause_menu(){
     SDL_RenderDrawRect(renderer_, &settings_rect);
     draw_text("Settings", settings_rect.x + 85, settings_rect.y + 18, text_color);
 
+    SDL_Rect main_menu_rect = get_main_menu_button_rect();
+    SDL_SetRenderDrawColor(renderer_, 90, 90, 70, 255);
+    SDL_RenderFillRect(renderer_, &main_menu_rect);
+    SDL_SetRenderDrawColor(renderer_, 220, 220, 220, 255);
+    SDL_RenderDrawRect(renderer_, &main_menu_rect);
+    draw_text("Main Menu", main_menu_rect.x + 75, main_menu_rect.y + 18, text_color);
+
     SDL_Rect quit_rect = get_quit_button_rect();
     SDL_SetRenderDrawColor(renderer_, 110, 70, 70, 255);
     SDL_RenderFillRect(renderer_, &quit_rect);
@@ -2684,16 +2794,7 @@ void App::render_pause_menu(){
     draw_text("Quit", quit_rect.x + 115, quit_rect.y + 18, text_color);
 }
 
-SDL_Rect App::get_settings_button_rect() const{
-    return SDL_Rect{
-        WORLD_WIDTH / 2 - 140,
-        WORLD_HEIGHT / 2 + 60,
-        280,
-        60
-    };
-}
-
-SDL_Rect App::get_settings_back_button_rect() const{
+SDL_Rect App::get_back_button_rect() const{
     return SDL_Rect{60, 60, 180, 55};
 }
 
@@ -2728,12 +2829,7 @@ void App::render_settings_menu(){
 
     draw_text("Settings", WORLD_WIDTH / 2 - 80, 120, title_color);
 
-    SDL_Rect back_rect = get_settings_back_button_rect();
-    SDL_SetRenderDrawColor(renderer_, 80, 80, 90, 255);
-    SDL_RenderFillRect(renderer_, &back_rect);
-    SDL_SetRenderDrawColor(renderer_, 220, 220, 220, 255);
-    SDL_RenderDrawRect(renderer_, &back_rect);
-    draw_text("Back", back_rect.x + 55, back_rect.y + 15, text_color);
+    render_back_button();
 
     std::string resolution_text = get_resolution_label();
 
@@ -3017,4 +3113,197 @@ ResolutionOption App::get_initial_window_resolution() const{
         static_cast<int>(desktop_mode.w * 0.8f),
         static_cast<int>(desktop_mode.h * 0.8f)
     };
+}
+
+void App::start_game(const MapOption& map, Difficulty difficulty){
+    // Store the chosen difficulty now so the game can use it later.
+    // For now, gameplay does not change based on difficulty.
+    selected_difficulty_ = difficulty;
+
+    // Reset runtime gameplay state so starting a map always creates a clean run.
+    towers_.clear();
+    enemies_.clear();
+    projectiles_.clear();
+    enemy_index_by_id_.clear();
+
+    tower_selected_ = false;
+    selected_tower_index_ = -1;
+    selected_tower_ = nullptr;
+
+    manual_targeting_mode_ = false;
+    manual_targeting_tower_index_ = -1;
+    reposition_mode_ = false;
+    reposition_tower_index_ = -1;
+
+    next_enemy_id_ = 1;
+    wave_manager_ = WaveManager{};
+
+    player_ = Player{35, 500};
+
+    // Load the selected map only when the game actually starts.
+    // This lets the main menu exist before any map is chosen.
+    if (!initialize_map_from_json(map.json_path.c_str())){
+        std::cerr << "Failed to initialize selected map: " << map.json_path << "\n";
+        screen_ = AppScreen::MainMenu;
+        return;
+    }
+
+    screen_ = AppScreen::Gameplay;
+    paused_ = false;
+    screen_stack_.clear();
+}
+
+SDL_Rect App::get_main_play_button_rect() const{
+    return SDL_Rect{WORLD_WIDTH / 2 - 140, 360, 280, 60};
+}
+
+SDL_Rect App::get_main_settings_button_rect() const{
+    return SDL_Rect{WORLD_WIDTH / 2 - 140, 440, 280, 60};
+}
+
+SDL_Rect App::get_main_quit_button_rect() const{
+    return SDL_Rect{WORLD_WIDTH / 2 - 140, 520, 280, 60};
+}
+
+void App::render_main_menu(){
+    SDL_SetRenderDrawColor(renderer_, 18, 22, 28, 255);
+    SDL_Rect background{0, 0, WORLD_WIDTH, WORLD_HEIGHT};
+    SDL_RenderFillRect(renderer_, &background);
+
+    SDL_Color text_color{240, 240, 240, 255};
+
+    draw_text("Extinction Defense", WORLD_WIDTH / 2 - 150, 220, text_color);
+
+    SDL_Rect play = get_main_play_button_rect();
+    SDL_Rect settings = get_main_settings_button_rect();
+    SDL_Rect quit = get_main_quit_button_rect();
+
+    SDL_SetRenderDrawColor(renderer_, 70, 110, 80, 255);
+    SDL_RenderFillRect(renderer_, &play);
+    SDL_SetRenderDrawColor(renderer_, 220, 220, 220, 255);
+    SDL_RenderDrawRect(renderer_, &play);
+    draw_text("Play", play.x + 115, play.y + 18, text_color);
+
+    SDL_SetRenderDrawColor(renderer_, 70, 80, 110, 255);
+    SDL_RenderFillRect(renderer_, &settings);
+    SDL_SetRenderDrawColor(renderer_, 220, 220, 220, 255);
+    SDL_RenderDrawRect(renderer_, &settings);
+    draw_text("Settings", settings.x + 85, settings.y + 18, text_color);
+
+    SDL_SetRenderDrawColor(renderer_, 110, 70, 70, 255);
+    SDL_RenderFillRect(renderer_, &quit);
+    SDL_SetRenderDrawColor(renderer_, 220, 220, 220, 255);
+    SDL_RenderDrawRect(renderer_, &quit);
+    draw_text("Quit", quit.x + 115, quit.y + 18, text_color);
+}
+
+SDL_Rect App::get_map_button_rect(int index) const{
+    return SDL_Rect{WORLD_WIDTH / 2 - 180, 330 + index * 80, 360, 60};
+}
+
+void App::render_map_select_menu(){
+    SDL_SetRenderDrawColor(renderer_, 18, 22, 28, 255);
+    SDL_Rect background{0, 0, WORLD_WIDTH, WORLD_HEIGHT};
+    SDL_RenderFillRect(renderer_, &background);
+
+    render_back_button();
+
+    SDL_Color text_color{240, 240, 240, 255};
+    draw_text("Select Map", WORLD_WIDTH / 2 - 90, 220, text_color);
+
+    for (int i = 0; i < static_cast<int>(map_options_.size()); ++i){
+        SDL_Rect rect = get_map_button_rect(i);
+
+        SDL_SetRenderDrawColor(renderer_, 50, 60, 70, 255);
+        SDL_RenderFillRect(renderer_, &rect);
+        SDL_SetRenderDrawColor(renderer_, 220, 220, 220, 255);
+        SDL_RenderDrawRect(renderer_, &rect);
+
+        draw_text(map_options_[i].name, rect.x + 130, rect.y + 18, text_color);
+    }
+}
+
+SDL_Rect App::get_difficulty_button_rect(Difficulty difficulty) const{
+    int row = 0;
+
+    if (difficulty == Difficulty::Medium){
+        row = 1;
+    }
+    else if (difficulty == Difficulty::Hard){
+        row = 2;
+    }
+
+    return SDL_Rect{WORLD_WIDTH / 2 - 140, 360 + row * 80, 280, 60};
+}
+
+void App::render_difficulty_select_menu(){
+    SDL_SetRenderDrawColor(renderer_, 18, 22, 28, 255);
+    SDL_Rect background{0, 0, WORLD_WIDTH, WORLD_HEIGHT};
+    SDL_RenderFillRect(renderer_, &background);
+
+    render_back_button();
+
+    SDL_Color text_color{240, 240, 240, 255};
+    draw_text("Select Difficulty", WORLD_WIDTH / 2 - 125, 220, text_color);
+
+    SDL_Rect easy = get_difficulty_button_rect(Difficulty::Easy);
+    SDL_Rect medium = get_difficulty_button_rect(Difficulty::Medium);
+    SDL_Rect hard = get_difficulty_button_rect(Difficulty::Hard);
+
+    SDL_SetRenderDrawColor(renderer_, 70, 110, 80, 255);
+    SDL_RenderFillRect(renderer_, &easy);
+    SDL_SetRenderDrawColor(renderer_, 220, 220, 220, 255);
+    SDL_RenderDrawRect(renderer_, &easy);
+    draw_text("Easy", easy.x + 110, easy.y + 18, text_color);
+
+    SDL_SetRenderDrawColor(renderer_, 90, 90, 70, 255);
+    SDL_RenderFillRect(renderer_, &medium);
+    SDL_SetRenderDrawColor(renderer_, 220, 220, 220, 255);
+    SDL_RenderDrawRect(renderer_, &medium);
+    draw_text("Medium", medium.x + 90, medium.y + 18, text_color);
+
+    SDL_SetRenderDrawColor(renderer_, 110, 70, 70, 255);
+    SDL_RenderFillRect(renderer_, &hard);
+    SDL_SetRenderDrawColor(renderer_, 220, 220, 220, 255);
+    SDL_RenderDrawRect(renderer_, &hard);
+    draw_text("Hard", hard.x + 110, hard.y + 18, text_color);
+}
+
+void App::push_screen(AppScreen next_screen){
+    // Save the current screen before moving forward.
+    screen_stack_.push_back(screen_);
+
+    screen_ = next_screen;
+}
+
+void App::pop_screen(){
+    // If there is nothing to go back to, safely return to the main menu.
+    if (screen_stack_.empty()){
+        screen_ = AppScreen::MainMenu;
+        paused_ = false;
+        return;
+    }
+
+    // Restore the most recent screen.
+    screen_ = screen_stack_.back();
+    screen_stack_.pop_back();
+
+    // If settings was opened from paused gameplay, returning should show the pause menu instead of resuming gameplay.
+    if (screen_ == AppScreen::Gameplay){
+        paused_ = true;
+    }
+}
+
+void App::render_back_button(){
+    SDL_Color text_color{220, 220, 220, 255};
+
+    SDL_Rect back_rect = get_back_button_rect();
+
+    SDL_SetRenderDrawColor(renderer_, 80, 80, 90, 255);
+    SDL_RenderFillRect(renderer_, &back_rect);
+
+    SDL_SetRenderDrawColor(renderer_, 220, 220, 220, 255);
+    SDL_RenderDrawRect(renderer_, &back_rect);
+
+    draw_text("Back", back_rect.x + 55, back_rect.y + 15, text_color);
 }

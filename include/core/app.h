@@ -28,6 +28,25 @@ struct GridCell{
     bool occupied = false;
 };
 
+enum class AppScreen{
+    MainMenu,
+    MapSelect,
+    DifficultySelect,
+    Gameplay,
+    Settings
+};
+
+enum class Difficulty{
+    Easy,
+    Medium,
+    Hard
+};
+
+struct MapOption{
+    std::string name;
+    std::string json_path;
+};
+
 // Class that starts SDL, making the window and renderer, 
 // running the main loop, and closing things cleanly
 class App{
@@ -132,7 +151,6 @@ class App{
         SDL_Rect get_quit_button_rect() const;
         // Settings menu helpers
         SDL_Rect get_settings_button_rect() const;
-        SDL_Rect get_settings_back_button_rect() const;
         SDL_Rect get_fullscreen_button_rect() const;
         SDL_Rect get_debug_hud_button_rect() const;
         SDL_Rect get_resolution_button_rect() const;
@@ -149,7 +167,25 @@ class App{
         void apply_audio_settings();
         void render_settings_menu();
         void toggle_fullscreen();
+        SDL_Rect get_main_menu_button_rect() const;
 
+        // Main menu helpers
+        void start_game(const MapOption& map, Difficulty difficulty);
+        void render_main_menu();
+        void render_map_select_menu();
+        void render_difficulty_select_menu();
+        SDL_Rect get_main_play_button_rect() const;
+        SDL_Rect get_main_settings_button_rect() const;
+        SDL_Rect get_main_quit_button_rect() const;
+        SDL_Rect get_map_button_rect(int index) const;
+        SDL_Rect get_difficulty_button_rect(Difficulty difficulty) const;
+
+        // Back button helpers
+        SDL_Rect get_back_button_rect() const;
+        void render_back_button();
+        void push_screen(AppScreen next_screen);
+        void pop_screen();
+        
         // Debug rendering
         void render_path_debug();
         bool draw_text(const std::string& text, int x, int y, SDL_Color color) const;
@@ -168,8 +204,6 @@ class App{
         bool running_;
         // Pause menu
         bool paused_ = false;
-        // Settings menu
-        bool settings_menu_open_ = false;
 
         // SDL setting states
         bool fullscreen_ = false;
@@ -248,4 +282,15 @@ class App{
 
         // For tower rotations in build mode
         bool build_rotation_swapped_ = false;
+
+        // Main menu & game starting members
+        AppScreen screen_ = AppScreen::MainMenu;
+        std::vector<AppScreen> screen_stack_;
+
+        std::vector<MapOption> map_options_{
+            {"Map 1", "assets/maps/map1.json"}
+        };
+
+        int selected_map_index_ = -1;
+        Difficulty selected_difficulty_ = Difficulty::Easy;
 };

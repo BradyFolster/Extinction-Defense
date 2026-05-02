@@ -19,6 +19,8 @@ class AssetManager{
         TTF_Font* get_font(const std::string& name) const;
         Mix_Chunk* get_sound(const std::string& name) const;
 
+        void unload_texture(const std::string& name);
+
         void cleanup();
     
     private:
