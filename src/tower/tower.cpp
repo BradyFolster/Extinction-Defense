@@ -459,7 +459,7 @@ const TowerUpgradeDefinition* get_upgrade_path(TowerType type, UpgradePath path)
         {"Lingering Bruise", 80, 0.0f, 0.0f, 0.0f, 0.0f, 0, 0, 0, 0.0f, 0, 0.0f, 0.50f},
         {"Wider Patrol", 140, 0.0f, 20.0f},
         {"Deep Stun", 240, 0.0f, 0.0f, 0.0f, 0.0f, 0, 0, 0, 0.0f, 0, -0.06f, 0.25f},
-        {"Cripplig Impact", 410, 0.0f, 0.0f, 0.20f, 0.0f, 2},
+        {"Crippling Impact", 410, 0.0f, 0.0f, 0.20f, 0.0f, 2},
         {"Fossil Lock", 710, 0.0f, 15.0f, 0.0f, 0.0f, 0, 0, 0, 0.0f, 0, -0.08f, 1.00f}
     };
 
