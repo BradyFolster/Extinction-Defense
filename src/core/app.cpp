@@ -2308,7 +2308,7 @@ float App::get_enemy_aura_slow_duration_multiplier(const Enemy& target_enemy) co
         float radius_sq = aura_def.aura.radius * aura_def.aura.radius;
 
         if (dist_sq <= radius_sq){
-            multiplier + aura_def.aura.slow_duration_multiplier;
+            multiplier += aura_def.aura.slow_duration_multiplier;
         }
     }
 
