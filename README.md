@@ -57,10 +57,10 @@ game architecture, and real-time application design in C++.
 - 18 enemy types implemented
 - All tower types and core mechanics functional
 - Modular architecture finalized
+- Enemy abilities implemented
+- All tower upgrade paths completed
 
 **Currently working on:**
-- Enemy trait systems (armor, healing, auras)
-- Full upgrade system integration
 - UI improvements
 - Visual polish and art
 
