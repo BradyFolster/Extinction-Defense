@@ -32,14 +32,7 @@ bool App::init(){
     // Pass the pointers so that SDL assigns them correctly
     build_resolution_options();
     const ResolutionOption& initial_resolution = resolution_options_[resolution_index_];
-    window_ = SDL_CreateWindow(
-        "Extinction Defense",
-        SDL_WINDOWPOS_CENTERED,
-        SDL_WINDOWPOS_CENTERED,
-        initial_resolution.width,
-        initial_resolution.height,
-        SDL_WINDOW_SHOWN | SDL_WINDOW_RESIZABLE
-    );
+    window_ = SDL_CreateWindow("Extinction Defense", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, initial_resolution.width, initial_resolution.height, SDL_WINDOW_SHOWN);
     if (window_ == nullptr){
         std::cerr << "SDL_CreateWindow failed: " << SDL_GetError() << "\n";
         return false;
