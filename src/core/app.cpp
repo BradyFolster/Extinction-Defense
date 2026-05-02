@@ -127,6 +127,16 @@ void App::process_events(){
         }
         // Example: press 'F' to toggle 1x / 2x speed
         else if (event.type == SDL_KEYDOWN){
+            if (event.key.keysym.sym == SDLK_ESCAPE){
+                // Toggles pause menu
+                paused_ = !paused_;
+
+                tower_selected_ = false;
+                manual_targeting_mode_ = false;
+                manual_targeting_tower_index_ = -1;
+                reposition_mode_ = false;
+                reposition_tower_index_ = -1;
+            }
             if (event.key.keysym.sym == SDLK_f){
                 game_speed = (game_speed == 1.0f) ? 2.0f : 1.0f;
             }
@@ -141,6 +151,19 @@ void App::process_events(){
             if (event.button.button == SDL_BUTTON_LEFT) {
                 int mouse_x = event.button.x;
                 int mouse_y = event.button.y;
+
+                // Stops if te game is paused
+                if (paused_){
+                    if (point_in_rect(mouse_x, mouse_y, get_resume_button_rect())){
+                        paused_ = false;
+                    }
+                    else if (point_in_rect(mouse_x, mouse_y, get_quit_button_rect())){
+                        running_ = false;
+                    }
+
+                    // Do not allow gameplay/build/menu clicks while paused.
+                    continue;
+                }
 
                 // Start wave button
                 if (point_in_rect(mouse_x, mouse_y, get_next_wave_button_rect())){
@@ -327,6 +350,10 @@ void App::process_events(){
 
 // Updates game logic
 void App::update(float dt){
+    if (paused_){
+        return;
+    }
+
     // For game speed multipliers
     float scaled_dt = dt * game_speed;
 
@@ -422,6 +449,11 @@ void App::render(){
 
     // Debug menu
     render_debug_hud();
+
+    // Renders the pause menu if the game is paused
+    if (paused_){
+        render_pause_menu();
+    }
 
     // Present the finished frame to the screen
     SDL_RenderPresent(renderer_);
@@ -832,6 +864,8 @@ void App::render_tower_button(TowerType type){
     }
     SDL_RenderDrawRect(renderer_, &rect);
 
+
+    // Renders cost inside each button
     SDL_Color cost_color = can_afford ? SDL_Color{80, 255, 100, 255} : SDL_Color{255, 70, 70, 255};
 
     std::string cost_text = "$" + std::to_string(def.cost);
@@ -846,6 +880,9 @@ void App::render_tower_button(TowerType type){
     const int center_y = rect.y + rect.h - padding_bottom - (estimated_text_h / 2);
 
     draw_text(cost_text, center_x - estimated_text_w / 2, center_y - estimated_text_h / 2, cost_color);
+
+    // DEBUG -- renders name of tower 
+    draw_text(def.name, rect.x + 8, rect.y + 8, SDL_Color{220, 220, 220, 255});
 }
 
 void App::render_tower_menu()   {
@@ -2518,4 +2555,59 @@ int App::get_selected_build_footprint_h() const{
     const TowerDefinition& def = get_tower_definition(selected_tower_type_);
 
     return build_rotation_swapped_ ? def.footprint_w : def.footprint_h;
+}
+
+SDL_Rect App::get_resume_button_rect() const{
+    return SDL_Rect{
+        WORLD_WIDTH / 2 - 140,
+        WORLD_HEIGHT / 2 - 20,
+        280,
+        60
+    };
+}
+
+SDL_Rect App::get_quit_button_rect() const{
+    return SDL_Rect{
+        WORLD_WIDTH / 2 - 140,
+        WORLD_HEIGHT / 2 + 60,
+        280,
+        60
+    };
+}
+
+void App::render_pause_menu(){
+    SDL_SetRenderDrawBlendMode(renderer_, SDL_BLENDMODE_BLEND);
+
+    // Darken the gameplay behind the pause window.
+    SDL_SetRenderDrawColor(renderer_, 0, 0, 0, 120);
+    SDL_Rect overlay{0, 0, WORLD_WIDTH, WORLD_HEIGHT};
+    SDL_RenderFillRect(renderer_, &overlay);
+
+    // Small centered pause panel.
+    SDL_Rect panel{WORLD_WIDTH / 2 - 220, WORLD_HEIGHT / 2 - 160, 440, 340};
+
+    SDL_SetRenderDrawColor(renderer_, 30, 34, 40, 245);
+    SDL_RenderFillRect(renderer_, &panel);
+
+    SDL_SetRenderDrawColor(renderer_, 100, 110, 125, 255);
+    SDL_RenderDrawRect(renderer_, &panel);
+
+    SDL_Color title_color{240, 240, 240, 255};
+    SDL_Color text_color{220, 220, 220, 255};
+
+    draw_text("Paused", panel.x + 170, panel.y + 35, title_color);
+
+    SDL_Rect resume_rect = get_resume_button_rect();
+    SDL_SetRenderDrawColor(renderer_, 70, 110, 80, 255);
+    SDL_RenderFillRect(renderer_, &resume_rect);
+    SDL_SetRenderDrawColor(renderer_, 220, 220, 220, 255);
+    SDL_RenderDrawRect(renderer_, &resume_rect);
+    draw_text("Resume", resume_rect.x + 95, resume_rect.y + 18, text_color);
+
+    SDL_Rect quit_rect = get_quit_button_rect();
+    SDL_SetRenderDrawColor(renderer_, 110, 70, 70, 255);
+    SDL_RenderFillRect(renderer_, &quit_rect);
+    SDL_SetRenderDrawColor(renderer_, 220, 220, 220, 255);
+    SDL_RenderDrawRect(renderer_, &quit_rect);
+    draw_text("Quit", quit_rect.x + 115, quit_rect.y + 18, text_color);
 }

@@ -120,6 +120,11 @@ class App{
         SDL_Rect get_next_wave_button_rect() const;
         void render_next_wave_button();
 
+        // Pause menu helpers
+        void render_pause_menu();
+        SDL_Rect get_resume_button_rect() const;
+        SDL_Rect get_quit_button_rect() const;
+
         // Debug rendering
         void render_path_debug();
         bool draw_text(const std::string& text, int x, int y, SDL_Color color) const;
@@ -136,6 +141,8 @@ class App{
 
         // Controls whether the main loop keeps running
         bool running_;
+        // Pause menu
+        bool paused_ = false;
 
         // Logical world size
         static constexpr int WORLD_WIDTH = 1920;
