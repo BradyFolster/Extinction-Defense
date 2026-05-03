@@ -171,6 +171,8 @@ class App{
         void render_settings_menu();
         void toggle_fullscreen();
         SDL_Rect get_main_menu_button_rect() const;
+        SDL_Rect get_show_fps_button_rect() const;
+        void render_fps_counter() const;
 
         // Main menu helpers
         void start_game(const MapOption& map, Difficulty difficulty);
@@ -270,7 +272,10 @@ class App{
 
         // Used for SDL_TTF text rendering
         TTF_Font* debug_font_ = nullptr;
+        // Debug stuff
         bool show_debug_hud_ = false;
+        bool show_fps_ = false;
+        float current_fps_ = 0.0f;
 
         // Manual targeting mode (Oviraptor)
         bool manual_targeting_mode_ = false;

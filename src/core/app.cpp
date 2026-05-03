@@ -95,6 +95,10 @@ void App::run(){
         // dt = delta time (change in time between frames)
         float dt = static_cast<float>(current - previous) / 1000.0f;
 
+        if (dt > 0.0f){
+            current_fps_ = 1.0f / dt;
+        }
+
         // Saves current time for the next frame's calculation
         previous = current;
 
@@ -230,6 +234,9 @@ void App::process_events(){
                         show_debug_hud_ = !show_debug_hud_;
                         show_grid_ = !show_grid_;
                         
+                    }
+                    else if (point_in_rect(mouse_x, mouse_y, get_show_fps_button_rect())){
+                        show_fps_ = !show_fps_;
                     }
                     else if (point_in_rect(mouse_x, mouse_y, get_resolution_button_rect())){
                         if (!fullscreen_){
@@ -604,6 +611,7 @@ void App::render(){
 
     // Start next wave button
     render_gameplay_hud();
+    render_fps_counter();
 
     // Renders build menu or the tower-specific menu
     if (selected_tower_index_ >= 0){
@@ -2976,6 +2984,15 @@ void App::render_settings_menu(){
 
     std::string debug_text = show_debug_hud_ ? "Debug HUD: ON" : "Debug HUD: OFF";
     draw_text(debug_text, debug_rect.x + 115, debug_rect.y + 22, text_color);
+
+    SDL_Rect fps_rect = get_show_fps_button_rect();
+    SDL_SetRenderDrawColor(renderer_, 50, 60, 70, 255);
+    SDL_RenderFillRect(renderer_, &fps_rect);
+    SDL_SetRenderDrawColor(renderer_, 220, 220, 220, 255);
+    SDL_RenderDrawRect(renderer_, &fps_rect);
+
+    std::string fps_text = show_fps_ ? "Show FPS: ON" : "Show FPS: OFF";
+    draw_text(fps_text, fps_rect.x + 130, fps_rect.y + 22, text_color);
 }
 
 SDL_Rect App::get_resolution_button_rect() const{
@@ -3372,4 +3389,31 @@ void App::render_back_button(){
     SDL_RenderDrawRect(renderer_, &back_rect);
 
     draw_text("Back", back_rect.x + 55, back_rect.y + 15, text_color);
+}
+
+SDL_Rect App::get_show_fps_button_rect() const{
+    // Goes directly under the Debug HUD button.
+    return SDL_Rect{WORLD_WIDTH / 2 - 250, 860, 500, 60};
+}
+
+void App::render_fps_counter() const{
+    if (!show_fps_){
+        return;
+    }
+
+    std::string fps_text = "FPS: " + std::to_string(static_cast<int>(current_fps_));
+
+    // Top-right of the map/playable area, not inside the right-side tower menu.
+    SDL_Rect box{
+        PLAYABLE_WIDTH - 130,
+        20,
+        110,
+        40
+    };
+
+    SDL_SetRenderDrawColor(renderer_, 0, 0, 0, 220);
+    SDL_RenderFillRect(renderer_, &box);
+
+    SDL_Color text_color{255, 255, 255, 255};
+    draw_text(fps_text, box.x + 10, box.y + 8, text_color);
 }
