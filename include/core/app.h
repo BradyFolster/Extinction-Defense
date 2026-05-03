@@ -141,9 +141,12 @@ class App{
         void render_reposition_preview();
         SDL_Rect get_reposition_button_rect() const;
 
-        // Start wave helpers
+        // In game HUD helpers
         SDL_Rect get_next_wave_button_rect() const;
         void render_next_wave_button();
+        SDL_Rect get_speed_button_rect() const;
+        void render_speed_button();
+        void render_gameplay_hud();
 
         // Pause menu helpers
         void render_pause_menu();
@@ -207,7 +210,7 @@ class App{
 
         // SDL setting states
         bool fullscreen_ = false;
-        bool vsync_enabled_ = true;
+        bool vsync_enabled_ = false;
         std::vector<ResolutionOption> resolution_options_;
         int resolution_index_ = 0;
         int master_volume_ = 100;
@@ -231,7 +234,7 @@ class App{
         static constexpr int MENU_X = PLAYABLE_WIDTH;
 
         // Temp debug option to show/hide grid
-        bool show_grid_ = true;
+        bool show_grid_ = false;
 
         // 2D grid storing placement data
         std::vector<std::vector<GridCell>> grid_;
@@ -267,7 +270,7 @@ class App{
 
         // Used for SDL_TTF text rendering
         TTF_Font* debug_font_ = nullptr;
-        bool show_debug_hud_ = true;
+        bool show_debug_hud_ = false;
 
         // Manual targeting mode (Oviraptor)
         bool manual_targeting_mode_ = false;

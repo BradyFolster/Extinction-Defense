@@ -147,6 +147,13 @@ void App::process_events(){
                     reposition_tower_index_ = -1;
                 }
             }
+            if (event.key.keysym.sym == SDLK_SPACE){
+                if (screen_ == AppScreen::Gameplay && !paused_ && wave_manager_.can_start_next_wave()){
+                    if (wave_manager_.start_next_wave()){
+                        reset_money_generator_timers();
+                    }
+                }
+            }
             if (event.key.keysym.sym == SDLK_f){
                 game_speed = (game_speed == 1.0f) ? 2.0f : 1.0f;
             }
@@ -221,6 +228,8 @@ void App::process_events(){
                     }
                     else if (point_in_rect(mouse_x, mouse_y, get_debug_hud_button_rect())){
                         show_debug_hud_ = !show_debug_hud_;
+                        show_grid_ = !show_grid_;
+                        
                     }
                     else if (point_in_rect(mouse_x, mouse_y, get_resolution_button_rect())){
                         if (!fullscreen_){
@@ -296,6 +305,10 @@ void App::process_events(){
                             reset_money_generator_timers();
                         }
                     }
+                }
+                else if (point_in_rect(mouse_x, mouse_y, get_speed_button_rect())){
+                    // Same behavior as pressing F, but exposed through the in-game HUD.
+                    game_speed = (game_speed == 1.0f) ? 2.0f : 1.0f;
                 }
                 else if (mouse_x >= MENU_X) {
                     if (selected_tower_index_ >= 0){
@@ -590,7 +603,7 @@ void App::render(){
     render_projectiles();
 
     // Start next wave button
-    render_next_wave_button();
+    render_gameplay_hud();
 
     // Renders build menu or the tower-specific menu
     if (selected_tower_index_ >= 0){
@@ -765,6 +778,9 @@ void App::apply_map_data_to_grid(){
 
 // Fills in all path cells 
 void App::render_path_debug(){
+    if (!show_debug_hud_){
+        return;
+    }
     for (int row = 0; row < GRID_ROWS; row++){
         for (int col = 0; col < GRID_COLS; col++){
             SDL_Rect rect;
@@ -1191,11 +1207,19 @@ void App::render_enemies() const{
 }
 
 SDL_Rect App::get_next_wave_button_rect() const{
-    // Top-left corner
     return SDL_Rect{
         20,
         20,
-        180,
+        100,
+        60
+    };
+}
+
+SDL_Rect App::get_speed_button_rect() const{
+    return SDL_Rect{
+        140,
+        20,
+        60,
         60
     };
 }
@@ -1203,19 +1227,61 @@ SDL_Rect App::get_next_wave_button_rect() const{
 void App::render_next_wave_button(){
     SDL_Rect rect = get_next_wave_button_rect();
 
-    // Button is green when active
-    // Grey when a wave can't be spawned
     if (wave_manager_.can_start_next_wave()){
-        SDL_SetRenderDrawColor(renderer_, 60, 170, 90, 255);
+        SDL_SetRenderDrawColor(renderer_, 60, 180, 90, 255);
     } else{
         SDL_SetRenderDrawColor(renderer_, 90, 90, 90, 255);
     }
 
     SDL_RenderFillRect(renderer_, &rect);
 
-    // Outline
-    SDL_SetRenderDrawColor(renderer_, 220, 220, 220, 255);
+    SDL_SetRenderDrawColor(renderer_, 20, 20, 20, 255);
     SDL_RenderDrawRect(renderer_, &rect);
+
+    // Draws wave number inside the button
+    draw_text(std::to_string(wave_manager_.current_wave_number()), rect.x + 28, rect.y + 10, SDL_Color{0, 0, 0, 255});
+}
+
+void App::render_speed_button(){
+    SDL_Rect rect = get_speed_button_rect();
+
+    if (game_speed == 2.0f){
+        SDL_SetRenderDrawColor(renderer_, 95, 25, 170, 255);
+    } else{
+        SDL_SetRenderDrawColor(renderer_, 65, 20, 120, 255);
+    }
+
+    SDL_RenderFillRect(renderer_, &rect);
+
+    SDL_SetRenderDrawColor(renderer_, 20, 20, 20, 255);
+    SDL_RenderDrawRect(renderer_, &rect);
+
+    draw_text("2x", rect.x + 14, rect.y + 18, SDL_Color{255, 255, 255, 255});
+}
+
+void App::render_gameplay_hud(){
+    render_next_wave_button();
+    render_speed_button();
+
+    // Money and health are stacked vertically
+    const int icon_x = 240;
+    const int text_x = 270;
+    const int money_y = 30;
+    const int health_y = 60;
+
+    SDL_Rect money_icon{icon_x, money_y, 20, 20};
+    SDL_SetRenderDrawColor(renderer_, 230, 170, 35, 255);
+    SDL_RenderFillRect(renderer_, &money_icon);
+    SDL_SetRenderDrawColor(renderer_, 20, 20, 20, 255);
+    SDL_RenderDrawRect(renderer_, &money_icon);
+    draw_text("$" + std::to_string(player_.money()), text_x, money_y - 2, SDL_Color{0, 0, 0, 255});
+
+    SDL_Rect health_icon{icon_x, health_y, 20, 20};
+    SDL_SetRenderDrawColor(renderer_, 220, 45, 60, 255);
+    SDL_RenderFillRect(renderer_, &health_icon);
+    SDL_SetRenderDrawColor(renderer_, 20, 20, 20, 255);
+    SDL_RenderDrawRect(renderer_, &health_icon);
+    draw_text(std::to_string(player_.health()), text_x, health_y - 2, SDL_Color{0, 0, 0, 255});
 }
 
 float App::tower_center_x(const Tower& tower) const{
