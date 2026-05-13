@@ -190,6 +190,9 @@ struct Tower{
     // Runtime build stats
     int footprint_w = 1;
     int footprint_h = 1;
+
+    // Amount spent on this specific tower
+    int money_spent;
 };
 
 const TowerDefinition& get_tower_definition(TowerType type);

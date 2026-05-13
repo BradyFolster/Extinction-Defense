@@ -96,6 +96,7 @@ class App{
         float get_attack_speed_bonus_for_tower(int tower_index) const;
         int get_selected_build_footprint_w() const;
         int get_selected_build_footprint_h() const;
+        void sell_tower(Tower& tower);
         // Tower Selection helpers
         int find_tower_at_pixel(int x, int y) const;
         void render_selected_tower_radius() const;
@@ -147,6 +148,9 @@ class App{
         SDL_Rect get_speed_button_rect() const;
         void render_speed_button();
         void render_gameplay_hud();
+        SDL_Rect get_sell_button_rect() const;
+        void render_sell_button();
+
 
         // Pause menu helpers
         void render_pause_menu();

@@ -331,6 +331,11 @@ void App::process_events(){
                         else if (point_in_rect(mouse_x, mouse_y, get_upgrade_button_rect(UpgradePath::Utility))){
                             handle_upgrade_button_click(UpgradePath::Utility);
                         }
+                        else if (point_in_rect(mouse_x, mouse_y, get_sell_button_rect())){
+                            sell_tower(towers_[selected_tower_index_]);
+                            selected_tower_index_ = -1;
+                            tower_selected_ = false;
+                        }
                     }
                     else if (point_in_rect(mouse_x, mouse_y, get_tower_button_rect(TowerType::Trex))) {
                         const TowerDefinition& def = get_tower_definition(TowerType::Trex);
@@ -889,6 +894,9 @@ bool App::place_selected_tower_if_valid(int center_col, int center_row) {
     // Optional reposition behavior stats
     tower.reposition = def.reposition;
     tower.reposition.cooldown_remaining = def.reposition.cooldown;
+
+    // How much money was spent on a tower
+    tower.money_spent = def.cost;
 
     towers_.push_back(tower);
 
@@ -2190,6 +2198,8 @@ void App::render_selected_tower_menu(){
     // Render both upgrade paths for the selected tower
     render_upgrade_button(tower, UpgradePath::Damage, tower.damage_path_level);
     render_upgrade_button(tower, UpgradePath::Utility, tower.utility_path_level);
+    // Render sell button
+    render_sell_button();
 }
 
 SDL_Rect App::get_upgrade_button_rect(UpgradePath path) const{
@@ -2227,10 +2237,41 @@ void App::handle_upgrade_button_click(UpgradePath path){
         return;
     }
 
+    // Keeps track of total money spent on this specific tower
+    tower.money_spent += upgrade->cost;
+
     // Apply the actual upgrade
     apply_upgrade(tower, *upgrade);
 
     current_path_level += 1;
+}
+
+SDL_Rect App::get_sell_button_rect() const{
+    const int button_x = MENU_X + 24;
+    const int button_w = MENU_WIDTH - 48;
+    const int button_h = 110;
+
+    return SDL_Rect{button_x, 830, button_w, button_h};
+}
+
+void App::render_sell_button(){
+    SDL_Rect rect = get_sell_button_rect();
+
+    SDL_SetRenderDrawColor(renderer_, 252, 0, 113, 255);
+
+    SDL_RenderFillRect(renderer_, &rect);
+
+    SDL_SetRenderDrawColor(renderer_, 220, 220, 220, 255);
+    SDL_RenderDrawRect(renderer_, &rect);
+
+    Tower &tower = towers_[selected_tower_index_];
+    int sell_price = static_cast<int>(std::ceil(tower.money_spent * 0.45));
+
+    SDL_Color text_color{210, 220, 230, 255};
+    std::string text = "Sell: $" + std::to_string(sell_price);
+    int text_x = rect.x + 12;
+    int text_y = rect.y + 12;
+    draw_text(text, text_x, text_y, text_color);
 }
 
 std::string App::describe_upgrade_effect(const TowerUpgradeDefinition& upgrade) const{
@@ -3416,4 +3457,20 @@ void App::render_fps_counter() const{
 
     SDL_Color text_color{255, 255, 255, 255};
     draw_text(fps_text, box.x + 10, box.y + 8, text_color);
+}
+
+void App::sell_tower(Tower& tower){
+    int sell_price = static_cast<int>(std::ceil(tower.money_spent * 0.45));
+
+    for (int r = 0; r < tower.footprint_h; ++r) {
+        for (int c = 0; c < tower.footprint_w; ++c) {
+            grid_[tower.row + r][tower.col + c].occupied = false;
+        }
+    }
+
+    if (selected_tower_index_ < static_cast<int>(towers_.size())){
+        towers_.erase(towers_.begin() + selected_tower_index_);
+    }
+
+    player_.add_money(sell_price);
 }
