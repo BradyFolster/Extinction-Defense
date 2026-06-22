@@ -8,6 +8,19 @@
 #include <sstream>
 #include <iomanip>
 
+namespace{
+    constexpr double RADIANS_TO_DEGREES = 180.0 / 3.14159265358979323846;
+
+    // SDL_RenderCopyEx treats 0 degrees as facing right.
+    // Change this if the source PNGs face up/down/left by default.
+    constexpr double TOWER_TEXTURE_ANGLE_OFFSET_DEGREES = -90.0;
+
+    double angle_degrees_between(float from_x, float from_y, float to_x, float to_y){
+        return std::atan2(to_y - from_y, to_x - from_x) * RADIANS_TO_DEGREES +
+               TOWER_TEXTURE_ANGLE_OFFSET_DEGREES;
+    }
+}
+
 // Default constructor & destructor
 App::App() : window_(nullptr), renderer_(nullptr), running_(false) {}
 App::~App() { shutdown(); }
@@ -606,7 +619,8 @@ void App::render(){
 
     render_grid_debug();
     // render_hovered_cell();
-    render_occupied_cells();
+    
+    // render_occupied_cells();
 
     // Renders enemies
     render_enemies();
@@ -668,6 +682,57 @@ bool App::load_assets(){
         std::cerr << "failed to load debug font.\n";
         return false;
     }
+
+    // Loads tower textures
+    if (!assets_.load_texture(renderer_, "tower_trex", "assets/images/dinos/trex.png")){
+        std::cerr << "failed to load trex texture.\n";
+        return false;
+    }
+    if (!assets_.load_texture(renderer_, "tower_stegosaurus", "assets/images/dinos/stegosaurus.png")){
+        std::cerr << "failed to load stegosaurus texture.\n";
+        return false;
+    }
+    if (!assets_.load_texture(renderer_, "tower_velociraptor", "assets/images/dinos/velociraptor.png")){
+        std::cerr << "failed to load velociraptor texture.\n";
+        return false;
+    }
+    if (!assets_.load_texture(renderer_, "tower_spinosaurus", "assets/images/dinos/spinosaurus.png")){
+        std::cerr << "failed to load spinosaurus texture.\n";
+        return false;
+    }
+    if (!assets_.load_texture(renderer_, "tower_parasaurolophus", "assets/images/dinos/parasaurolophus.png")){
+        std::cerr << "failed to load parasaurolophus texture.\n";
+        return false;
+    }
+    if (!assets_.load_texture(renderer_, "tower_ankylosaurus", "assets/images/dinos/ankylosaurus.png")){
+        std::cerr << "failed to load ankylosaurus texture.\n";
+        return false;
+    }
+    if (!assets_.load_texture(renderer_, "tower_sarcosuchus", "assets/images/dinos/sarcosuchus.png")){
+        std::cerr << "failed to load sarcosuchus texture.\n";
+        return false;
+    }
+    if (!assets_.load_texture(renderer_, "tower_allosaurus", "assets/images/dinos/allosaurus.png")){
+        std::cerr << "failed to load allosaurus texture.\n";
+        return false;
+    }
+    if (!assets_.load_texture(renderer_, "tower_dilophosaurus", "assets/images/dinos/dilophosaurus.png")){
+        std::cerr << "failed to load dilophosaurus texture.\n";
+        return false;
+    }
+    if (!assets_.load_texture(renderer_, "tower_troodon", "assets/images/dinos/troodon.png")){
+        std::cerr << "failed to load troodon texture.\n";
+        return false;
+    }
+    if (!assets_.load_texture(renderer_, "tower_oviraptor", "assets/images/dinos/oviraptor.png")){
+        std::cerr << "failed to load oviraptor texture.\n";
+        return false;
+    }
+    if (!assets_.load_texture(renderer_, "tower_pteranodon", "assets/images/dinos/pteranodon.png")){
+        std::cerr << "failed to load pteranodon texture.\n";
+        return false;
+    }
+
 
 
     return true;
@@ -869,6 +934,7 @@ bool App::place_selected_tower_if_valid(int center_col, int center_row) {
 
     tower.footprint_w = footprint_w;
     tower.footprint_h = footprint_h;
+    tower.facing_angle_degrees = build_rotation_swapped_ ? 90.0 : 0.0;
 
     // Runtime combat stats for later upgrades
     tower.attack_damage = def.attack_damage;
@@ -923,11 +989,7 @@ void App::render_towers() {
     for (const Tower& tower : towers_) {
         const TowerDefinition& def = get_tower_definition(tower.type);
 
-        SDL_SetRenderDrawColor(renderer_,
-                               def.preview_color.r,
-                               def.preview_color.g,
-                               def.preview_color.b,
-                               180);
+        SDL_Texture* texture = assets_.get_texture(def.texture_name);
 
         SDL_Rect rect{
             tower.col * CELL_SIZE,
@@ -936,7 +998,30 @@ void App::render_towers() {
             tower.footprint_h * CELL_SIZE
         };
 
-        SDL_RenderFillRect(renderer_, &rect);
+        float visual_scale = 1.4f;
+        const int texture_w = def.footprint_w * CELL_SIZE;
+        const int texture_h = def.footprint_h * CELL_SIZE;
+        const int center_x = rect.x + rect.w / 2;
+        const int center_y = rect.y + rect.h / 2;
+
+        SDL_Rect render_rect{
+            center_x - static_cast<int>((texture_w * visual_scale) / 2),
+            center_y - static_cast<int>((texture_h * visual_scale) / 2),
+            static_cast<int>(texture_w * visual_scale),
+            static_cast<int>(texture_h * visual_scale)
+        };
+
+
+        if (texture){
+            SDL_RenderCopyEx(renderer_, texture, nullptr, &render_rect, tower.facing_angle_degrees, nullptr, SDL_FLIP_NONE);
+        } else{
+            SDL_SetRenderDrawColor(renderer_,
+                                def.preview_color.r,
+                                def.preview_color.g,
+                                def.preview_color.b,
+                                180);
+            SDL_RenderFillRect(renderer_, &rect);
+        }
     }
 }
 
@@ -1628,7 +1713,7 @@ void App::render_enemy_health_bar(const Enemy& enemy, const SDL_Rect& enemy_rect
     SDL_RenderDrawRect(renderer_, &background_rect);
 }
 
-void App::spawn_projectile(const Tower& tower, int tower_index, const Enemy& target){
+void App::spawn_projectile(Tower& tower, int tower_index, const Enemy& target){
     Projectile projectile;
 
     // Lock this projectile onto the enemy's unique ID
@@ -1688,6 +1773,8 @@ void App::spawn_projectile(const Tower& tower, int tower_index, const Enemy& tar
 
     // Convert direction into fixed velocty
     if (aim_dist > 0.0f){
+        tower.facing_angle_degrees = angle_degrees_between(projectile.x, projectile.y, aim_x, aim_y);
+
         float dir_x = aim_dx / aim_dist;
         float dir_y = aim_dy / aim_dist;
 
@@ -2507,7 +2594,7 @@ SDL_Rect App::get_manual_target_button_rect() const{
     return SDL_Rect{MENU_X + 24, 320, MENU_WIDTH - 48, 60};
 }
 
-void App::spawn_projectile_at_point(const Tower& tower, int tower_index, float target_x, float target_y){
+void App::spawn_projectile_at_point(Tower& tower, int tower_index, float target_x, float target_y){
     Projectile projectile;
 
     projectile.target_enemy_id = -1;
@@ -2535,6 +2622,8 @@ void App::spawn_projectile_at_point(const Tower& tower, int tower_index, float t
     float dist = std::sqrt(dx * dx + dy * dy);
 
     if (dist > 0.0f){
+        tower.facing_angle_degrees = angle_degrees_between(projectile.x, projectile.y, target_x, target_y);
+
         projectile.vx = (dx / dist) * projectile.speed;
         projectile.vy = (dy / dist) * projectile.speed;
     }

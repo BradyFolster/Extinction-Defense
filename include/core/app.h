@@ -126,7 +126,7 @@ class App{
         float get_enemy_aura_slow_duration_multiplier(const Enemy& target_enemy) const;
         ResolutionOption get_initial_window_resolution() const;
         // Projectile helpers
-        void spawn_projectile(const Tower& tower, int tower_index, const Enemy& target);
+        void spawn_projectile(Tower& tower, int tower_index, const Enemy& target);
         void update_projectiles(float dt);
         void render_projectiles() const;
         // Manual Targeting helpers
@@ -135,7 +135,7 @@ class App{
         void render_manual_target_preview() const;
         void render_selected_manual_target() const;
         SDL_Rect get_manual_target_button_rect() const;
-        void spawn_projectile_at_point(const Tower& tower, int tower_index, float target_x, float target_y);
+        void spawn_projectile_at_point(Tower& tower, int tower_index, float target_x, float target_y);
         // Reposition helpers
         void enter_reposition_mode(int tower_index);
         bool move_selected_tower_if_valid(int center_col, int center_row);

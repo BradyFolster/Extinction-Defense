@@ -7,6 +7,7 @@ const TowerDefinition& get_tower_definition(TowerType type){
     static const TowerDefinition trex{
         TowerType::Trex,
         "T. Rex",
+        "tower_trex",
         3, 3,
         SDL_Color{255, 80, 80, 180},
         165,    // cost
@@ -34,7 +35,8 @@ const TowerDefinition& get_tower_definition(TowerType type){
     static const TowerDefinition stegosaurus{
         TowerType::Stegosaurus,
         "Stegosaurus",
-        3, 2,
+        "tower_stegosaurus",
+        2, 3,
         SDL_Color{80, 220, 120, 180},
         130,    // cost
         20.0f,  // attack_damage
@@ -60,6 +62,7 @@ const TowerDefinition& get_tower_definition(TowerType type){
     static const TowerDefinition velociraptor{
         TowerType::Velociraptor,
         "Velociraptor",
+        "tower_velociraptor",
         2, 2,
         SDL_Color{80, 160, 255, 180},
         95,     // cost
@@ -86,7 +89,8 @@ const TowerDefinition& get_tower_definition(TowerType type){
     static const TowerDefinition spinosaurus{
         TowerType::Spinosaurus,
         "Spinosaurus",
-        3, 2,
+        "tower_spinosaurus",
+        2, 3,
         SDL_Color{120, 80, 255, 180},
         170,    // cost
         20.0f,  // attack_damage
@@ -112,6 +116,7 @@ const TowerDefinition& get_tower_definition(TowerType type){
     static const TowerDefinition parasaurolophus{
         TowerType::Parasaurolophus,
         "Parasaurolophus",
+        "tower_parasaurolophus",
         2, 2,
         SDL_Color{240, 200, 80, 180},
         145,    // cost
@@ -139,7 +144,8 @@ const TowerDefinition& get_tower_definition(TowerType type){
     static const TowerDefinition ankylosaurus{
         TowerType::Ankylosaurus,
         "Ankylosaurus",
-        3, 2,
+        "tower_ankylosaurus",
+        2, 3,
         SDL_Color{180, 140, 90, 180},
         150,    // cost
         9.0f,   // attack_damage
@@ -165,7 +171,8 @@ const TowerDefinition& get_tower_definition(TowerType type){
     static const TowerDefinition sarcosuchus{
         TowerType::Sarcosuchus,
         "Sarcosuchus",
-        3, 2,
+        "tower_sarcosuchus",
+        2, 3,
         SDL_Color{80, 180, 180, 180},
         190,    // cost
         32.0f,  // attack_damage
@@ -191,7 +198,8 @@ const TowerDefinition& get_tower_definition(TowerType type){
     static const TowerDefinition allosaurus{
         TowerType::Allosaurus,
         "Allosaurus",
-        3, 2,
+        "tower_allosaurus",
+        2, 3,
         SDL_Color{255, 130, 60, 180},
         165,    // cost
         13.0f,  // attack_damage
@@ -217,6 +225,7 @@ const TowerDefinition& get_tower_definition(TowerType type){
     static const TowerDefinition dilophosaurus{
         TowerType::Dilophosaurus,
         "Dilophosaurus",
+        "tower_dilophosaurus",
         2, 2,
         SDL_Color{120, 255, 120, 180},
         160,    // cost
@@ -243,6 +252,7 @@ const TowerDefinition& get_tower_definition(TowerType type){
     static const TowerDefinition troodon{
         TowerType::Troodon,
         "Troodon",
+        "tower_troodon",
         2, 2,
         SDL_Color{180, 120, 255, 180},
         160,    // cost
@@ -269,6 +279,7 @@ const TowerDefinition& get_tower_definition(TowerType type){
     static const TowerDefinition oviraptor{
         TowerType::Oviraptor,
         "Oviraptor",
+        "tower_oviraptor",
         2, 2,
         SDL_Color{255, 210, 120, 180},
         180,    // cost
@@ -295,6 +306,7 @@ const TowerDefinition& get_tower_definition(TowerType type){
     static const TowerDefinition pteranodon{
         TowerType::Pteranodon,
         "Pteranodon",
+        "tower_pteranodon",
         2, 2,
         SDL_Color{120, 220, 255, 180},
         185,    // cost

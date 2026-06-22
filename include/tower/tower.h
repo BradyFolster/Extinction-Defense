@@ -96,6 +96,7 @@ struct RepositionStats{
 struct TowerDefinition{
     TowerType type;
     const char* name;
+    const char* texture_name;
     // How many spaces it occupies
     int footprint_w;
     int footprint_h;
@@ -165,6 +166,9 @@ struct Tower{
     int utility_path_level = 0;
 
     float attack_cooldown = 0.0f;
+
+    // Degrees used by SDL_RenderCopyEx. 0 means facing right.
+    double facing_angle_degrees = 0.0;
 
     // For money generating towers (Parasaurolophus)
     MoneyGeneratorStats money_generator;
