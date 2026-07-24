@@ -150,6 +150,9 @@ void App::process_events(){
         if (event.type == SDL_QUIT){
             running_ = false;
         }
+        else if (screen_transition_active_){
+            continue;
+        }
         else if (event.type == SDL_MOUSEMOTION){
             mouse_x_ = event.motion.x;
             mouse_y_ = event.motion.y;
@@ -345,7 +348,7 @@ void App::process_events(){
                         reposition_mode_ = false;
                         reposition_tower_index_ = -1;
 
-                        screen_ = AppScreen::MainMenu;
+                        start_screen_transition(AppScreen::MainMenu);
                     }
                     else if (point_in_rect(mouse_x, mouse_y, get_quit_button_rect())){
                         running_ = false;
@@ -548,6 +551,8 @@ void App::process_events(){
 
 // Updates game logic
 void App::update(float dt){
+    update_screen_transition(dt);
+
     if (screen_ != AppScreen::Gameplay){
         return;
     }
@@ -600,24 +605,28 @@ void App::render(){
     // Renders different game states
     if (screen_ == AppScreen::MainMenu){
         render_main_menu();
+        render_screen_transition_overlay();
         SDL_RenderPresent(renderer_);
         return;
     }
 
     if (screen_ == AppScreen::MapSelect){
         render_map_select_menu();
+        render_screen_transition_overlay();
         SDL_RenderPresent(renderer_);
         return;
     }
 
     if (screen_ == AppScreen::DifficultySelect){
         render_difficulty_select_menu();
+        render_screen_transition_overlay();
         SDL_RenderPresent(renderer_);
         return;
     }
 
     if (screen_ == AppScreen::Settings){
         render_settings_menu();
+        render_screen_transition_overlay();
         SDL_RenderPresent(renderer_);
         return;
     }
@@ -684,6 +693,8 @@ void App::render(){
     if (screen_ == AppScreen::Gameplay && paused_){
         render_pause_menu();
     }
+
+    render_screen_transition_overlay();
 
     // Present the finished frame to the screen
     SDL_RenderPresent(renderer_);
@@ -3567,9 +3578,9 @@ void App::start_game(const MapOption& map, Difficulty difficulty){
         return;
     }
 
-    screen_ = AppScreen::Gameplay;
     paused_ = false;
     screen_stack_.clear();
+    start_screen_transition(AppScreen::Gameplay);
 }
 
 SDL_Rect App::get_main_play_button_rect() const{
@@ -3694,28 +3705,89 @@ void App::render_difficulty_select_menu(){
 }
 
 void App::push_screen(AppScreen next_screen){
-    // Save the current screen before moving forward.
-    screen_stack_.push_back(screen_);
-
-    screen_ = next_screen;
-}
-
-void App::pop_screen(){
-    // If there is nothing to go back to, safely return to the main menu.
-    if (screen_stack_.empty()){
-        screen_ = AppScreen::MainMenu;
-        paused_ = false;
+    if (screen_transition_active_){
         return;
     }
 
-    // Restore the most recent screen.
-    screen_ = screen_stack_.back();
+    // Save the current screen before moving forward.
+    screen_stack_.push_back(screen_);
+    start_screen_transition(next_screen);
+}
+
+void App::pop_screen(){
+    if (screen_transition_active_){
+        return;
+    }
+
+    // If there is nothing to go back to, safely return to the main menu.
+    if (screen_stack_.empty()){
+        paused_ = false;
+        start_screen_transition(AppScreen::MainMenu);
+        return;
+    }
+
+    // Restore the most recent screen after the fade reaches black.
+    AppScreen previous_screen = screen_stack_.back();
     screen_stack_.pop_back();
 
     // If settings was opened from paused gameplay, returning should show the pause menu instead of resuming gameplay.
-    if (screen_ == AppScreen::Gameplay){
+    if (previous_screen == AppScreen::Gameplay){
         paused_ = true;
     }
+
+    start_screen_transition(previous_screen);
+}
+
+void App::start_screen_transition(AppScreen next_screen){
+    transition_next_screen_ = next_screen;
+    screen_transition_active_ = true;
+    screen_transition_fading_out_ = true;
+    screen_transition_alpha_ = 0.0f;
+}
+
+void App::update_screen_transition(float dt){
+    if (!screen_transition_active_){
+        return;
+    }
+
+    if (screen_transition_fading_out_){
+        screen_transition_alpha_ += SCREEN_TRANSITION_SPEED * dt;
+
+        if (screen_transition_alpha_ >= 1.0f){
+            screen_transition_alpha_ = 1.0f;
+            screen_ = transition_next_screen_;
+            screen_transition_fading_out_ = false;
+        }
+    } else{
+        screen_transition_alpha_ -= SCREEN_TRANSITION_SPEED * dt;
+
+        if (screen_transition_alpha_ <= 0.0f){
+            screen_transition_alpha_ = 0.0f;
+            screen_transition_active_ = false;
+        }
+    }
+}
+
+void App::render_screen_transition_overlay() const{
+    if (!screen_transition_active_ || screen_transition_alpha_ <= 0.0f){
+        return;
+    }
+
+    // Temporarily draw in real window pixels so the fade also covers
+    // letterbox/pillarbox space on non-16:9 displays.
+    int output_w = 0;
+    int output_h = 0;
+    SDL_GetRendererOutputSize(renderer_, &output_w, &output_h);
+    SDL_RenderSetLogicalSize(renderer_, 0, 0);
+
+    SDL_SetRenderDrawBlendMode(renderer_, SDL_BLENDMODE_BLEND);
+    SDL_SetRenderDrawColor(renderer_, 0, 0, 0, static_cast<Uint8>(screen_transition_alpha_ * 255.0f));
+
+    SDL_Rect overlay{0, 0, output_w, output_h};
+    SDL_RenderFillRect(renderer_, &overlay);
+
+    // Restore the game's fixed logical coordinate system for normal rendering.
+    SDL_RenderSetLogicalSize(renderer_, WORLD_WIDTH, WORLD_HEIGHT);
 }
 
 void App::render_back_button(){

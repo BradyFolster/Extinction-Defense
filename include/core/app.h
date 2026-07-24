@@ -200,6 +200,9 @@ class App{
         void render_back_button();
         void push_screen(AppScreen next_screen);
         void pop_screen();
+        void start_screen_transition(AppScreen next_screen);
+        void update_screen_transition(float dt);
+        void render_screen_transition_overlay() const;
         
         // Debug rendering
         void render_path_debug();
@@ -306,6 +309,13 @@ class App{
         // Main menu & game starting members
         AppScreen screen_ = AppScreen::MainMenu;
         std::vector<AppScreen> screen_stack_;
+
+        // Quick fade-to-black transition between menu screens.
+        bool screen_transition_active_ = false;
+        bool screen_transition_fading_out_ = false;
+        AppScreen transition_next_screen_ = AppScreen::MainMenu;
+        float screen_transition_alpha_ = 0.0f;
+        static constexpr float SCREEN_TRANSITION_SPEED = 12.0f;
 
         std::vector<MapOption> map_options_{
             {"Map 1", "assets/maps/map1.json"}
