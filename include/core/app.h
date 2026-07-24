@@ -102,6 +102,8 @@ class App{
         void render_selected_tower_radius() const;
         void draw_filled_circle(int center_x, int center_y, int radius) const;
         // Menu helpers
+        void render_button_texture(const SDL_Rect& rect, SDL_Color tint, bool draw_hover_highlight = true) const;
+        void render_button_hover_highlight(const SDL_Rect& rect) const;
         void render_tower_menu();
         void render_tower_button(TowerType type);
         void render_selected_tower_menu();
@@ -189,6 +191,10 @@ class App{
         SDL_Rect get_map_button_rect(int index) const;
         SDL_Rect get_difficulty_button_rect(Difficulty difficulty) const;
 
+        // Settings helpers
+        bool load_settings();
+        bool save_settings() const;
+
         // Back button helpers
         SDL_Rect get_back_button_rect() const;
         void render_back_button();
@@ -198,6 +204,8 @@ class App{
         // Debug rendering
         void render_path_debug();
         bool draw_text(const std::string& text, int x, int y, SDL_Color color) const;
+        bool draw_text_small(const std::string& text, int x, int y, SDL_Color color) const;
+        bool draw_text_tiny(const std::string& text, int x, int y, SDL_Color color) const;
         void render_debug_hud() const;
 
     private:

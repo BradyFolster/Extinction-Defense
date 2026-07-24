@@ -7,6 +7,8 @@
 #include <set>
 #include <sstream>
 #include <iomanip>
+#include <fstream>
+#include <nlohmann/json.hpp>
 
 namespace{
     constexpr double RADIANS_TO_DEGREES = 180.0 / 3.14159265358979323846;
@@ -40,15 +42,26 @@ bool App::init(){
         std::cerr << "Mix_OpenAudio failed: " << Mix_GetError() << "\n";
         return false;
     }
+
+    // Loads game settings before creating the window so that resolution settings work right away
+    load_settings();
+
     // Creates a window and a renderer attached to said window
     // Title, resolution (width x height), flags
     // Pass the pointers so that SDL assigns them correctly
+    const int saved_resolution_index = resolution_index_;
     build_resolution_options();
+    resolution_index_ = std::clamp(saved_resolution_index, 0, static_cast<int>(resolution_options_.size()) - 1);
     const ResolutionOption& initial_resolution = resolution_options_[resolution_index_];
     window_ = SDL_CreateWindow("Extinction Defense", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, initial_resolution.width, initial_resolution.height, SDL_WINDOW_SHOWN);
     if (window_ == nullptr){
         std::cerr << "SDL_CreateWindow failed: " << SDL_GetError() << "\n";
         return false;
+    }
+
+    // Apply saved fullscreen preference 
+    if (fullscreen_){
+        SDL_SetWindowFullscreen(window_, SDL_WINDOW_FULLSCREEN_DESKTOP);
     }
 
 
@@ -87,6 +100,9 @@ bool App::init(){
     if (!load_assets()){
         return false;
     }
+
+    // Apply saved volume settings after loading settings and opening SDL_mixer.
+    apply_audio_settings();
     
     // Starts the first wave
     // wave_manager_.start_next_wave();
@@ -242,47 +258,68 @@ void App::process_events(){
                     }
                     else if (point_in_rect(mouse_x, mouse_y, get_fullscreen_button_rect())){
                         toggle_fullscreen();
+
+                        save_settings();
                     }
                     else if (point_in_rect(mouse_x, mouse_y, get_debug_hud_button_rect())){
                         show_debug_hud_ = !show_debug_hud_;
                         show_grid_ = !show_grid_;
                         
+                        save_settings();
                     }
                     else if (point_in_rect(mouse_x, mouse_y, get_show_fps_button_rect())){
                         show_fps_ = !show_fps_;
+
+                        save_settings();
                     }
                     else if (point_in_rect(mouse_x, mouse_y, get_resolution_button_rect())){
                         if (!fullscreen_){
                             cycle_resolution();
+
+                            save_settings();
                         }
                     }
                     else if (point_in_rect(mouse_x, mouse_y, get_vsync_button_rect())){
                         vsync_enabled_ = !vsync_enabled_;
                         SDL_RenderSetVSync(renderer_, vsync_enabled_ ? 1 : 0);
+
+                        save_settings();
                     }
                     else if (point_in_rect(mouse_x, mouse_y, get_master_volume_down_rect())){
                         master_volume_ = std::max(0, master_volume_ - 10);
                         apply_audio_settings();
+
+                        save_settings();
                     }
                     else if (point_in_rect(mouse_x, mouse_y, get_master_volume_up_rect())){
                         master_volume_ = std::min(100, master_volume_ + 10);
                         apply_audio_settings();
+
+                        save_settings();
                     }
                     else if (point_in_rect(mouse_x, mouse_y, get_music_volume_down_rect())){
                         music_volume_ = std::max(0, music_volume_ - 10);
                         apply_audio_settings();
+
+                        save_settings();
                     }
                     else if (point_in_rect(mouse_x, mouse_y, get_music_volume_up_rect())){
                         music_volume_ = std::min(100, music_volume_ + 10);
                         apply_audio_settings();
+
+                        save_settings();
                     }
                     else if (point_in_rect(mouse_x, mouse_y, get_sfx_volume_down_rect())){
                         sfx_volume_ = std::max(0, sfx_volume_ - 10);
                         apply_audio_settings();
+
+                        save_settings();
                     }
                     else if (point_in_rect(mouse_x, mouse_y, get_sfx_volume_up_rect())){
                         sfx_volume_ = std::min(100, sfx_volume_ + 10);
                         apply_audio_settings();
+
+                        save_settings();
                     }
 
                     continue;
@@ -682,6 +719,31 @@ bool App::load_assets(){
         std::cerr << "failed to load debug font.\n";
         return false;
     }
+    if (!assets_.load_font("game_font", "assets/fonts/Pixellari.ttf", 24)){
+        std::cerr << "failed to load game font.\n";
+        return false;
+    }
+    if (!assets_.load_font("game_font_small", "assets/fonts/Pixellari.ttf", 18)){
+        std::cerr << "failed to load small game font.\n";
+        return false;
+    }
+    if (!assets_.load_font("game_font_tiny", "assets/fonts/Pixellari.ttf", 14)){
+        std::cerr << "failed to load tiny game font.\n";
+        return false;
+    }
+
+    if (!assets_.load_texture(renderer_, "button", "assets/images/button.png")){
+        std::cerr << "failed to load button texture.\n";
+        return false;
+    }
+    if (!assets_.load_texture(renderer_, "coin_icon", "assets/images/coin.png")){
+        std::cerr << "failed to load coin icon texture.\n";
+        return false;
+    }
+    if (!assets_.load_texture(renderer_, "heart_icon", "assets/images/heart.png")){
+        std::cerr << "failed to load heart icon texture.\n";
+        return false;
+    }
 
     // Loads tower textures
     if (!assets_.load_texture(renderer_, "tower_trex", "assets/images/dinos/trex.png")){
@@ -733,7 +795,11 @@ bool App::load_assets(){
         return false;
     }
 
-
+    // Fireball texture
+    if (!assets_.load_texture(renderer_, "projectile_fireball", "assets/images/fireball.png")){
+        std::cerr << "failed to load fireball projectile texture.\n";
+        return false;
+    }
 
     return true;
 }
@@ -1109,14 +1175,46 @@ bool App::point_in_rect(int x, int y, const SDL_Rect& rect) const   {
             y < rect.y + rect.h;
 }
 
+void App::render_button_texture(const SDL_Rect& rect, SDL_Color tint, bool draw_hover_highlight) const{
+    SDL_Texture* texture = assets_.get_texture("button");
+
+    if (texture == nullptr){
+        SDL_SetRenderDrawColor(renderer_, tint.r, tint.g, tint.b, tint.a);
+        SDL_RenderFillRect(renderer_, &rect);
+
+        if (draw_hover_highlight){
+            render_button_hover_highlight(rect);
+        }
+        return;
+    }
+
+    SDL_SetTextureColorMod(texture, 255, 255, 255);
+    SDL_SetTextureAlphaMod(texture, tint.a);
+    SDL_RenderCopy(renderer_, texture, nullptr, &rect);
+    SDL_SetTextureAlphaMod(texture, 255);
+
+    if (draw_hover_highlight){
+        render_button_hover_highlight(rect);
+    }
+}
+
+void App::render_button_hover_highlight(const SDL_Rect& rect) const{
+    if (!point_in_rect(mouse_x_, mouse_y_, rect)){
+        return;
+    }
+
+    SDL_SetRenderDrawBlendMode(renderer_, SDL_BLENDMODE_BLEND);
+    SDL_SetRenderDrawColor(renderer_, 255, 255, 255, 45);
+    SDL_RenderFillRect(renderer_, &rect);
+}
+
 void App::render_tower_button(TowerType type){
     SDL_Rect rect = get_tower_button_rect(type);
     const TowerDefinition& def = get_tower_definition(type);
 
     const bool can_afford = player_.can_afford(def.cost);
 
-    SDL_SetRenderDrawColor(renderer_, 50, 60, 70, 255);
-    SDL_RenderFillRect(renderer_, &rect);
+    render_button_texture(rect, SDL_Color{50, 60, 70, 255});
 
     if (!can_afford){
         SDL_SetRenderDrawBlendMode(renderer_, SDL_BLENDMODE_BLEND);
@@ -1148,8 +1246,15 @@ void App::render_tower_button(TowerType type){
 
     draw_text(cost_text, center_x - estimated_text_w / 2, center_y - estimated_text_h / 2, cost_color);
 
-    // DEBUG -- renders name of tower 
-    draw_text(def.name, rect.x + 8, rect.y + 8, SDL_Color{220, 220, 220, 255});
+    int name_w = 0;
+    int name_h = 0;
+    TTF_Font* tiny_font = assets_.get_font("game_font_tiny");
+
+    if (tiny_font != nullptr && TTF_SizeText(tiny_font, def.name, &name_w, &name_h) == 0){
+        draw_text_tiny(def.name, rect.x + (rect.w - name_w) / 2, rect.y + 12, SDL_Color{220, 220, 220, 255});
+    } else{
+        draw_text_tiny(def.name, rect.x + 12, rect.y + 12, SDL_Color{220, 220, 220, 255});
+    }
 }
 
 void App::render_tower_menu()   {
@@ -1329,30 +1434,38 @@ void App::render_next_wave_button(){
     SDL_Rect rect = get_next_wave_button_rect();
 
     if (wave_manager_.can_start_next_wave()){
-        SDL_SetRenderDrawColor(renderer_, 60, 180, 90, 255);
+        render_button_texture(rect, SDL_Color{60, 180, 90, 255});
     } else{
-        SDL_SetRenderDrawColor(renderer_, 90, 90, 90, 255);
+        render_button_texture(rect, SDL_Color{90, 90, 90, 255});
     }
-
-    SDL_RenderFillRect(renderer_, &rect);
 
     SDL_SetRenderDrawColor(renderer_, 20, 20, 20, 255);
     SDL_RenderDrawRect(renderer_, &rect);
 
-    // Draws wave number inside the button
-    draw_text(std::to_string(wave_manager_.current_wave_number()), rect.x + 28, rect.y + 10, SDL_Color{0, 0, 0, 255});
+    // Draws wave number centered inside the button.
+    std::string wave_text = std::to_string(wave_manager_.current_wave_number());
+    int text_w = 0;
+    int text_h = 0;
+    TTF_Font* font = assets_.get_font("debug_font");
+
+    if (font != nullptr && TTF_SizeText(font, wave_text.c_str(), &text_w, &text_h) == 0){
+        draw_text(wave_text, rect.x + (rect.w - text_w) / 2, rect.y + 18, SDL_Color{255, 255, 255, 255});
+    } else{
+        draw_text(wave_text, rect.x + 28, rect.y + 18, SDL_Color{255, 255, 255, 255});
+    }
 }
 
 void App::render_speed_button(){
     SDL_Rect rect = get_speed_button_rect();
 
-    if (game_speed == 2.0f){
-        SDL_SetRenderDrawColor(renderer_, 95, 25, 170, 255);
-    } else{
-        SDL_SetRenderDrawColor(renderer_, 65, 20, 120, 255);
-    }
+    render_button_texture(rect, SDL_Color{255, 255, 255, 255});
 
-    SDL_RenderFillRect(renderer_, &rect);
+    if (game_speed == 2.0f){
+        SDL_SetRenderDrawBlendMode(renderer_, SDL_BLENDMODE_BLEND);
+        SDL_SetRenderDrawColor(renderer_, 30, 180, 70, 75);
+        SDL_RenderFillRect(renderer_, &rect);
+        render_button_hover_highlight(rect);
+    }
 
     SDL_SetRenderDrawColor(renderer_, 20, 20, 20, 255);
     SDL_RenderDrawRect(renderer_, &rect);
@@ -1366,23 +1479,24 @@ void App::render_gameplay_hud(){
 
     // Money and health are stacked vertically
     const int icon_x = 240;
-    const int text_x = 270;
+    const int icon_size = 32;
+    const int text_x = icon_x + icon_size + 8;
     const int money_y = 30;
     const int health_y = 60;
 
-    SDL_Rect money_icon{icon_x, money_y, 20, 20};
-    SDL_SetRenderDrawColor(renderer_, 230, 170, 35, 255);
-    SDL_RenderFillRect(renderer_, &money_icon);
-    SDL_SetRenderDrawColor(renderer_, 20, 20, 20, 255);
-    SDL_RenderDrawRect(renderer_, &money_icon);
-    draw_text("$" + std::to_string(player_.money()), text_x, money_y - 2, SDL_Color{0, 0, 0, 255});
+    SDL_Rect money_icon{icon_x, money_y - 7, icon_size, icon_size};
+    SDL_Texture* coin_texture = assets_.get_texture("coin_icon");
+    if (coin_texture != nullptr){
+        SDL_RenderCopy(renderer_, coin_texture, nullptr, &money_icon);
+    }
+    draw_text("$" + std::to_string(player_.money()), text_x, money_y - 2, SDL_Color{255, 255, 255, 255});
 
-    SDL_Rect health_icon{icon_x, health_y, 20, 20};
-    SDL_SetRenderDrawColor(renderer_, 220, 45, 60, 255);
-    SDL_RenderFillRect(renderer_, &health_icon);
-    SDL_SetRenderDrawColor(renderer_, 20, 20, 20, 255);
-    SDL_RenderDrawRect(renderer_, &health_icon);
-    draw_text(std::to_string(player_.health()), text_x, health_y - 2, SDL_Color{0, 0, 0, 255});
+    SDL_Rect health_icon{icon_x, health_y - 7, icon_size, icon_size};
+    SDL_Texture* heart_texture = assets_.get_texture("heart_icon");
+    if (heart_texture != nullptr){
+        SDL_RenderCopy(renderer_, heart_texture, nullptr, &health_icon);
+    }
+    draw_text(std::to_string(player_.health()), text_x, health_y - 2, SDL_Color{255, 255, 255, 255});
 }
 
 float App::tower_center_x(const Tower& tower) const{
@@ -1575,7 +1689,8 @@ void App::update_towers(float dt){
 }
 
 bool App::draw_text(const std::string& text, int x, int y, SDL_Color color) const{
-    TTF_Font* font = assets_.get_font("debug_font");
+    // TTF_Font* font = assets_.get_font("debug_font");
+    TTF_Font* font = assets_.get_font("game_font");
 
     if (font == nullptr){
         return false;
@@ -1602,6 +1717,64 @@ bool App::draw_text(const std::string& text, int x, int y, SDL_Color color) cons
         surface->h
     };
 
+    SDL_FreeSurface(surface);
+
+    SDL_RenderCopy(renderer_, texture, nullptr, &dest);
+    SDL_DestroyTexture(texture);
+
+    return true;
+}
+
+bool App::draw_text_small(const std::string& text, int x, int y, SDL_Color color) const{
+    TTF_Font* font = assets_.get_font("game_font_small");
+
+    if (font == nullptr){
+        return false;
+    }
+
+    SDL_Surface* surface = TTF_RenderText_Blended(font, text.c_str(), color);
+    if (surface == nullptr){
+        std::cerr << "TTF_RenderText_Blended() failed: " << TTF_GetError() << "\n";
+        return false;
+    }
+
+    SDL_Texture* texture = SDL_CreateTextureFromSurface(renderer_, surface);
+    if (texture == nullptr){
+        std::cerr << "SDL_CreateTextureFromSurface() failed: " << SDL_GetError() << "\n";
+        SDL_FreeSurface(surface);
+        return false;
+    }
+
+    SDL_Rect dest{x, y, surface->w, surface->h};
+    SDL_FreeSurface(surface);
+
+    SDL_RenderCopy(renderer_, texture, nullptr, &dest);
+    SDL_DestroyTexture(texture);
+
+    return true;
+}
+
+bool App::draw_text_tiny(const std::string& text, int x, int y, SDL_Color color) const{
+    TTF_Font* font = assets_.get_font("game_font_tiny");
+
+    if (font == nullptr){
+        return false;
+    }
+
+    SDL_Surface* surface = TTF_RenderText_Blended(font, text.c_str(), color);
+    if (surface == nullptr){
+        std::cerr << "TTF_RenderText_Blended() failed: " << TTF_GetError() << "\n";
+        return false;
+    }
+
+    SDL_Texture* texture = SDL_CreateTextureFromSurface(renderer_, surface);
+    if (texture == nullptr){
+        std::cerr << "SDL_CreateTextureFromSurface() failed: " << SDL_GetError() << "\n";
+        SDL_FreeSurface(surface);
+        return false;
+    }
+
+    SDL_Rect dest{x, y, surface->w, surface->h};
     SDL_FreeSurface(surface);
 
     SDL_RenderCopy(renderer_, texture, nullptr, &dest);
@@ -1983,29 +2156,73 @@ void App::update_projectiles(float dt){
 }
 
 void App::render_projectiles() const{
-    // Draw each active projectile as a small filled square
+    SDL_Texture* fireball_texture = assets_.get_texture("projectile_fireball");
+
+    // Spritesheet layout
+    // 3 columns x 3 rows, 9 total frames
+    const int frame_w = 32;
+    const int frame_h = 32;
+    const int sheet_cols = 3;
+    const int total_frames = 9;
+
+    // Controls animation speed.
+    // Smaller number = faster animation.
+    const Uint32 milliseconds_per_frame = 80;
+
+    // Use SDL time to pick the current animation frame.
+    // This makes all fireballs animate continuously.
+    int frame = static_cast<int>((SDL_GetTicks() / milliseconds_per_frame) % total_frames);
+
+    // Convert frame number into spritesheet column and row.
+    int frame_col = frame % sheet_cols;
+    int frame_row = frame / sheet_cols;
+
+    // Source rectangle: which 32x32 frame to read from the spritesheet.
+    SDL_Rect src{
+        frame_col * frame_w,
+        frame_row * frame_h,
+        frame_w,
+        frame_h
+    };
+
+    // Draw every active projectile.
     for (const Projectile& projectile : projectiles_){
         if (!projectile.alive){
             continue;
         }
 
-        SDL_SetRenderDrawColor(
-            renderer_,
-            projectile.color.r,
-            projectile.color.g,
-            projectile.color.b,
-            projectile.color.a
-        );
+        // If the texture failed to load, fall back to the old square rendering.
+        if (fireball_texture == nullptr){
+            SDL_SetRenderDrawColor(
+                renderer_,
+                projectile.color.r,
+                projectile.color.g,
+                projectile.color.b,
+                projectile.color.a
+            );
 
-        SDL_Rect rect{
-            // center the square on the projectile's position
+            SDL_Rect rect{
+                static_cast<int>(projectile.x - projectile.size / 2),
+                static_cast<int>(projectile.y - projectile.size / 2),
+                projectile.size,
+                projectile.size
+            };
+
+            SDL_RenderFillRect(renderer_, &rect);
+            continue;
+        }
+
+        // Destination rectangle: where the projectile appears on screen.
+        // This keeps the projectile centered on projectile.x/projectile.y.
+        SDL_Rect dest{
             static_cast<int>(projectile.x - projectile.size / 2),
             static_cast<int>(projectile.y - projectile.size / 2),
             projectile.size,
             projectile.size
         };
 
-        SDL_RenderFillRect(renderer_, &rect);
+        // Draw the current animation frame.
+        SDL_RenderCopy(renderer_, fireball_texture, &src, &dest);
     }
 }
 
@@ -2248,8 +2465,7 @@ void App::render_selected_tower_menu(){
     if (tower.manual_targeting.enabled){
         SDL_Rect rect= get_manual_target_button_rect();
 
-        SDL_SetRenderDrawColor(renderer_, 170, 130, 60, 255);
-        SDL_RenderFillRect(renderer_, &rect);
+        render_button_texture(rect, SDL_Color{170, 130, 60, 255});
 
         SDL_SetRenderDrawColor(renderer_, 255, 255, 255, 255);
         SDL_RenderDrawRect(renderer_, &rect);
@@ -2264,12 +2480,10 @@ void App::render_selected_tower_menu(){
         const bool can_move = tower.reposition.cooldown_remaining <= 0.0f;
 
         if (can_move){
-            SDL_SetRenderDrawColor(renderer_, 80, 140, 180, 255);
+            render_button_texture(rect, SDL_Color{80, 140, 180, 255});
         } else{
-            SDL_SetRenderDrawColor(renderer_, 80, 80, 80, 255);
+            render_button_texture(rect, SDL_Color{80, 80, 80, 255});
         }
-
-        SDL_RenderFillRect(renderer_, &rect);
 
         SDL_SetRenderDrawColor(renderer_, 255, 255, 255, 255);
         SDL_RenderDrawRect(renderer_, &rect);
@@ -2344,9 +2558,7 @@ SDL_Rect App::get_sell_button_rect() const{
 void App::render_sell_button(){
     SDL_Rect rect = get_sell_button_rect();
 
-    SDL_SetRenderDrawColor(renderer_, 252, 0, 113, 255);
-
-    SDL_RenderFillRect(renderer_, &rect);
+    render_button_texture(rect, SDL_Color{252, 0, 113, 255});
 
     SDL_SetRenderDrawColor(renderer_, 220, 220, 220, 255);
     SDL_RenderDrawRect(renderer_, &rect);
@@ -2356,9 +2568,15 @@ void App::render_sell_button(){
 
     SDL_Color text_color{210, 220, 230, 255};
     std::string text = "Sell: $" + std::to_string(sell_price);
-    int text_x = rect.x + 12;
-    int text_y = rect.y + 12;
-    draw_text(text, text_x, text_y, text_color);
+    int text_w = 0;
+    int text_h = 0;
+    TTF_Font* font = assets_.get_font("game_font");
+
+    if (font != nullptr && TTF_SizeText(font, text.c_str(), &text_w, &text_h) == 0){
+        draw_text(text, rect.x + (rect.w - text_w) / 2, rect.y + (rect.h - text_h) / 2, text_color);
+    } else{
+        draw_text(text, rect.x + 12, rect.y + 12, text_color);
+    }
 }
 
 std::string App::describe_upgrade_effect(const TowerUpgradeDefinition& upgrade) const{
@@ -2398,14 +2616,12 @@ void App::render_upgrade_button(const Tower& tower, UpgradePath path, int curren
 
     // Dim the button if the player cannot buy it or the path is finished
     if (is_maxed){
-        SDL_SetRenderDrawColor(renderer_, 70, 70, 70, 255);
+        render_button_texture(rect, SDL_Color{70, 70, 70, 255});
     } else if (!can_afford){
-        SDL_SetRenderDrawColor(renderer_, 110, 70, 70, 255);
+        render_button_texture(rect, SDL_Color{110, 70, 70, 255});
     } else{
-        SDL_SetRenderDrawColor(renderer_, 70, 110, 80, 255);
+        render_button_texture(rect, SDL_Color{70, 110, 80, 255});
     }
-
-    SDL_RenderFillRect(renderer_, &rect);
 
     SDL_SetRenderDrawColor(renderer_, 220, 220, 220, 255);
     SDL_RenderDrawRect(renderer_, &rect);
@@ -2413,19 +2629,19 @@ void App::render_upgrade_button(const Tower& tower, UpgradePath path, int curren
     SDL_Color title_color{255, 255, 255, 255};
     SDL_Color text_color{210, 220, 230, 255};
 
-    int text_x = rect.x + 12;
-    int text_y = rect.y + 10;
+    int text_x = rect.x + 24;
+    int text_y = rect.y + 22;
 
     std::string path_name = path == UpgradePath::Damage ? "Damage Path" : "Utility Path";
-    draw_text(path_name, text_x, text_y, title_color);
+    draw_text_small(path_name, text_x, text_y, title_color);
 
     if (is_maxed){
-        draw_text("MAX LEVEL", text_x, text_y + 28, text_color);
+        draw_text_small("MAX LEVEL", text_x, text_y + 24, text_color);
         return;
     }
 
-    draw_text(next_upgrade->name, text_x, text_y + 28, text_color);
-    draw_text("$" + std::to_string(next_upgrade->cost) + " - " + describe_upgrade_effect(*next_upgrade), text_x, text_y + 56, text_color);
+    draw_text_small(next_upgrade->name, text_x, text_y + 24, text_color);
+    draw_text_small("$" + std::to_string(next_upgrade->cost) + " - " + describe_upgrade_effect(*next_upgrade), text_x, text_y + 48, text_color);
 }
 
 void App::reset_money_generator_timers(){
@@ -2970,29 +3186,25 @@ void App::render_pause_menu(){
     draw_text("Paused", panel.x + 170, panel.y + 35, title_color);
 
     SDL_Rect resume_rect = get_resume_button_rect();
-    SDL_SetRenderDrawColor(renderer_, 70, 110, 80, 255);
-    SDL_RenderFillRect(renderer_, &resume_rect);
+    render_button_texture(resume_rect, SDL_Color{70, 110, 80, 255});
     SDL_SetRenderDrawColor(renderer_, 220, 220, 220, 255);
     SDL_RenderDrawRect(renderer_, &resume_rect);
     draw_text("Resume", resume_rect.x + 95, resume_rect.y + 18, text_color);
 
     SDL_Rect settings_rect = get_settings_button_rect();
-    SDL_SetRenderDrawColor(renderer_, 70, 80, 110, 255);
-    SDL_RenderFillRect(renderer_, &settings_rect);
+    render_button_texture(settings_rect, SDL_Color{70, 80, 110, 255});
     SDL_SetRenderDrawColor(renderer_, 220, 220, 220, 255);
     SDL_RenderDrawRect(renderer_, &settings_rect);
     draw_text("Settings", settings_rect.x + 85, settings_rect.y + 18, text_color);
 
     SDL_Rect main_menu_rect = get_main_menu_button_rect();
-    SDL_SetRenderDrawColor(renderer_, 90, 90, 70, 255);
-    SDL_RenderFillRect(renderer_, &main_menu_rect);
+    render_button_texture(main_menu_rect, SDL_Color{90, 90, 70, 255});
     SDL_SetRenderDrawColor(renderer_, 220, 220, 220, 255);
     SDL_RenderDrawRect(renderer_, &main_menu_rect);
     draw_text("Main Menu", main_menu_rect.x + 75, main_menu_rect.y + 18, text_color);
 
     SDL_Rect quit_rect = get_quit_button_rect();
-    SDL_SetRenderDrawColor(renderer_, 110, 70, 70, 255);
-    SDL_RenderFillRect(renderer_, &quit_rect);
+    render_button_texture(quit_rect, SDL_Color{110, 70, 70, 255});
     SDL_SetRenderDrawColor(renderer_, 220, 220, 220, 255);
     SDL_RenderDrawRect(renderer_, &quit_rect);
     draw_text("Quit", quit_rect.x + 115, quit_rect.y + 18, text_color);
@@ -3038,15 +3250,13 @@ void App::render_settings_menu(){
     std::string resolution_text = get_resolution_label();
 
     SDL_Rect resolution_rect = get_resolution_button_rect();
-    SDL_SetRenderDrawColor(renderer_, 50, 60, 70, 255);
-    SDL_RenderFillRect(renderer_, &resolution_rect);
+    render_button_texture(resolution_rect, SDL_Color{50, 60, 70, 255});
     SDL_SetRenderDrawColor(renderer_, 220, 220, 220, 255);
     SDL_RenderDrawRect(renderer_, &resolution_rect);
     draw_text(resolution_text, resolution_rect.x + 110, resolution_rect.y + 18, text_color);
 
     SDL_Rect vsync_rect = get_vsync_button_rect();
-    SDL_SetRenderDrawColor(renderer_, 50, 60, 70, 255);
-    SDL_RenderFillRect(renderer_, &vsync_rect);
+    render_button_texture(vsync_rect, SDL_Color{50, 60, 70, 255});
     SDL_SetRenderDrawColor(renderer_, 220, 220, 220, 255);
     SDL_RenderDrawRect(renderer_, &vsync_rect);
 
@@ -3054,8 +3264,7 @@ void App::render_settings_menu(){
     draw_text(vsync_text, vsync_rect.x + 180, vsync_rect.y + 18, text_color);
 
     SDL_Rect fullscreen_rect = get_fullscreen_button_rect();
-    SDL_SetRenderDrawColor(renderer_, 50, 60, 70, 255);
-    SDL_RenderFillRect(renderer_, &fullscreen_rect);
+    render_button_texture(fullscreen_rect, SDL_Color{50, 60, 70, 255});
     SDL_SetRenderDrawColor(renderer_, 220, 220, 220, 255);
     SDL_RenderDrawRect(renderer_, &fullscreen_rect);
 
@@ -3088,8 +3297,7 @@ void App::render_settings_menu(){
     };
 
     for (const SDL_Rect& button : volume_buttons){
-        SDL_SetRenderDrawColor(renderer_, 50, 60, 70, 255);
-        SDL_RenderFillRect(renderer_, &button);
+        render_button_texture(button, SDL_Color{50, 60, 70, 255});
         SDL_SetRenderDrawColor(renderer_, 220, 220, 220, 255);
         SDL_RenderDrawRect(renderer_, &button);
     }
@@ -3107,8 +3315,7 @@ void App::render_settings_menu(){
     draw_text(fullscreen_text, fullscreen_rect.x + 110, fullscreen_rect.y + 22, text_color);
 
     SDL_Rect debug_rect = get_debug_hud_button_rect();
-    SDL_SetRenderDrawColor(renderer_, 50, 60, 70, 255);
-    SDL_RenderFillRect(renderer_, &debug_rect);
+    render_button_texture(debug_rect, SDL_Color{50, 60, 70, 255});
     SDL_SetRenderDrawColor(renderer_, 220, 220, 220, 255);
     SDL_RenderDrawRect(renderer_, &debug_rect);
 
@@ -3116,8 +3323,7 @@ void App::render_settings_menu(){
     draw_text(debug_text, debug_rect.x + 115, debug_rect.y + 22, text_color);
 
     SDL_Rect fps_rect = get_show_fps_button_rect();
-    SDL_SetRenderDrawColor(renderer_, 50, 60, 70, 255);
-    SDL_RenderFillRect(renderer_, &fps_rect);
+    render_button_texture(fps_rect, SDL_Color{50, 60, 70, 255});
     SDL_SetRenderDrawColor(renderer_, 220, 220, 220, 255);
     SDL_RenderDrawRect(renderer_, &fps_rect);
 
@@ -3391,20 +3597,17 @@ void App::render_main_menu(){
     SDL_Rect settings = get_main_settings_button_rect();
     SDL_Rect quit = get_main_quit_button_rect();
 
-    SDL_SetRenderDrawColor(renderer_, 70, 110, 80, 255);
-    SDL_RenderFillRect(renderer_, &play);
+    render_button_texture(play, SDL_Color{70, 110, 80, 255});
     SDL_SetRenderDrawColor(renderer_, 220, 220, 220, 255);
     SDL_RenderDrawRect(renderer_, &play);
     draw_text("Play", play.x + 115, play.y + 18, text_color);
 
-    SDL_SetRenderDrawColor(renderer_, 70, 80, 110, 255);
-    SDL_RenderFillRect(renderer_, &settings);
+    render_button_texture(settings, SDL_Color{70, 80, 110, 255});
     SDL_SetRenderDrawColor(renderer_, 220, 220, 220, 255);
     SDL_RenderDrawRect(renderer_, &settings);
     draw_text("Settings", settings.x + 85, settings.y + 18, text_color);
 
-    SDL_SetRenderDrawColor(renderer_, 110, 70, 70, 255);
-    SDL_RenderFillRect(renderer_, &quit);
+    render_button_texture(quit, SDL_Color{110, 70, 70, 255});
     SDL_SetRenderDrawColor(renderer_, 220, 220, 220, 255);
     SDL_RenderDrawRect(renderer_, &quit);
     draw_text("Quit", quit.x + 115, quit.y + 18, text_color);
@@ -3427,8 +3630,7 @@ void App::render_map_select_menu(){
     for (int i = 0; i < static_cast<int>(map_options_.size()); ++i){
         SDL_Rect rect = get_map_button_rect(i);
 
-        SDL_SetRenderDrawColor(renderer_, 50, 60, 70, 255);
-        SDL_RenderFillRect(renderer_, &rect);
+        render_button_texture(rect, SDL_Color{50, 60, 70, 255});
         SDL_SetRenderDrawColor(renderer_, 220, 220, 220, 255);
         SDL_RenderDrawRect(renderer_, &rect);
 
@@ -3463,20 +3665,29 @@ void App::render_difficulty_select_menu(){
     SDL_Rect medium = get_difficulty_button_rect(Difficulty::Medium);
     SDL_Rect hard = get_difficulty_button_rect(Difficulty::Hard);
 
-    SDL_SetRenderDrawColor(renderer_, 70, 110, 80, 255);
+    render_button_texture(easy, SDL_Color{255, 255, 255, 255}, false);
+    SDL_SetRenderDrawBlendMode(renderer_, SDL_BLENDMODE_BLEND);
+    SDL_SetRenderDrawColor(renderer_, 30, 180, 70, 75);
     SDL_RenderFillRect(renderer_, &easy);
+    render_button_hover_highlight(easy);
     SDL_SetRenderDrawColor(renderer_, 220, 220, 220, 255);
     SDL_RenderDrawRect(renderer_, &easy);
     draw_text("Easy", easy.x + 110, easy.y + 18, text_color);
 
-    SDL_SetRenderDrawColor(renderer_, 90, 90, 70, 255);
+    render_button_texture(medium, SDL_Color{255, 255, 255, 255}, false);
+    SDL_SetRenderDrawBlendMode(renderer_, SDL_BLENDMODE_BLEND);
+    SDL_SetRenderDrawColor(renderer_, 220, 180, 35, 75);
     SDL_RenderFillRect(renderer_, &medium);
+    render_button_hover_highlight(medium);
     SDL_SetRenderDrawColor(renderer_, 220, 220, 220, 255);
     SDL_RenderDrawRect(renderer_, &medium);
     draw_text("Medium", medium.x + 90, medium.y + 18, text_color);
 
-    SDL_SetRenderDrawColor(renderer_, 110, 70, 70, 255);
+    render_button_texture(hard, SDL_Color{255, 255, 255, 255}, false);
+    SDL_SetRenderDrawBlendMode(renderer_, SDL_BLENDMODE_BLEND);
+    SDL_SetRenderDrawColor(renderer_, 210, 45, 45, 75);
     SDL_RenderFillRect(renderer_, &hard);
+    render_button_hover_highlight(hard);
     SDL_SetRenderDrawColor(renderer_, 220, 220, 220, 255);
     SDL_RenderDrawRect(renderer_, &hard);
     draw_text("Hard", hard.x + 110, hard.y + 18, text_color);
@@ -3512,8 +3723,7 @@ void App::render_back_button(){
 
     SDL_Rect back_rect = get_back_button_rect();
 
-    SDL_SetRenderDrawColor(renderer_, 80, 80, 90, 255);
-    SDL_RenderFillRect(renderer_, &back_rect);
+    render_button_texture(back_rect, SDL_Color{80, 80, 90, 255});
 
     SDL_SetRenderDrawColor(renderer_, 220, 220, 220, 255);
     SDL_RenderDrawRect(renderer_, &back_rect);
@@ -3562,4 +3772,64 @@ void App::sell_tower(Tower& tower){
     }
 
     player_.add_money(sell_price);
+}
+
+bool App::load_settings(){
+    // Open the settings file for reading
+    std::ifstream file("settings.json");
+
+    // If the file doesn't exist yet, keep the default values
+    if (!file.is_open()){
+        return false;
+    }
+
+    // Parse the json file
+    nlohmann::json settings;
+    file >> settings;
+
+    // Read each saved value
+    fullscreen_ = settings.value("fullscreen", fullscreen_);
+    resolution_index_ = settings.value("resolution_index", resolution_index_);
+    vsync_enabled_ = settings.value("vsync", vsync_enabled_);
+    show_debug_hud_ = settings.value("show_debug_hud", show_debug_hud_);
+    show_grid_ = settings.value("show_grid", show_grid_);
+    show_fps_ = settings.value("show_fps", show_fps_);
+    master_volume_ = settings.value("master_volume", master_volume_);
+    music_volume_ = settings.value("music_volume", music_volume_);
+    sfx_volume_ = settings.value("sfx_volume", sfx_volume_);
+
+    // Limits on settings to prevent breaking the game
+    master_volume_ = std::clamp(master_volume_, 0, 100);
+    music_volume_ = std::clamp(music_volume_, 0, 100);
+    sfx_volume_ = std::clamp(sfx_volume_, 0, 100);
+
+    return true;
+}
+
+bool App::save_settings() const{
+    // Create a json object from the settings file
+    nlohmann::json settings{
+        {"fullscreen", fullscreen_},
+        {"resolution_index", resolution_index_},
+        {"vsync", vsync_enabled_},
+        {"show_debug_hud", show_debug_hud_},
+        {"show_grid", show_grid_},
+        {"show_fps", show_fps_},
+        {"master_volume", master_volume_},
+        {"music_volume", music_volume_},
+        {"sfx_volume", sfx_volume_}
+    };
+
+    // Open settings.json for writing
+    // Overwrites the file with current settings
+    std::ofstream file("settings.json");
+
+    if (!file.is_open()){
+        return false;
+    }
+
+    // Wrute formatted json using 4-space indentation
+    file << settings.dump(4);
+
+    return true;
 }
