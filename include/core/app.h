@@ -42,6 +42,12 @@ enum class Difficulty{
     Hard
 };
 
+enum class PauseConfirmAction{
+    None,
+    MainMenu,
+    Quit
+};
+
 struct MapOption{
     std::string name;
     std::string json_path;
@@ -175,6 +181,7 @@ class App{
         void cycle_resolution();
         void apply_audio_settings();
         void render_settings_menu();
+        void render_menu_background() const;
         void toggle_fullscreen();
         SDL_Rect get_main_menu_button_rect() const;
         SDL_Rect get_show_fps_button_rect() const;
@@ -224,6 +231,7 @@ class App{
         bool running_;
         // Pause menu
         bool paused_ = false;
+        PauseConfirmAction pause_confirm_action_ = PauseConfirmAction::None;
 
         // SDL setting states
         bool fullscreen_ = false;
@@ -315,7 +323,7 @@ class App{
         bool screen_transition_fading_out_ = false;
         AppScreen transition_next_screen_ = AppScreen::MainMenu;
         float screen_transition_alpha_ = 0.0f;
-        static constexpr float SCREEN_TRANSITION_SPEED = 12.0f;
+        static constexpr float SCREEN_TRANSITION_SPEED = 6.0f;
 
         std::vector<MapOption> map_options_{
             {"Map 1", "assets/maps/map1.json"}

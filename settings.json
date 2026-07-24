@@ -2,9 +2,10 @@
     "fullscreen": true,
     "master_volume": 100,
     "music_volume": 100,
-    "resolution_index": 3,
+    "resolution_index": 2,
     "sfx_volume": 100,
     "show_debug_hud": false,
     "show_fps": false,
+    "show_grid": false,
     "vsync": false
 }

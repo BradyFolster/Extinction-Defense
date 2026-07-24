@@ -174,7 +174,11 @@ void App::process_events(){
                     pop_screen();
                 }
                 else if (screen_ == AppScreen::Gameplay){
-                    paused_ = !paused_;
+                    if (paused_ && pause_confirm_action_ != PauseConfirmAction::None){
+                        pause_confirm_action_ = PauseConfirmAction::None;
+                    } else{
+                        paused_ = !paused_;
+                    }
 
                     tower_selected_ = false;
                     manual_targeting_mode_ = false;
@@ -330,28 +334,48 @@ void App::process_events(){
 
                 // Stops if te game is paused
                 if (screen_ == AppScreen::Gameplay && paused_){
+                    if (pause_confirm_action_ != PauseConfirmAction::None){
+                        SDL_Rect yes_rect{WORLD_WIDTH / 2 - 190, WORLD_HEIGHT / 2 + 60, 160, 60};
+                        SDL_Rect no_rect{WORLD_WIDTH / 2 + 30, WORLD_HEIGHT / 2 + 60, 160, 60};
+
+                        if (point_in_rect(mouse_x, mouse_y, yes_rect)){
+                            if (pause_confirm_action_ == PauseConfirmAction::MainMenu){
+                                paused_ = false;
+                                pause_confirm_action_ = PauseConfirmAction::None;
+
+                                tower_selected_ = false;
+                                selected_tower_index_ = -1;
+                                selected_tower_ = nullptr;
+
+                                manual_targeting_mode_ = false;
+                                manual_targeting_tower_index_ = -1;
+                                reposition_mode_ = false;
+                                reposition_tower_index_ = -1;
+
+                                start_screen_transition(AppScreen::MainMenu);
+                            } else if (pause_confirm_action_ == PauseConfirmAction::Quit){
+                                running_ = false;
+                            }
+                        } else if (point_in_rect(mouse_x, mouse_y, no_rect)){
+                            pause_confirm_action_ = PauseConfirmAction::None;
+                        }
+
+                        continue;
+                    }
+
                     if (point_in_rect(mouse_x, mouse_y, get_resume_button_rect())){
+                        pause_confirm_action_ = PauseConfirmAction::None;
                         paused_ = false;
                     }
                     else if (point_in_rect(mouse_x, mouse_y, get_settings_button_rect())){
+                        pause_confirm_action_ = PauseConfirmAction::None;
                         push_screen(AppScreen::Settings);
                     }
                     else if (point_in_rect(mouse_x, mouse_y, get_main_menu_button_rect())){
-                        paused_ = false;
-
-                        tower_selected_ = false;
-                        selected_tower_index_ = -1;
-                        selected_tower_ = nullptr;
-
-                        manual_targeting_mode_ = false;
-                        manual_targeting_tower_index_ = -1;
-                        reposition_mode_ = false;
-                        reposition_tower_index_ = -1;
-
-                        start_screen_transition(AppScreen::MainMenu);
+                        pause_confirm_action_ = PauseConfirmAction::MainMenu;
                     }
                     else if (point_in_rect(mouse_x, mouse_y, get_quit_button_rect())){
-                        running_ = false;
+                        pause_confirm_action_ = PauseConfirmAction::Quit;
                     }
 
                     continue;
@@ -597,7 +621,7 @@ void App::update(float dt){
 // Renders the current frame
 void App::render(){
     // Set the color the renderer will use when clearing the screen
-    SDL_SetRenderDrawColor(renderer_, 18, 22, 28, 255);
+    SDL_SetRenderDrawColor(renderer_, 16, 33, 33, 255);
 
     // Clears the window to the current draw color
     SDL_RenderClear(renderer_);
@@ -745,6 +769,10 @@ bool App::load_assets(){
 
     if (!assets_.load_texture(renderer_, "button", "assets/images/button.png")){
         std::cerr << "failed to load button texture.\n";
+        return false;
+    }
+    if (!assets_.load_texture(renderer_, "menu_background", "assets/images/background.png")){
+        std::cerr << "failed to load menu background texture.\n";
         return false;
     }
     if (!assets_.load_texture(renderer_, "coin_icon", "assets/images/coin.png")){
@@ -1233,13 +1261,6 @@ void App::render_tower_button(TowerType type){
         SDL_RenderFillRect(renderer_, &rect);
     }
 
-    if (tower_selected_ && selected_tower_type_ == type){
-        SDL_SetRenderDrawColor(renderer_, 255, 255, 255, 255);
-    } else {
-        SDL_SetRenderDrawColor(renderer_, 90, 100, 110, 255);
-    }
-    SDL_RenderDrawRect(renderer_, &rect);
-
 
     // Renders cost inside each button
     SDL_Color cost_color = can_afford ? SDL_Color{80, 255, 100, 255} : SDL_Color{255, 70, 70, 255};
@@ -1451,7 +1472,6 @@ void App::render_next_wave_button(){
     }
 
     SDL_SetRenderDrawColor(renderer_, 20, 20, 20, 255);
-    SDL_RenderDrawRect(renderer_, &rect);
 
     // Draws wave number centered inside the button.
     std::string wave_text = std::to_string(wave_manager_.current_wave_number());
@@ -1479,7 +1499,6 @@ void App::render_speed_button(){
     }
 
     SDL_SetRenderDrawColor(renderer_, 20, 20, 20, 255);
-    SDL_RenderDrawRect(renderer_, &rect);
 
     draw_text("2x", rect.x + 14, rect.y + 18, SDL_Color{255, 255, 255, 255});
 }
@@ -2479,7 +2498,6 @@ void App::render_selected_tower_menu(){
         render_button_texture(rect, SDL_Color{170, 130, 60, 255});
 
         SDL_SetRenderDrawColor(renderer_, 255, 255, 255, 255);
-        SDL_RenderDrawRect(renderer_, &rect);
 
         draw_text("Set Target", rect.x + 16, rect.y + 18, title_color);
     }
@@ -2497,7 +2515,6 @@ void App::render_selected_tower_menu(){
         }
 
         SDL_SetRenderDrawColor(renderer_, 255, 255, 255, 255);
-        SDL_RenderDrawRect(renderer_, &rect);
 
         if (can_move){
             draw_text("Move", rect.x + 16, rect.y + 10, title_color);
@@ -2572,7 +2589,6 @@ void App::render_sell_button(){
     render_button_texture(rect, SDL_Color{252, 0, 113, 255});
 
     SDL_SetRenderDrawColor(renderer_, 220, 220, 220, 255);
-    SDL_RenderDrawRect(renderer_, &rect);
 
     Tower &tower = towers_[selected_tower_index_];
     int sell_price = static_cast<int>(std::ceil(tower.money_spent * 0.45));
@@ -2635,7 +2651,6 @@ void App::render_upgrade_button(const Tower& tower, UpgradePath path, int curren
     }
 
     SDL_SetRenderDrawColor(renderer_, 220, 220, 220, 255);
-    SDL_RenderDrawRect(renderer_, &rect);
 
     SDL_Color title_color{255, 255, 255, 255};
     SDL_Color text_color{210, 220, 230, 255};
@@ -3199,26 +3214,76 @@ void App::render_pause_menu(){
     SDL_Rect resume_rect = get_resume_button_rect();
     render_button_texture(resume_rect, SDL_Color{70, 110, 80, 255});
     SDL_SetRenderDrawColor(renderer_, 220, 220, 220, 255);
-    SDL_RenderDrawRect(renderer_, &resume_rect);
     draw_text("Resume", resume_rect.x + 95, resume_rect.y + 18, text_color);
 
     SDL_Rect settings_rect = get_settings_button_rect();
     render_button_texture(settings_rect, SDL_Color{70, 80, 110, 255});
     SDL_SetRenderDrawColor(renderer_, 220, 220, 220, 255);
-    SDL_RenderDrawRect(renderer_, &settings_rect);
     draw_text("Settings", settings_rect.x + 85, settings_rect.y + 18, text_color);
 
     SDL_Rect main_menu_rect = get_main_menu_button_rect();
     render_button_texture(main_menu_rect, SDL_Color{90, 90, 70, 255});
     SDL_SetRenderDrawColor(renderer_, 220, 220, 220, 255);
-    SDL_RenderDrawRect(renderer_, &main_menu_rect);
     draw_text("Main Menu", main_menu_rect.x + 75, main_menu_rect.y + 18, text_color);
 
     SDL_Rect quit_rect = get_quit_button_rect();
     render_button_texture(quit_rect, SDL_Color{110, 70, 70, 255});
     SDL_SetRenderDrawColor(renderer_, 220, 220, 220, 255);
-    SDL_RenderDrawRect(renderer_, &quit_rect);
     draw_text("Quit", quit_rect.x + 115, quit_rect.y + 18, text_color);
+
+    if (pause_confirm_action_ != PauseConfirmAction::None){
+        SDL_SetRenderDrawBlendMode(renderer_, SDL_BLENDMODE_BLEND);
+        SDL_SetRenderDrawColor(renderer_, 0, 0, 0, 150);
+        SDL_Rect confirm_overlay{0, 0, WORLD_WIDTH, WORLD_HEIGHT};
+        SDL_RenderFillRect(renderer_, &confirm_overlay);
+
+        SDL_Rect confirm_panel{WORLD_WIDTH / 2 - 260, WORLD_HEIGHT / 2 - 120, 520, 260};
+        SDL_SetRenderDrawColor(renderer_, 30, 34, 40, 250);
+        SDL_RenderFillRect(renderer_, &confirm_panel);
+        SDL_SetRenderDrawColor(renderer_, 100, 110, 125, 255);
+        SDL_RenderDrawRect(renderer_, &confirm_panel);
+
+        std::string message = pause_confirm_action_ == PauseConfirmAction::MainMenu
+            ? "Return to Main Menu?"
+            : "Exit Game?";
+
+        TTF_Font* font = assets_.get_font("game_font");
+        int text_w = 0;
+        int text_h = 0;
+
+        std::string title = "Are You Sure?";
+        if (font != nullptr && TTF_SizeText(font, title.c_str(), &text_w, &text_h) == 0){
+            draw_text(title, confirm_panel.x + (confirm_panel.w - text_w) / 2, confirm_panel.y + 35, title_color);
+        } else{
+            draw_text(title, confirm_panel.x + 160, confirm_panel.y + 35, title_color);
+        }
+
+        if (font != nullptr && TTF_SizeText(font, message.c_str(), &text_w, &text_h) == 0){
+            draw_text(message, confirm_panel.x + (confirm_panel.w - text_w) / 2, confirm_panel.y + 85, text_color);
+        } else{
+            draw_text(message, confirm_panel.x + 105, confirm_panel.y + 85, text_color);
+        }
+
+        SDL_Rect yes_rect{WORLD_WIDTH / 2 - 190, WORLD_HEIGHT / 2 + 60, 160, 60};
+        SDL_Rect no_rect{WORLD_WIDTH / 2 + 30, WORLD_HEIGHT / 2 + 60, 160, 60};
+
+        render_button_texture(yes_rect, SDL_Color{70, 110, 80, 255});
+        render_button_texture(no_rect, SDL_Color{110, 70, 70, 255});
+
+        std::string yes_text = "Yes";
+        if (font != nullptr && TTF_SizeText(font, yes_text.c_str(), &text_w, &text_h) == 0){
+            draw_text(yes_text, yes_rect.x + (yes_rect.w - text_w) / 2, yes_rect.y + 18, text_color);
+        } else{
+            draw_text(yes_text, yes_rect.x + 55, yes_rect.y + 18, text_color);
+        }
+
+        std::string no_text = "No";
+        if (font != nullptr && TTF_SizeText(font, no_text.c_str(), &text_w, &text_h) == 0){
+            draw_text(no_text, no_rect.x + (no_rect.w - text_w) / 2, no_rect.y + 18, text_color);
+        } else{
+            draw_text(no_text, no_rect.x + 60, no_rect.y + 18, text_color);
+        }
+    }
 }
 
 SDL_Rect App::get_back_button_rect() const{
@@ -3244,12 +3309,23 @@ void App::toggle_fullscreen(){
     }
 }
 
+void App::render_menu_background() const{
+    SDL_Texture* background_texture = assets_.get_texture("menu_background");
+    SDL_Rect background{0, 0, WORLD_WIDTH, WORLD_HEIGHT};
+
+    if (background_texture != nullptr){
+        SDL_RenderCopy(renderer_, background_texture, nullptr, &background);
+        return;
+    }
+
+    SDL_SetRenderDrawColor(renderer_, 16, 33, 33, 255);
+    SDL_RenderFillRect(renderer_, &background);
+}
+
 void App::render_settings_menu(){
     SDL_SetRenderDrawBlendMode(renderer_, SDL_BLENDMODE_BLEND);
 
-    SDL_SetRenderDrawColor(renderer_, 18, 22, 28, 255);
-    SDL_Rect background{0, 0, WORLD_WIDTH, WORLD_HEIGHT};
-    SDL_RenderFillRect(renderer_, &background);
+    render_menu_background();
 
     SDL_Color title_color{240, 240, 240, 255};
     SDL_Color text_color{220, 220, 220, 255};
@@ -3263,13 +3339,11 @@ void App::render_settings_menu(){
     SDL_Rect resolution_rect = get_resolution_button_rect();
     render_button_texture(resolution_rect, SDL_Color{50, 60, 70, 255});
     SDL_SetRenderDrawColor(renderer_, 220, 220, 220, 255);
-    SDL_RenderDrawRect(renderer_, &resolution_rect);
     draw_text(resolution_text, resolution_rect.x + 110, resolution_rect.y + 18, text_color);
 
     SDL_Rect vsync_rect = get_vsync_button_rect();
     render_button_texture(vsync_rect, SDL_Color{50, 60, 70, 255});
     SDL_SetRenderDrawColor(renderer_, 220, 220, 220, 255);
-    SDL_RenderDrawRect(renderer_, &vsync_rect);
 
     std::string vsync_text = vsync_enabled_ ? "V-Sync: ON" : "V-Sync: OFF";
     draw_text(vsync_text, vsync_rect.x + 180, vsync_rect.y + 18, text_color);
@@ -3277,7 +3351,6 @@ void App::render_settings_menu(){
     SDL_Rect fullscreen_rect = get_fullscreen_button_rect();
     render_button_texture(fullscreen_rect, SDL_Color{50, 60, 70, 255});
     SDL_SetRenderDrawColor(renderer_, 220, 220, 220, 255);
-    SDL_RenderDrawRect(renderer_, &fullscreen_rect);
 
     draw_text("Master Volume: " + std::to_string(master_volume_) + "%",
           WORLD_WIDTH / 2 - 120,
@@ -3310,7 +3383,6 @@ void App::render_settings_menu(){
     for (const SDL_Rect& button : volume_buttons){
         render_button_texture(button, SDL_Color{50, 60, 70, 255});
         SDL_SetRenderDrawColor(renderer_, 220, 220, 220, 255);
-        SDL_RenderDrawRect(renderer_, &button);
     }
 
     draw_text("-", master_down.x + 28, master_down.y + 18, text_color);
@@ -3328,7 +3400,6 @@ void App::render_settings_menu(){
     SDL_Rect debug_rect = get_debug_hud_button_rect();
     render_button_texture(debug_rect, SDL_Color{50, 60, 70, 255});
     SDL_SetRenderDrawColor(renderer_, 220, 220, 220, 255);
-    SDL_RenderDrawRect(renderer_, &debug_rect);
 
     std::string debug_text = show_debug_hud_ ? "Debug HUD: ON" : "Debug HUD: OFF";
     draw_text(debug_text, debug_rect.x + 115, debug_rect.y + 22, text_color);
@@ -3336,7 +3407,6 @@ void App::render_settings_menu(){
     SDL_Rect fps_rect = get_show_fps_button_rect();
     render_button_texture(fps_rect, SDL_Color{50, 60, 70, 255});
     SDL_SetRenderDrawColor(renderer_, 220, 220, 220, 255);
-    SDL_RenderDrawRect(renderer_, &fps_rect);
 
     std::string fps_text = show_fps_ ? "Show FPS: ON" : "Show FPS: OFF";
     draw_text(fps_text, fps_rect.x + 130, fps_rect.y + 22, text_color);
@@ -3596,9 +3666,7 @@ SDL_Rect App::get_main_quit_button_rect() const{
 }
 
 void App::render_main_menu(){
-    SDL_SetRenderDrawColor(renderer_, 18, 22, 28, 255);
-    SDL_Rect background{0, 0, WORLD_WIDTH, WORLD_HEIGHT};
-    SDL_RenderFillRect(renderer_, &background);
+    render_menu_background();
 
     SDL_Color text_color{240, 240, 240, 255};
 
@@ -3610,17 +3678,14 @@ void App::render_main_menu(){
 
     render_button_texture(play, SDL_Color{70, 110, 80, 255});
     SDL_SetRenderDrawColor(renderer_, 220, 220, 220, 255);
-    SDL_RenderDrawRect(renderer_, &play);
     draw_text("Play", play.x + 115, play.y + 18, text_color);
 
     render_button_texture(settings, SDL_Color{70, 80, 110, 255});
     SDL_SetRenderDrawColor(renderer_, 220, 220, 220, 255);
-    SDL_RenderDrawRect(renderer_, &settings);
     draw_text("Settings", settings.x + 85, settings.y + 18, text_color);
 
     render_button_texture(quit, SDL_Color{110, 70, 70, 255});
     SDL_SetRenderDrawColor(renderer_, 220, 220, 220, 255);
-    SDL_RenderDrawRect(renderer_, &quit);
     draw_text("Quit", quit.x + 115, quit.y + 18, text_color);
 }
 
@@ -3629,9 +3694,7 @@ SDL_Rect App::get_map_button_rect(int index) const{
 }
 
 void App::render_map_select_menu(){
-    SDL_SetRenderDrawColor(renderer_, 18, 22, 28, 255);
-    SDL_Rect background{0, 0, WORLD_WIDTH, WORLD_HEIGHT};
-    SDL_RenderFillRect(renderer_, &background);
+    render_menu_background();
 
     render_back_button();
 
@@ -3643,7 +3706,6 @@ void App::render_map_select_menu(){
 
         render_button_texture(rect, SDL_Color{50, 60, 70, 255});
         SDL_SetRenderDrawColor(renderer_, 220, 220, 220, 255);
-        SDL_RenderDrawRect(renderer_, &rect);
 
         draw_text(map_options_[i].name, rect.x + 130, rect.y + 18, text_color);
     }
@@ -3663,9 +3725,7 @@ SDL_Rect App::get_difficulty_button_rect(Difficulty difficulty) const{
 }
 
 void App::render_difficulty_select_menu(){
-    SDL_SetRenderDrawColor(renderer_, 18, 22, 28, 255);
-    SDL_Rect background{0, 0, WORLD_WIDTH, WORLD_HEIGHT};
-    SDL_RenderFillRect(renderer_, &background);
+    render_menu_background();
 
     render_back_button();
 
@@ -3682,7 +3742,6 @@ void App::render_difficulty_select_menu(){
     SDL_RenderFillRect(renderer_, &easy);
     render_button_hover_highlight(easy);
     SDL_SetRenderDrawColor(renderer_, 220, 220, 220, 255);
-    SDL_RenderDrawRect(renderer_, &easy);
     draw_text("Easy", easy.x + 110, easy.y + 18, text_color);
 
     render_button_texture(medium, SDL_Color{255, 255, 255, 255}, false);
@@ -3691,7 +3750,6 @@ void App::render_difficulty_select_menu(){
     SDL_RenderFillRect(renderer_, &medium);
     render_button_hover_highlight(medium);
     SDL_SetRenderDrawColor(renderer_, 220, 220, 220, 255);
-    SDL_RenderDrawRect(renderer_, &medium);
     draw_text("Medium", medium.x + 90, medium.y + 18, text_color);
 
     render_button_texture(hard, SDL_Color{255, 255, 255, 255}, false);
@@ -3700,7 +3758,6 @@ void App::render_difficulty_select_menu(){
     SDL_RenderFillRect(renderer_, &hard);
     render_button_hover_highlight(hard);
     SDL_SetRenderDrawColor(renderer_, 220, 220, 220, 255);
-    SDL_RenderDrawRect(renderer_, &hard);
     draw_text("Hard", hard.x + 110, hard.y + 18, text_color);
 }
 
@@ -3798,7 +3855,6 @@ void App::render_back_button(){
     render_button_texture(back_rect, SDL_Color{80, 80, 90, 255});
 
     SDL_SetRenderDrawColor(renderer_, 220, 220, 220, 255);
-    SDL_RenderDrawRect(renderer_, &back_rect);
 
     draw_text("Back", back_rect.x + 55, back_rect.y + 15, text_color);
 }
