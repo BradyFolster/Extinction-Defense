@@ -2641,19 +2641,17 @@ void App::render_upgrade_button(const Tower& tower, UpgradePath path, int curren
     bool is_maxed = next_upgrade == nullptr;
     bool can_afford = !is_maxed && player_.can_afford(next_upgrade->cost);
 
-    // Dim the button if the player cannot buy it or the path is finished
-    if (is_maxed){
-        render_button_texture(rect, SDL_Color{70, 70, 70, 255});
-    } else if (!can_afford){
-        render_button_texture(rect, SDL_Color{110, 70, 70, 255});
-    } else{
-        render_button_texture(rect, SDL_Color{70, 110, 80, 255});
-    }
+    render_button_texture(rect, SDL_Color{255, 255, 255, 255});
 
-    SDL_SetRenderDrawColor(renderer_, 220, 220, 220, 255);
+    if (is_maxed || !can_afford){
+        SDL_SetRenderDrawBlendMode(renderer_, SDL_BLENDMODE_BLEND);
+        SDL_SetRenderDrawColor(renderer_, 0, 0, 0, 115);
+        SDL_RenderFillRect(renderer_, &rect);
+    }
 
     SDL_Color title_color{255, 255, 255, 255};
     SDL_Color text_color{210, 220, 230, 255};
+    SDL_Color cost_color = can_afford ? SDL_Color{80, 255, 100, 255} : SDL_Color{255, 70, 70, 255};
 
     int text_x = rect.x + 24;
     int text_y = rect.y + 22;
@@ -2667,7 +2665,20 @@ void App::render_upgrade_button(const Tower& tower, UpgradePath path, int curren
     }
 
     draw_text_small(next_upgrade->name, text_x, text_y + 24, text_color);
-    draw_text_small("$" + std::to_string(next_upgrade->cost) + " - " + describe_upgrade_effect(*next_upgrade), text_x, text_y + 48, text_color);
+
+    std::string cost_text = "$" + std::to_string(next_upgrade->cost);
+    draw_text_small(cost_text, text_x, text_y + 48, cost_color);
+
+    int cost_w = 0;
+    int cost_h = 0;
+    TTF_Font* small_font = assets_.get_font("game_font_small");
+    int effect_x = text_x + 58;
+
+    if (small_font != nullptr && TTF_SizeText(small_font, cost_text.c_str(), &cost_w, &cost_h) == 0){
+        effect_x = text_x + cost_w + 12;
+    }
+
+    draw_text_small("- " + describe_upgrade_effect(*next_upgrade), effect_x, text_y + 48, text_color);
 }
 
 void App::reset_money_generator_timers(){
@@ -3669,24 +3680,34 @@ void App::render_main_menu(){
     render_menu_background();
 
     SDL_Color text_color{240, 240, 240, 255};
+    TTF_Font* font = assets_.get_font("game_font");
 
-    draw_text("Extinction Defense", WORLD_WIDTH / 2 - 150, 220, text_color);
+    auto draw_centered_text = [this, font](const std::string& text, const SDL_Rect& area, SDL_Color color){
+        int text_w = 0;
+        int text_h = 0;
+
+        if (font != nullptr && TTF_SizeText(font, text.c_str(), &text_w, &text_h) == 0){
+            draw_text(text, area.x + (area.w - text_w) / 2, area.y + (area.h - text_h) / 2, color);
+        } else{
+            draw_text(text, area.x, area.y, color);
+        }
+    };
+
+    SDL_Rect title_area{0, 200, WORLD_WIDTH, 70};
+    draw_centered_text("Extinction Defense", title_area, text_color);
 
     SDL_Rect play = get_main_play_button_rect();
     SDL_Rect settings = get_main_settings_button_rect();
     SDL_Rect quit = get_main_quit_button_rect();
 
     render_button_texture(play, SDL_Color{70, 110, 80, 255});
-    SDL_SetRenderDrawColor(renderer_, 220, 220, 220, 255);
-    draw_text("Play", play.x + 115, play.y + 18, text_color);
+    draw_centered_text("Play", play, text_color);
 
     render_button_texture(settings, SDL_Color{70, 80, 110, 255});
-    SDL_SetRenderDrawColor(renderer_, 220, 220, 220, 255);
-    draw_text("Settings", settings.x + 85, settings.y + 18, text_color);
+    draw_centered_text("Settings", settings, text_color);
 
     render_button_texture(quit, SDL_Color{110, 70, 70, 255});
-    SDL_SetRenderDrawColor(renderer_, 220, 220, 220, 255);
-    draw_text("Quit", quit.x + 115, quit.y + 18, text_color);
+    draw_centered_text("Quit", quit, text_color);
 }
 
 SDL_Rect App::get_map_button_rect(int index) const{
