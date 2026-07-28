@@ -88,3 +88,5 @@ struct Enemy{
 };
 
 const EnemyDefinition& get_enemy_definition(EnemyType type);
+
+const char* get_enemy_texture_key(EnemyType type);

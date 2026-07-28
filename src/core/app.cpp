@@ -750,6 +750,7 @@ bool App::load_assets(){
     //            ADD MORE ASSETS BELOW (same format)
     // =======================================================
 
+    // Fonts
     if (!assets_.load_font("debug_font", "assets/fonts/Roboto-Regular.ttf", 24)){
         std::cerr << "failed to load debug font.\n";
         return false;
@@ -767,6 +768,7 @@ bool App::load_assets(){
         return false;
     }
 
+    // UI
     if (!assets_.load_texture(renderer_, "button", "assets/images/button.png")){
         std::cerr << "failed to load button texture.\n";
         return false;
@@ -831,6 +833,80 @@ bool App::load_assets(){
     }
     if (!assets_.load_texture(renderer_, "tower_pteranodon", "assets/images/dinos/pteranodon.png")){
         std::cerr << "failed to load pteranodon texture.\n";
+        return false;
+    }
+
+    // Enemies
+    if (!assets_.load_texture(renderer_, "enemy_egg_scout", "assets/images/enemies/EggScout.png")){
+        std::cerr << "failed to load egg scout texture.\n";
+        return false;
+    }
+    if (!assets_.load_texture(renderer_, "enemy_nest_runner", "assets/images/enemies/NestRunner.png")){
+        std::cerr << "failed to load nest runner texture.\n";
+        return false;
+    }
+    if (!assets_.load_texture(renderer_, "enemy_warden", "assets/images/enemies/Warden.png")){
+        std::cerr << "failed to load warden texture.\n";
+        return false;
+    }
+    if (!assets_.load_texture(renderer_, "enemy_tamed_compy_pack", "assets/images/enemies/TamedCompyPack.png")){
+        std::cerr << "failed to load tamed compy pack texture.\n";
+        return false;
+    }
+    if (!assets_.load_texture(renderer_, "enemy_raptor_rider", "assets/images/enemies/RaptorRider.png")){
+        std::cerr << "failed to load raptor rider texture.\n";
+        return false;
+    }
+    if (!assets_.load_texture(renderer_, "enemy_egg_cart_caravan", "assets/images/enemies/EggCartCaravan.png")){
+        std::cerr << "failed to load egg cart caravan texture.\n";
+        return false;
+    }
+    if (!assets_.load_texture(renderer_, "enemy_bone_doctor", "assets/images/enemies/BoneDoctor.png")){
+        std::cerr << "failed to load bone doctor texture.\n";
+        return false;
+    }
+    if (!assets_.load_texture(renderer_, "enemy_shieldback_raider", "assets/images/enemies/ShieldbackRaider.png")){
+        std::cerr << "failed to load shieldback raider texture.\n";
+        return false;
+    }
+    if (!assets_.load_texture(renderer_, "enemy_trike_ram_team", "assets/images/enemies/TrikeRamTeam.png")){
+        std::cerr << "failed to load trike ram team texture.\n";
+        return false;
+    }
+    if (!assets_.load_texture(renderer_, "enemy_nest_smoke_shaman", "assets/images/enemies/NestSmokeShaman.png")){
+        std::cerr << "failed to load nest smoke shaman texture.\n";
+        return false;
+    }
+    if (!assets_.load_texture(renderer_, "enemy_armored_ankylosaur", "assets/images/enemies/ArmoredAnkylosaur.png")){
+        std::cerr << "failed to load armored ankylosaur texture.\n";
+        return false;
+    }
+    if (!assets_.load_texture(renderer_, "enemy_ballista_crew", "assets/images/enemies/BallistaCrew.png")){
+        std::cerr << "failed to load ballista crew texture.\n";
+        return false;
+    }
+    if (!assets_.load_texture(renderer_, "enemy_chrome_claw_raptor", "assets/images/enemies/ChromeClawRaptor.png")){
+        std::cerr << "failed to load chrome-claw raptor texture.\n";
+        return false;
+    }
+    if (!assets_.load_texture(renderer_, "enemy_ironcrest_triceratops", "assets/images/enemies/IroncrestTriceratops.png")){
+        std::cerr << "failed to load ironcrest triceratops texture.\n";
+        return false;
+    }
+    if (!assets_.load_texture(renderer_, "enemy_bio_surgeon_doctor", "assets/images/enemies/BioSurgeonDoctor.png")){
+        std::cerr << "failed to load bio-surgeon doctor texture.\n";
+        return false;
+    }
+    if (!assets_.load_texture(renderer_, "enemy_robo_raptor", "assets/images/enemies/RoboRaptor.png")){
+        std::cerr << "failed to load robo-raptor texture.\n";
+        return false;
+    }
+    if (!assets_.load_texture(renderer_, "enemy_robo_stego_bulwark", "assets/images/enemies/RoboStegoBulwark.png")){
+        std::cerr << "failed to load robo-stego bulwark texture.\n";
+        return false;
+    }
+    if (!assets_.load_texture(renderer_, "enemy_eggbreaker_titan", "assets/images/enemies/EggbreakerTitan.png")){
+        std::cerr << "failed to load eggbreaker titan texture.\n";
         return false;
     }
 
@@ -1426,22 +1502,59 @@ void App::render_enemies() const{
         if (!enemy.alive){
             continue;
         }
+        // Selects the correct frame
+        const int frame_w = 32;
+        const int frame_h = 32;
+        const int sheet_cols = 3;
+        const int total_frames = 9;
+        const Uint32 milliseconds_per_frame = 100;
 
-        const EnemyDefinition& def = get_enemy_definition(enemy.type);
+        int frame = static_cast<int>((SDL_GetTicks() / milliseconds_per_frame) % total_frames);
+        int frame_col = frame % sheet_cols;
+        int frame_row = frame / sheet_cols;
 
-        SDL_SetRenderDrawColor(renderer_, def.debug_color.r, def.debug_color.g, def.debug_color.b, 255);
-
-        SDL_Rect rect{
-            static_cast<int>(enemy.x - CELL_SIZE / 3),
-            static_cast<int>(enemy.y - CELL_SIZE / 3),
-            CELL_SIZE * 2 / 3,
-            CELL_SIZE * 2 / 3
+        SDL_Rect src{
+            frame_col * frame_w,
+            frame_row * frame_h,
+            frame_w,
+            frame_h
         };
 
-        SDL_RenderFillRect(renderer_, &rect);
+        // Renders the texture
+        SDL_Texture* texture = assets_.get_texture(get_enemy_texture_key(enemy.type));
+        const int enemy_render_size = CELL_SIZE * 6 / 3;
+        SDL_Rect rect{
+            static_cast<int>(enemy.x - enemy_render_size / 2),
+            static_cast<int>(enemy.y - enemy_render_size / 2),
+            enemy_render_size,
+            enemy_render_size
+        };
 
+        SDL_RenderCopy(renderer_, texture, &src, &rect);
         render_enemy_health_bar(enemy, rect);
+
     }
+    // Old rendering system
+    // for (const Enemy& enemy : enemies_){
+    //     if (!enemy.alive){
+    //         continue;
+    //     }
+
+    //     const EnemyDefinition& def = get_enemy_definition(enemy.type);
+
+    //     SDL_SetRenderDrawColor(renderer_, def.debug_color.r, def.debug_color.g, def.debug_color.b, 255);
+
+    //     SDL_Rect rect{
+    //         static_cast<int>(enemy.x - CELL_SIZE / 3),
+    //         static_cast<int>(enemy.y - CELL_SIZE / 3),
+    //         CELL_SIZE * 2 / 3,
+    //         CELL_SIZE * 2 / 3
+    //     };
+
+    //     SDL_RenderFillRect(renderer_, &rect);
+
+    //     render_enemy_health_bar(enemy, rect);
+    // }
 }
 
 SDL_Rect App::get_next_wave_button_rect() const{
@@ -1881,7 +1994,7 @@ void App::render_enemy_health_bar(const Enemy& enemy, const SDL_Rect& enemy_rect
     const int bar_width = CELL_SIZE;
     const int bar_height = 4;
     const int bar_x = static_cast<int>(enemy.x - bar_width / 2);
-    const int bar_y = enemy.y - 8;
+    const int bar_y = enemy.y - 23;
 
     SDL_Rect background_rect{
         bar_x,

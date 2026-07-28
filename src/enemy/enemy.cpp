@@ -258,3 +258,27 @@ const EnemyDefinition& get_enemy_definition(EnemyType type){
         default: throw std::runtime_error("Unknown EnemyType");
     }
 }
+
+const char* get_enemy_texture_key(EnemyType type){
+    switch(type){
+        case EnemyType::EggScout: return "enemy_egg_scout";
+        case EnemyType::NestRunner: return "enemy_nest_runner";
+        case EnemyType::Warden: return "enemy_warden";
+        case EnemyType::TamedCompyPack: return "enemy_tamed_compy_pack";
+        case EnemyType::RaptorRider: return "enemy_raptor_rider";
+        case EnemyType::EggCartCaravan: return "enemy_egg_cart_caravan";
+        case EnemyType::BoneDoctor: return "enemy_bone_doctor";
+        case EnemyType::ShieldbackRaider: return "enemy_shieldback_raider";
+        case EnemyType::TrikeRamTeam: return "enemy_trike_ram_team";
+        case EnemyType::NestSmokeShaman: return "enemy_nest_smoke_shaman";
+        case EnemyType::ArmoredAnkylosaur: return "enemy_armored_ankylosaur";
+        case EnemyType::BallistaCrew: return "enemy_ballista_crew";
+        case EnemyType::ChromeClawRaptor: return "enemy_chrome_claw_raptor";
+        case EnemyType::IroncrestTriceratops: return "enemy_ironcrest_triceratops";
+        case EnemyType::BioSurgeonDoctor: return "enemy_bio_surgeon_doctor";
+        case EnemyType::RoboRaptor: return "enemy_robo_raptor";
+        case EnemyType::RoboStegoBulwark: return "enemy_robo_stego_bulwark";
+        case EnemyType::EggbreakerTitan: return "enemy_eggbreaker_titan";
+        default: return nullptr;
+    }
+}
