@@ -1454,6 +1454,11 @@ void App::update_enemies(float dt){
             enemy.path_index++;
             continue;
         }
+
+        // Hit flash
+        if (enemy.hit_flash_timer > 0.0f){
+            enemy.hit_flash_timer -= dt;
+        }
         
         const EnemyDefinition& def = get_enemy_definition(enemy.type);
         // Ticks down slow effect before moving
@@ -1530,8 +1535,17 @@ void App::render_enemies() const{
             enemy_render_size
         };
 
+        // Hit Flash
+        if (enemy.hit_flash_timer > 0.0f){
+            SDL_SetTextureColorMod(texture, 255, 80, 80);
+        } else {
+            SDL_SetTextureColorMod(texture, 255, 255, 255);
+        }
+
         SDL_RenderCopy(renderer_, texture, &src, &rect);
+        SDL_SetTextureColorMod(texture, 255, 255, 255);
         render_enemy_health_bar(enemy, rect);
+
 
     }
     // Old rendering system
@@ -2421,6 +2435,8 @@ void App::damage_enemy(Enemy& enemy, const Tower& source_tower){
     }
 
     enemy.health -= final_damage;
+    // Hit flash
+    enemy.hit_flash_timer = 0.08f;
 
     // Optional slow-on-hit behavior
     if (source_tower.slow_on_hit.duration > 0.0f){

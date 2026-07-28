@@ -85,6 +85,9 @@ struct Enemy{
 
     // Runtime timer for healers
     float healing_timer = 0.0f;
+
+    // Hit effect
+    float hit_flash_timer = 0.0f;
 };
 
 const EnemyDefinition& get_enemy_definition(EnemyType type);
