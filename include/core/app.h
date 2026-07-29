@@ -33,7 +33,8 @@ enum class AppScreen{
     MapSelect,
     DifficultySelect,
     Gameplay,
-    Settings
+    Settings,
+    GameOver
 };
 
 enum class Difficulty{
@@ -159,6 +160,11 @@ class App{
         SDL_Rect get_sell_button_rect() const;
         void render_sell_button();
 
+        // Gameover screen helpers
+        void render_game_over_menu();
+        SDL_Rect get_game_over_restart_button_rect() const;
+        SDL_Rect get_game_over_main_menu_button_rect() const;
+        
 
         // Pause menu helpers
         void render_pause_menu();

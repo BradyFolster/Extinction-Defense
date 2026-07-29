@@ -259,6 +259,20 @@ void App::process_events(){
                     continue;
                 }
 
+                if (screen_ == AppScreen::GameOver){
+                    if (point_in_rect(mouse_x, mouse_y, get_game_over_restart_button_rect())){
+                        if (selected_map_index_ >= 0 && selected_map_index_ < static_cast<int>(map_options_.size())){
+                            start_game(map_options_[selected_map_index_], selected_difficulty_);
+                        }
+                    }
+                    else if (point_in_rect(mouse_x, mouse_y, get_game_over_main_menu_button_rect())){
+                        screen_stack_.clear();
+                        start_screen_transition(AppScreen::MainMenu);
+                    }
+
+                    continue;
+                }
+
                 if (screen_ == AppScreen::Settings){
                     if (point_in_rect(mouse_x, mouse_y, get_back_button_rect())){
                         pop_screen();
@@ -650,6 +664,13 @@ void App::render(){
 
     if (screen_ == AppScreen::Settings){
         render_settings_menu();
+        render_screen_transition_overlay();
+        SDL_RenderPresent(renderer_);
+        return;
+    }
+
+    if (screen_ == AppScreen::GameOver){
+        render_game_over_menu();
         render_screen_transition_overlay();
         SDL_RenderPresent(renderer_);
         return;
@@ -1437,6 +1458,15 @@ void App::update_enemies(float dt){
             player_.take_damage(def.goal_damage);
             enemy.alive = false;
             enemy.reached_goal = true;
+
+            // Checks for gameover
+            if (player_.is_dead()){
+                paused_ = false;
+                selected_tower_index_ = -1;
+                tower_selected_ = false;
+                start_screen_transition(AppScreen::GameOver);
+            }
+
             continue;
         }
 
@@ -4110,4 +4140,42 @@ bool App::save_settings() const{
     file << settings.dump(4);
 
     return true;
+}
+
+void App::render_game_over_menu(){
+    render_menu_background();
+
+    SDL_Color title_color{240, 240, 240, 255};
+    SDL_Color text_color{220, 220, 220, 255};
+    TTF_Font* font = assets_.get_font("game_font");
+
+    auto draw_centered_text = [this, font](const std::string& text, const SDL_Rect& area, SDL_Color color){
+        int text_w = 0;
+        int text_h = 0;
+
+        if (font != nullptr && TTF_SizeText(font, text.c_str(), &text_w, &text_h) == 0){
+            draw_text(text, area.x + (area.w - text_w) / 2, area.y + (area.h - text_h) / 2, color);
+        } else{
+            draw_text(text, area.x, area.y, color);
+        }
+    };
+
+    SDL_Rect title_area{0, 230, WORLD_WIDTH, 70};
+    draw_centered_text("Game Over", title_area, title_color);
+
+    SDL_Rect restart_rect = get_game_over_restart_button_rect();
+    render_button_texture(restart_rect, SDL_Color{70, 110, 80, 255});
+    draw_centered_text("Restart", restart_rect, text_color);
+
+    SDL_Rect main_menu_rect = get_game_over_main_menu_button_rect();
+    render_button_texture(main_menu_rect, SDL_Color{90, 90, 70, 255});
+    draw_centered_text("Main Menu", main_menu_rect, text_color);
+}
+
+SDL_Rect App::get_game_over_restart_button_rect() const{
+    return SDL_Rect{WORLD_WIDTH / 2 - 140, 360, 280, 60};
+}
+
+SDL_Rect App::get_game_over_main_menu_button_rect() const{
+    return SDL_Rect{WORLD_WIDTH / 2 - 140, 440, 280, 60};
 }
