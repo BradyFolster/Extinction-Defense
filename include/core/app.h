@@ -42,6 +42,14 @@ enum class Difficulty{
     Medium,
     Hard
 };
+struct DifficultySettings{
+    int starting_health = 35;
+    int starting_money = 500;
+    float enemy_health_multiplier = 1.0f;
+    float enemy_speed_multiplier = 1.0f;
+    float enemy_reward_multiplier = 1.0f;
+    float spawn_delay_multiplier = 1.0f;
+};
 
 enum class PauseConfirmAction{
     None,
@@ -138,7 +146,7 @@ class App{
         void spawn_poof_effect(float x, float y);
         void update_poof_effects(float dt);
         void render_poof_effects() const;
-        
+
         // Projectile helpers
         void spawn_projectile(Tower& tower, int tower_index, const Enemy& target);
         void update_projectiles(float dt);
@@ -208,6 +216,8 @@ class App{
         SDL_Rect get_main_quit_button_rect() const;
         SDL_Rect get_map_button_rect(int index) const;
         SDL_Rect get_difficulty_button_rect(Difficulty difficulty) const;
+        DifficultySettings get_difficulty_settings() const;
+        std::string get_difficulty_name() const;
 
         // Settings helpers
         bool load_settings();

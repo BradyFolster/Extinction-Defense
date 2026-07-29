@@ -1441,7 +1441,11 @@ void App::spawn_enemy(EnemyType type){
     enemy.id = next_enemy_id_++;
 
     enemy.type = type;
-    enemy.health = get_enemy_definition(type).max_health;
+
+    const EnemyDefinition& def = get_enemy_definition(type);
+    DifficultySettings settings = get_difficulty_settings();
+
+    enemy.health = def.max_health * settings.enemy_health_multiplier;
 
     // Start the enemy at the first path cell
     enemy.x = cell_center_x(enemy_path_[0].col);
@@ -1514,6 +1518,8 @@ void App::update_enemies(float dt){
         }
         // Moves enemy based on slow effect and dt
         float current_speed = def.speed;
+        // Difficulty speed modifier
+        current_speed *= get_difficulty_settings().enemy_speed_multiplier;
 
         // Shaman speed effect
         current_speed *= get_enemy_aura_speed_bonus(enemy);
@@ -2499,7 +2505,10 @@ void App::damage_enemy(Enemy& enemy, const Tower& source_tower){
     if (enemy.health <= 0.0f){
         spawn_poof_effect(enemy.x, enemy.y);
         enemy.alive = false;
-        player_.add_money(def.reward);
+        // Difficulty reward modifier
+        int reward = static_cast<int>(def.reward * get_difficulty_settings().enemy_reward_multiplier);
+        reward = std::max(1, reward);
+        player_.add_money(reward);
     }
 }
 
@@ -3381,7 +3390,8 @@ void App::render_pause_menu(){
     SDL_RenderFillRect(renderer_, &overlay);
 
     // Small centered pause panel.
-    SDL_Rect panel{WORLD_WIDTH / 2 - 220, WORLD_HEIGHT / 2 - 230, 440, 520};
+    int pause_width = WORLD_WIDTH / 2 - 220;
+    SDL_Rect panel{pause_width, WORLD_HEIGHT / 2 - 230, 440, 520};
 
     SDL_SetRenderDrawColor(renderer_, 30, 34, 40, 245);
     SDL_RenderFillRect(renderer_, &panel);
@@ -3393,6 +3403,9 @@ void App::render_pause_menu(){
     SDL_Color text_color{220, 220, 220, 255};
 
     draw_text("Paused", panel.x + 170, panel.y + 35, title_color);
+
+    std::string diff = "Difficulty: " + get_difficulty_name();
+    draw_text_small(diff, panel.x + (pause_width / 5), panel.y + 70, title_color);
 
     SDL_Rect resume_rect = get_resume_button_rect();
     render_button_texture(resume_rect, SDL_Color{70, 110, 80, 255});
@@ -3822,7 +3835,9 @@ void App::start_game(const MapOption& map, Difficulty difficulty){
     next_enemy_id_ = 1;
     wave_manager_ = WaveManager{};
 
-    player_ = Player{35, 500};
+    // Uses difficulty settings
+    DifficultySettings settings = get_difficulty_settings();
+    player_ = Player{settings.starting_health, settings.starting_money};
 
     // Load the selected map only when the game actually starts.
     // This lets the main menu exist before any map is chosen.
@@ -4264,5 +4279,31 @@ void App::render_poof_effects() const{
         };
 
         SDL_RenderCopy(renderer_, texture, &src, &dest);
+    }
+}
+
+DifficultySettings App::get_difficulty_settings() const{
+    switch (selected_difficulty_){
+        case Difficulty::Easy:
+            return DifficultySettings{45, 650, 0.85f, 0.95f, 1.15f, 1.10f};
+        case Difficulty::Hard:
+            return DifficultySettings{25, 425, 1.20f, 1.08f, 0.90f, 0.90f};
+        case Difficulty::Medium:
+        default:
+            return DifficultySettings{35, 500, 1.0f, 1.0f, 1.0f, 1.0f};
+
+    }
+}
+
+std::string App::get_difficulty_name() const{
+    switch (selected_difficulty_){
+        case Difficulty::Easy:
+            return "Easy";
+        case Difficulty::Medium:
+            return "Medium";
+        case Difficulty::Hard:
+            return "Hard";
+        default:
+            return "";
     }
 }
