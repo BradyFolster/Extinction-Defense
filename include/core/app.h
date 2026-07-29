@@ -133,7 +133,7 @@ class App{
         void render_enemies() const;
         float cell_center_x(int col) const;
         float cell_center_y(int row) const;
-        void render_enemy_health_bar(const Enemy& enemy, const SDL_Rect& enemy_rect) const;
+        void render_enemy_health_bar(const Enemy& enemy) const;
         Enemy* find_enemy_by_id(int enemy_id);
         void rebuild_enemy_index();
         void damage_enemy(Enemy& enemy, const Tower& source_tower);

@@ -992,23 +992,23 @@ bool App::load_assets(){
     }
 
     // SFX
-    if (!assets_.load_sound("button_click", "assets/sounds/button_click.wav")){
+    if (!assets_.load_sound("button_click", "assets/sounds/sfx/button_click.wav")){
         std::cerr << "failed to load button click sound.\n";
         return false;
     }
-    if (!assets_.load_sound("upgrade_click", "assets/sounds/upgrade.wav")){
+    if (!assets_.load_sound("upgrade_click", "assets/sounds/sfx/upgrade.wav")){
         std::cerr << "failed to load upgrade click sound.\n";
         return false;
     }
-    if (!assets_.load_sound("sell_click", "assets/sounds/sell.wav")){
+    if (!assets_.load_sound("sell_click", "assets/sounds/sfx/sell.wav")){
         std::cerr << "failed to load sell click sound.\n";
         return false;
     }
-    if (!assets_.load_sound("attack", "assets/sounds/attack.wav")){
+    if (!assets_.load_sound("attack", "assets/sounds/sfx/attack.wav")){
         std::cerr << "failed to load attack sound.\n";
         return false;
     }
-    if (!assets_.load_sound("death", "assets/sounds/death.wav")){
+    if (!assets_.load_sound("death", "assets/sounds/sfx/death.wav")){
         std::cerr << "failed to load death sound.\n";
         return false;
     }
@@ -1256,6 +1256,8 @@ bool App::place_selected_tower_if_valid(int center_col, int center_row) {
             grid_[start_row + r][start_col + c].occupied = true;
         }
     }
+
+    play_sound("upgrade_click");
 
     return true;
 }
@@ -1656,7 +1658,7 @@ void App::render_enemies() const{
 
         SDL_RenderCopy(renderer_, texture, &src, &rect);
         SDL_SetTextureColorMod(texture, 255, 255, 255);
-        render_enemy_health_bar(enemy, rect);
+        render_enemy_health_bar(enemy);
 
 
     }
@@ -1679,7 +1681,7 @@ void App::render_enemies() const{
 
     //     SDL_RenderFillRect(renderer_, &rect);
 
-    //     render_enemy_health_bar(enemy, rect);
+    //     render_enemy_health_bar(enemy);
     // }
 }
 
@@ -2096,7 +2098,7 @@ void App::render_debug_hud() const{
     draw_text("Enemies: " + std::to_string(enemies_.size()), x, y, text_color);
 }
 
-void App::render_enemy_health_bar(const Enemy& enemy, const SDL_Rect& enemy_rect) const{
+void App::render_enemy_health_bar(const Enemy& enemy) const{
     const EnemyDefinition& def = get_enemy_definition(enemy.type);
 
     // Render only if the enemy has taken damage
