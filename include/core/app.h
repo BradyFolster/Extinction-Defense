@@ -231,6 +231,9 @@ class App{
         void start_screen_transition(AppScreen next_screen);
         void update_screen_transition(float dt);
         void render_screen_transition_overlay() const;
+
+        // Sound helpers
+        void play_sound(const std::string& name) const;
         
         // Debug rendering
         void render_path_debug();

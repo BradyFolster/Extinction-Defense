@@ -38,7 +38,7 @@ bool App::init(){
         std::cerr << "IMG_Init failed: " << IMG_GetError() << "\n";
         return false;
     }
-    if (Mix_OpenAudio(4410, MIX_DEFAULT_FORMAT, 2, 2048) != 0){
+    if (Mix_OpenAudio(44100, MIX_DEFAULT_FORMAT, 2, 256) != 0){
         std::cerr << "Mix_OpenAudio failed: " << Mix_GetError() << "\n";
         return false;
     }
@@ -171,12 +171,15 @@ void App::process_events(){
             // Pause menu & settings menu
             if (event.key.keysym.sym == SDLK_ESCAPE){
                 if (screen_ == AppScreen::Settings || screen_ == AppScreen::MapSelect || screen_ == AppScreen::DifficultySelect){
+                    play_sound("button_click");
                     pop_screen();
                 }
                 else if (screen_ == AppScreen::Gameplay){
                     if (paused_ && pause_confirm_action_ != PauseConfirmAction::None){
+                        play_sound("button_click");
                         pause_confirm_action_ = PauseConfirmAction::None;
                     } else{
+                        play_sound("button_click");
                         paused_ = !paused_;
                     }
 
@@ -190,11 +193,13 @@ void App::process_events(){
             if (event.key.keysym.sym == SDLK_SPACE){
                 if (screen_ == AppScreen::Gameplay && !paused_ && wave_manager_.can_start_next_wave()){
                     if (wave_manager_.start_next_wave()){
+                        play_sound("button_click");
                         reset_money_generator_timers();
                     }
                 }
             }
             if (event.key.keysym.sym == SDLK_f){
+                play_sound("button_click");
                 game_speed = (game_speed == 1.0f) ? 2.0f : 1.0f;
             }
         }
@@ -210,12 +215,15 @@ void App::process_events(){
                 int mouse_y = event.button.y;
                 if (screen_ == AppScreen::MainMenu){
                     if (point_in_rect(mouse_x, mouse_y, get_main_play_button_rect())){
+                        play_sound("button_click");
                         push_screen(AppScreen::MapSelect);
                     }
                     else if (point_in_rect(mouse_x, mouse_y, get_main_settings_button_rect())){
+                        play_sound("button_click");
                         push_screen(AppScreen::Settings);
                     }
                     else if (point_in_rect(mouse_x, mouse_y, get_main_quit_button_rect())){
+                        play_sound("button_click");
                         running_ = false;
                     }
 
@@ -224,12 +232,14 @@ void App::process_events(){
 
                 if (screen_ == AppScreen::MapSelect){
                     if (point_in_rect(mouse_x, mouse_y, get_back_button_rect())){
+                        play_sound("button_click");
                         pop_screen();
                         continue;
                     }
 
                     for (int i = 0; i < static_cast<int>(map_options_.size()); ++i){
                         if (point_in_rect(mouse_x, mouse_y, get_map_button_rect(i))){
+                            play_sound("button_click");
                             selected_map_index_ = i;
                             push_screen(AppScreen::DifficultySelect);
                         }
@@ -240,18 +250,22 @@ void App::process_events(){
 
                 if (screen_ == AppScreen::DifficultySelect){
                     if (point_in_rect(mouse_x, mouse_y, get_back_button_rect())){
+                        play_sound("button_click");
                         pop_screen();
                         continue;
                     }
 
                     if (selected_map_index_ >= 0){
                         if (point_in_rect(mouse_x, mouse_y, get_difficulty_button_rect(Difficulty::Easy))){
+                            play_sound("button_click");
                             start_game(map_options_[selected_map_index_], Difficulty::Easy);
                         }
                         else if (point_in_rect(mouse_x, mouse_y, get_difficulty_button_rect(Difficulty::Medium))){
+                            play_sound("button_click");
                             start_game(map_options_[selected_map_index_], Difficulty::Medium);
                         }
                         else if (point_in_rect(mouse_x, mouse_y, get_difficulty_button_rect(Difficulty::Hard))){
+                            play_sound("button_click");
                             start_game(map_options_[selected_map_index_], Difficulty::Hard);
                         }
                     }
@@ -262,10 +276,12 @@ void App::process_events(){
                 if (screen_ == AppScreen::GameOver){
                     if (point_in_rect(mouse_x, mouse_y, get_game_over_restart_button_rect())){
                         if (selected_map_index_ >= 0 && selected_map_index_ < static_cast<int>(map_options_.size())){
+                            play_sound("button_click");
                             start_game(map_options_[selected_map_index_], selected_difficulty_);
                         }
                     }
                     else if (point_in_rect(mouse_x, mouse_y, get_game_over_main_menu_button_rect())){
+                        play_sound("button_click");
                         screen_stack_.clear();
                         start_screen_transition(AppScreen::MainMenu);
                     }
@@ -275,68 +291,80 @@ void App::process_events(){
 
                 if (screen_ == AppScreen::Settings){
                     if (point_in_rect(mouse_x, mouse_y, get_back_button_rect())){
+                        play_sound("button_click");
                         pop_screen();
                     }
                     else if (point_in_rect(mouse_x, mouse_y, get_fullscreen_button_rect())){
+                        play_sound("button_click");
                         toggle_fullscreen();
 
                         save_settings();
                     }
                     else if (point_in_rect(mouse_x, mouse_y, get_debug_hud_button_rect())){
+                        play_sound("button_click");
                         show_debug_hud_ = !show_debug_hud_;
                         show_grid_ = !show_grid_;
                         
                         save_settings();
                     }
                     else if (point_in_rect(mouse_x, mouse_y, get_show_fps_button_rect())){
+                        play_sound("button_click");
                         show_fps_ = !show_fps_;
 
                         save_settings();
                     }
                     else if (point_in_rect(mouse_x, mouse_y, get_resolution_button_rect())){
                         if (!fullscreen_){
+                            play_sound("button_click");
                             cycle_resolution();
 
                             save_settings();
                         }
                     }
                     else if (point_in_rect(mouse_x, mouse_y, get_vsync_button_rect())){
+                        play_sound("button_click");
                         vsync_enabled_ = !vsync_enabled_;
                         SDL_RenderSetVSync(renderer_, vsync_enabled_ ? 1 : 0);
 
                         save_settings();
                     }
                     else if (point_in_rect(mouse_x, mouse_y, get_master_volume_down_rect())){
+                        play_sound("button_click");
                         master_volume_ = std::max(0, master_volume_ - 10);
                         apply_audio_settings();
 
                         save_settings();
                     }
                     else if (point_in_rect(mouse_x, mouse_y, get_master_volume_up_rect())){
+                        play_sound("button_click");
                         master_volume_ = std::min(100, master_volume_ + 10);
                         apply_audio_settings();
 
                         save_settings();
                     }
                     else if (point_in_rect(mouse_x, mouse_y, get_music_volume_down_rect())){
+                        play_sound("button_click");
                         music_volume_ = std::max(0, music_volume_ - 10);
                         apply_audio_settings();
 
                         save_settings();
                     }
                     else if (point_in_rect(mouse_x, mouse_y, get_music_volume_up_rect())){
+                        play_sound("button_click");
                         music_volume_ = std::min(100, music_volume_ + 10);
                         apply_audio_settings();
 
                         save_settings();
                     }
                     else if (point_in_rect(mouse_x, mouse_y, get_sfx_volume_down_rect())){
+                        play_sound("button_click");
                         sfx_volume_ = std::max(0, sfx_volume_ - 10);
                         apply_audio_settings();
 
                         save_settings();
                     }
                     else if (point_in_rect(mouse_x, mouse_y, get_sfx_volume_up_rect())){
+                        play_sound("button_click");
                         sfx_volume_ = std::min(100, sfx_volume_ + 10);
                         apply_audio_settings();
 
@@ -354,6 +382,7 @@ void App::process_events(){
 
                         if (point_in_rect(mouse_x, mouse_y, yes_rect)){
                             if (pause_confirm_action_ == PauseConfirmAction::MainMenu){
+                                play_sound("button_click");
                                 paused_ = false;
                                 pause_confirm_action_ = PauseConfirmAction::None;
 
@@ -368,9 +397,11 @@ void App::process_events(){
 
                                 start_screen_transition(AppScreen::MainMenu);
                             } else if (pause_confirm_action_ == PauseConfirmAction::Quit){
+                                play_sound("button_click");
                                 running_ = false;
                             }
                         } else if (point_in_rect(mouse_x, mouse_y, no_rect)){
+                            play_sound("button_click");
                             pause_confirm_action_ = PauseConfirmAction::None;
                         }
 
@@ -378,17 +409,21 @@ void App::process_events(){
                     }
 
                     if (point_in_rect(mouse_x, mouse_y, get_resume_button_rect())){
+                        play_sound("button_click");
                         pause_confirm_action_ = PauseConfirmAction::None;
                         paused_ = false;
                     }
                     else if (point_in_rect(mouse_x, mouse_y, get_settings_button_rect())){
+                        play_sound("button_click");
                         pause_confirm_action_ = PauseConfirmAction::None;
                         push_screen(AppScreen::Settings);
                     }
                     else if (point_in_rect(mouse_x, mouse_y, get_main_menu_button_rect())){
+                        play_sound("button_click");
                         pause_confirm_action_ = PauseConfirmAction::MainMenu;
                     }
                     else if (point_in_rect(mouse_x, mouse_y, get_quit_button_rect())){
+                        play_sound("button_click");
                         pause_confirm_action_ = PauseConfirmAction::Quit;
                     }
 
@@ -399,30 +434,37 @@ void App::process_events(){
                 if (point_in_rect(mouse_x, mouse_y, get_next_wave_button_rect())){
                     if (wave_manager_.can_start_next_wave()){
                         if (wave_manager_.start_next_wave()){
+                            play_sound("button_click");
                             // Resets all money generator timers at the start of each wave
                             reset_money_generator_timers();
                         }
                     }
                 }
                 else if (point_in_rect(mouse_x, mouse_y, get_speed_button_rect())){
+                    play_sound("button_click");
                     // Same behavior as pressing F, but exposed through the in-game HUD.
                     game_speed = (game_speed == 1.0f) ? 2.0f : 1.0f;
                 }
                 else if (mouse_x >= MENU_X) {
                     if (selected_tower_index_ >= 0){
                         if (point_in_rect(mouse_x, mouse_y, get_reposition_button_rect())){
+                            play_sound("button_click");
                             enter_reposition_mode(selected_tower_index_);
                         }
                         else if (point_in_rect(mouse_x, mouse_y, get_manual_target_button_rect())){
+                            play_sound("button_click");
                             enter_manual_targeting_mode(selected_tower_index_);
                         }
                         else if (point_in_rect(mouse_x, mouse_y, get_upgrade_button_rect(UpgradePath::Damage))){
+                            play_sound("upgrade_click");
                             handle_upgrade_button_click(UpgradePath::Damage);
                         } 
                         else if (point_in_rect(mouse_x, mouse_y, get_upgrade_button_rect(UpgradePath::Utility))){
+                            play_sound("upgrade_click");
                             handle_upgrade_button_click(UpgradePath::Utility);
                         }
                         else if (point_in_rect(mouse_x, mouse_y, get_sell_button_rect())){
+                            play_sound("sell_click");
                             sell_tower(towers_[selected_tower_index_]);
                             selected_tower_index_ = -1;
                             tower_selected_ = false;
@@ -946,6 +988,24 @@ bool App::load_assets(){
     // Poof
     if (!assets_.load_texture(renderer_, "poof", "assets/images/poof.png")){
         std::cerr << "failed to load poof texture.\n";
+        return false;
+    }
+
+    // SFX
+    if (!assets_.load_sound("button_click", "assets/sounds/button_click.wav")){
+        std::cerr << "failed to load button click sound.\n";
+        return false;
+    }
+    if (!assets_.load_sound("upgrade_click", "assets/sounds/upgrade.wav")){
+        std::cerr << "failed to load upgrade click sound.\n";
+        return false;
+    }
+    if (!assets_.load_sound("sell_click", "assets/sounds/sell.wav")){
+        std::cerr << "failed to load sell click sound.\n";
+        return false;
+    }
+    if (!assets_.load_sound("attack", "assets/sounds/attack.wav")){
+        std::cerr << "failed to load attack sound.\n";
         return false;
     }
 
@@ -2092,6 +2152,8 @@ void App::render_enemy_health_bar(const Enemy& enemy, const SDL_Rect& enemy_rect
 }
 
 void App::spawn_projectile(Tower& tower, int tower_index, const Enemy& target){
+    play_sound("attack");
+    
     Projectile projectile;
 
     // Lock this projectile onto the enemy's unique ID
@@ -4368,4 +4430,14 @@ std::string App::get_difficulty_name() const{
         default:
             return "";
     }
+}
+
+void App::play_sound(const std::string& name) const{
+    Mix_Chunk* sound = assets_.get_sound(name);
+
+    if (sound == nullptr){
+        return;
+    }
+
+    Mix_PlayChannel(-1, sound, 0);
 }
