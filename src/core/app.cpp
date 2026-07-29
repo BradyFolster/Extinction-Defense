@@ -2791,24 +2791,86 @@ std::string App::describe_upgrade_effect(const TowerUpgradeDefinition& upgrade) 
     // Dynamically builds a one line effect description for an upgrade
     std::string effect;
 
+    auto append_effect = [&effect](const std::string& text){
+        if (!effect.empty()){
+            effect += ", ";
+        }
+        effect += text;
+    };
+
     if (upgrade.damage_bonus != 0.0f){
-        effect += "+" + std::to_string(static_cast<int>(upgrade.damage_bonus)) + " damage";
+        append_effect("+" + std::to_string(static_cast<int>(upgrade.damage_bonus)) + " damage");
     }
     if (upgrade.range_bonus != 0.0f){
-        if (!effect.empty()) effect += ", ";
-        effect += "+" + std::to_string(static_cast<int>(upgrade.range_bonus)) + " range";
+        append_effect("+" + std::to_string(static_cast<int>(upgrade.range_bonus)) + " range");
     }
     if (upgrade.attacks_per_second_bonus != 0.0f){
-        if (!effect.empty()) effect += ", ";
-        effect += "+" + format_float_2dp(upgrade.attacks_per_second_bonus) + " APS";
+        append_effect("+" + format_float_2dp(upgrade.attacks_per_second_bonus) + " APS");
     }
     if (upgrade.projectile_speed_bonus != 0.0f){
-        if (!effect.empty()) effect += ", ";
-        effect += "+" + std::to_string(static_cast<int>(upgrade.projectile_speed_bonus)) + " proj speed";
+        append_effect("+" + std::to_string(static_cast<int>(upgrade.projectile_speed_bonus)) + " proj speed");
     }
     if (upgrade.projectile_size_bonus != 0){
-        if (!effect.empty()) effect += ", ";
-        effect += "+" + std::to_string(upgrade.projectile_size_bonus) + " proj size";
+        append_effect("+" + std::to_string(upgrade.projectile_size_bonus) + " proj size");
+    }
+    if (upgrade.pierce_bonus != 0){
+        append_effect("+" + std::to_string(upgrade.pierce_bonus) + " pierce");
+    }
+    if (upgrade.money_amount_bonus != 0){
+        append_effect("+$" + std::to_string(upgrade.money_amount_bonus) + " payout");
+    }
+    if (upgrade.money_interval_delta != 0.0f){
+        if (upgrade.money_interval_delta < 0.0f){
+            append_effect("-" + format_float_2dp(std::abs(upgrade.money_interval_delta)) + "s payout time");
+        } else{
+            append_effect("+" + format_float_2dp(upgrade.money_interval_delta) + "s payout time");
+        }
+    }
+    if (upgrade.money_max_payouts_bonus != 0){
+        append_effect("+" + std::to_string(upgrade.money_max_payouts_bonus) + " stored payouts");
+    }
+    if (upgrade.slow_multiplier_delta != 0.0f){
+        if (upgrade.slow_multiplier_delta < 0.0f){
+            append_effect("+" + format_float_2dp(std::abs(upgrade.slow_multiplier_delta)) + " stronger slow");
+        } else{
+            append_effect("+" + format_float_2dp(upgrade.slow_multiplier_delta) + " weaker slow");
+        }
+    }
+    if (upgrade.slow_duration_bonus != 0.0f){
+        append_effect("+" + format_float_2dp(upgrade.slow_duration_bonus) + "s slow");
+    }
+    if (upgrade.splash_radius_bonus != 0.0f){
+        append_effect("+" + std::to_string(static_cast<int>(upgrade.splash_radius_bonus)) + " splash radius");
+    }
+    if (upgrade.splash_multiplier_bonus != 0.0f){
+        append_effect("+" + format_float_2dp(upgrade.splash_multiplier_bonus) + " splash damage");
+    }
+    if (upgrade.burst_shots_bonus != 0){
+        append_effect("+" + std::to_string(upgrade.burst_shots_bonus) + " burst shots");
+    }
+    if (upgrade.burst_interval_delta != 0.0f){
+        if (upgrade.burst_interval_delta < 0.0f){
+            append_effect("-" + format_float_2dp(std::abs(upgrade.burst_interval_delta)) + "s burst gap");
+        } else{
+            append_effect("+" + format_float_2dp(upgrade.burst_interval_delta) + "s burst gap");
+        }
+    }
+    if (upgrade.aura_aps_bonus != 0.0f){
+        append_effect("+" + format_float_2dp(upgrade.aura_aps_bonus) + " aura APS");
+    }
+    if (upgrade.aura_mark_damage_bonus != 0.0f){
+        append_effect("+" + format_float_2dp(upgrade.aura_mark_damage_bonus) + " mark damage");
+    }
+    if (upgrade.reposition_cooldown_delta != 0.0f){
+        if (upgrade.reposition_cooldown_delta < 0.0f){
+            append_effect("-" + format_float_2dp(std::abs(upgrade.reposition_cooldown_delta)) + "s move cooldown");
+        } else{
+            append_effect("+" + format_float_2dp(upgrade.reposition_cooldown_delta) + "s move cooldown");
+        }
+    }
+
+    if (effect.empty()){
+        effect = "No stat change";
     }
 
     return effect;
