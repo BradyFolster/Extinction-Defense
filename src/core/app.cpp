@@ -1008,6 +1008,10 @@ bool App::load_assets(){
         std::cerr << "failed to load attack sound.\n";
         return false;
     }
+    if (!assets_.load_sound("death", "assets/sounds/death.wav")){
+        std::cerr << "failed to load death sound.\n";
+        return false;
+    }
 
     return true;
 }
@@ -2566,6 +2570,7 @@ void App::damage_enemy(Enemy& enemy, const Tower& source_tower){
     // If health is 0, kill the enemy and give the player reward money
     if (enemy.health <= 0.0f){
         spawn_poof_effect(enemy.x, enemy.y);
+        play_sound("death");
         enemy.alive = false;
         // Difficulty reward modifier
         int reward = static_cast<int>(def.reward * get_difficulty_settings().enemy_reward_multiplier);
