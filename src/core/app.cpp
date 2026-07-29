@@ -625,6 +625,9 @@ void App::update(float dt){
     // Makes it so projectiles track enemies based on their updated positions
     update_projectiles(scaled_dt);
 
+    // Poof effects
+    update_poof_effects(scaled_dt);
+
     // If the wave is waiting for everything to die/reach the end,
     // and there are no enemies left, then the wave is cleared
     if (wave_manager_.is_waiting_for_clear() && enemies_.empty()){
@@ -712,6 +715,9 @@ void App::render(){
     // render_hovered_cell();
     
     // render_occupied_cells();
+
+    // Renders poofs
+    render_poof_effects();
 
     // Renders enemies
     render_enemies();
@@ -934,6 +940,12 @@ bool App::load_assets(){
     // Fireball texture
     if (!assets_.load_texture(renderer_, "projectile_fireball", "assets/images/fireball.png")){
         std::cerr << "failed to load fireball projectile texture.\n";
+        return false;
+    }
+
+    // Poof
+    if (!assets_.load_texture(renderer_, "poof", "assets/images/poof.png")){
+        std::cerr << "failed to load poof texture.\n";
         return false;
     }
 
@@ -2485,6 +2497,7 @@ void App::damage_enemy(Enemy& enemy, const Tower& source_tower){
 
     // If health is 0, kill the enemy and give the player reward money
     if (enemy.health <= 0.0f){
+        spawn_poof_effect(enemy.x, enemy.y);
         enemy.alive = false;
         player_.add_money(def.reward);
     }
@@ -3795,6 +3808,7 @@ void App::start_game(const MapOption& map, Difficulty difficulty){
     enemies_.clear();
     projectiles_.clear();
     enemy_index_by_id_.clear();
+    poof_effects_.clear();
 
     tower_selected_ = false;
     selected_tower_index_ = -1;
@@ -4178,4 +4192,77 @@ SDL_Rect App::get_game_over_restart_button_rect() const{
 
 SDL_Rect App::get_game_over_main_menu_button_rect() const{
     return SDL_Rect{WORLD_WIDTH / 2 - 140, 440, 280, 60};
+}
+
+void App::spawn_poof_effect(float x, float y){
+    PoofEffect effect;
+    effect.x = x;
+    effect.y = y;
+    effect.age = 0.0f;
+    effect.duration = 0.36f;
+    effect.size = CELL_SIZE * 2;
+
+    poof_effects_.push_back(effect);
+}
+
+void App::update_poof_effects(float dt){
+    for (PoofEffect& effect : poof_effects_){
+        effect.age += dt;
+    }
+
+    poof_effects_.erase(
+        std::remove_if(poof_effects_.begin(), poof_effects_.end(),
+            [](const PoofEffect& effect){
+                return effect.age >= effect.duration;
+            }),
+        poof_effects_.end());
+}
+
+void App::render_poof_effects() const{
+    SDL_Texture* texture = assets_.get_texture("poof");
+
+    if (texture == nullptr){
+        return;
+    }
+
+    const int frame_w = 32;
+    const int frame_h = 32;
+    const int sheet_cols = 3;
+    const int total_frames = 9;
+
+    for (const PoofEffect& effect : poof_effects_){
+        float progress = effect.age / effect.duration;
+
+        if (progress < 0.0f){
+            progress = 0.0f;
+        }
+        if (progress > 1.0f){
+            progress = 1.0f;
+        }
+
+        int frame = static_cast<int>(progress * total_frames);
+
+        if (frame >= total_frames){
+            frame = total_frames - 1;
+        }
+
+        int frame_col = frame % sheet_cols;
+        int frame_row = frame / sheet_cols;
+
+        SDL_Rect src{
+            frame_col * frame_w,
+            frame_row * frame_h,
+            frame_w,
+            frame_h
+        };
+
+        SDL_Rect dest{
+            static_cast<int>(effect.x - effect.size / 2),
+            static_cast<int>(effect.y - effect.size / 2),
+            effect.size,
+            effect.size
+        };
+
+        SDL_RenderCopy(renderer_, texture, &src, &dest);
+    }
 }

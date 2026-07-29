@@ -93,3 +93,11 @@ struct Enemy{
 const EnemyDefinition& get_enemy_definition(EnemyType type);
 
 const char* get_enemy_texture_key(EnemyType type);
+
+struct PoofEffect{
+    float x = 0.0f;
+    float y = 0.0f;
+    float age = 0.0f;
+    float duration = 0.45f;
+    int size = 64;
+};

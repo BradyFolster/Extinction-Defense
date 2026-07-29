@@ -134,6 +134,11 @@ class App{
         float get_enemy_aura_speed_bonus(const Enemy& target_enemy) const;
         float get_enemy_aura_slow_duration_multiplier(const Enemy& target_enemy) const;
         ResolutionOption get_initial_window_resolution() const;
+        // Poof effect helpers
+        void spawn_poof_effect(float x, float y);
+        void update_poof_effects(float dt);
+        void render_poof_effects() const;
+        
         // Projectile helpers
         void spawn_projectile(Tower& tower, int tower_index, const Enemy& target);
         void update_projectiles(float dt);
@@ -295,6 +300,9 @@ class App{
         std::vector<Projectile> projectiles_;
         int next_enemy_id_ = 1;
         WaveManager wave_manager_;
+
+        // Data for poof effects
+        std::vector<PoofEffect> poof_effects_;
 
         // Player object containing (health, money)
         Player player_{35, 500000};
