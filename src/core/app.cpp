@@ -456,11 +456,9 @@ void App::process_events(){
                             enter_manual_targeting_mode(selected_tower_index_);
                         }
                         else if (point_in_rect(mouse_x, mouse_y, get_upgrade_button_rect(UpgradePath::Damage))){
-                            play_sound("upgrade_click");
                             handle_upgrade_button_click(UpgradePath::Damage);
                         } 
                         else if (point_in_rect(mouse_x, mouse_y, get_upgrade_button_rect(UpgradePath::Utility))){
-                            play_sound("upgrade_click");
                             handle_upgrade_button_click(UpgradePath::Utility);
                         }
                         else if (point_in_rect(mouse_x, mouse_y, get_sell_button_rect())){
@@ -2650,7 +2648,6 @@ void App::draw_filled_circle(int center_x, int center_y, int radius) const{
     }
 }
 
-
 void App::render_selected_tower_radius() const{
     if (selected_tower_index_ < 0){
         return;
@@ -2821,6 +2818,9 @@ void App::handle_upgrade_button_click(UpgradePath path){
 
     // Apply the actual upgrade
     apply_upgrade(tower, *upgrade);
+
+    // Plays sound
+    play_sound("upgrade_click");
 
     current_path_level += 1;
 }
