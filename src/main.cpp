@@ -1,6 +1,10 @@
 #include "core/app.h"
 
-int main(){
+// Doesn't take command line inputs, but windows gets angry if this isn't here
+int main(int argc, char* argv[]){
+    (void)argc;
+    (void)argv;
+
     // Creates App object
     App app;
 
