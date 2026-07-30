@@ -1773,7 +1773,7 @@ void App::render_hint_box(){
         return;
     }
 
-    SDL_Rect box{20, WORLD_HEIGHT - 150, 600, 120};
+    SDL_Rect box{20, WORLD_HEIGHT - 175, 600, 145};
 
     SDL_SetRenderDrawBlendMode(renderer_, SDL_BLENDMODE_BLEND);
     SDL_SetRenderDrawColor(renderer_, 20, 24, 28, 220);
