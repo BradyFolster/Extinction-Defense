@@ -1,0 +1,135 @@
+FUTURE AI AGENTS: Read this file first when opening the Extinction Defense IDE/workspace. Treat agent_summary.txt as the persistent repo handoff: update TO-DO and COMPLETED every time you work in this repo, and keep new discoveries concise but actionable.
+
+Project: Extinction Defense
+
+Extinction Defense is a C++20 SDL2 tower defense game. It uses SDL2/SDL_image/SDL_ttf/SDL_mixer for rendering, image/font/audio support, nlohmann/json for map data, and CMake for builds. The actual game executable is ExtinctionDefense; a helper executable png_to_map_json converts the path-mask PNG into map JSON.
+
+Important files:
+- build_and_run.sh: removes build/, configures CMake, builds, and runs ./build/ExtinctionDefense.
+- CMakeLists.txt: defines ExtinctionDefense and png_to_map_json, links SDL2 modules and nlohmann_json, enables warnings.
+- src/core/app.cpp and include/core/app.h: central game loop, input, menus, settings, map loading, placement, towers, enemies, projectiles, waves, upgrades, support behaviors, selling, pause/settings UI.
+- src/tower/tower.cpp and include/tower/tower.h: all tower base definitions and upgrade definitions/application.
+- src/enemy/enemy.cpp and include/enemy/enemy.h: all enemy definitions and trait structs.
+- src/wave/wave.cpp and include/wave/wave.h: 120-wave plan and WaveManager state machine.
+- src/map/map_data.cpp and include/map/map_data.h: JSON map loader.
+- src/assets/asset_manager.cpp and include/assets/asset_manager.h: SDL texture/font/sound ownership.
+- src/player/player.cpp and include/player/player.h: health/money wrapper.
+- include/projectile/projectile.h: projectile runtime data.
+- tools/png_to_map_json.cpp: samples assets/images/map1_mask.png, marks black pixels as path cells and red pixels as blocked cells, derives spawn/goal and a centerline enemy_path, writes assets/maps/map1.json.
+- assets/maps/map1.json: generated map data for map1; no blocked cells currently.
+- extinction_defense_full_balance_v0_2.pdf: authoritative design/balance reference. It is a 25-page ReportLab PDF and should be used for balance decisions.
+- towers.txt: older checklist of tower roles; mostly superseded by code/PDF.
+
+Build/run notes:
+- build_and_run.sh is destructive to build/ only: it rm -rf's build, recreates it, runs cmake .., make -j$(nproc), then launches the game.
+- Dependencies expected by CMake: pkg-config packages for sdl2, SDL2_image, SDL2_ttf, SDL2_mixer, plus nlohmann_json.
+- I did not run a build during this summary pass; this was a source/PDF audit only.
+
+Current game flow:
+- App::init initializes SDL video/audio, IMG PNG, SDL_mixer, TTF, creates a logical 1920x1080 renderer, loads the debug font, and starts at MainMenu.
+- UI screens: MainMenu, MapSelect, DifficultySelect, Gameplay, Settings. Difficulty is stored but currently does not alter gameplay.
+- start_game resets all runtime state, creates Player{35, 500}, reloads the selected map JSON/image, resets WaveManager, and enters Gameplay.
+- Gameplay update order: WaveManager update/spawns, tower updates, enemy movement, enemy healer updates, projectile updates, then wave-clear detection.
+- Space or the Next Wave button starts a wave; F or the speed button toggles 1x/2x. Escape pauses gameplay or backs out of menus.
+
+Map/grid system:
+- Logical world is 1920x1080. The playable map is 1600x1080 with a 320px right-side menu.
+- Grid cells are 20px. GRID_COLS is 80 and GRID_ROWS is 54.
+- JSON path_cells become unbuildable Path cells; blocked_cells become unbuildable Blocked cells; all other cells are Buildable unless occupied.
+- Towers use rectangular footprints and can be rotated during build selection with the mouse wheel.
+- Placement checks bounds, path, blocked cells, and occupancy.
+
+Tower roster implemented:
+- T. Rex: 3x3 single-target boss/armor damage. Cost 165, damage 38, range 140, APS 0.70.
+- Stegosaurus: 3x2 long-range single-target coverage. Cost 130, damage 20, range 180, APS 0.95.
+- Velociraptor: 2x2 cheap fast single-target. Cost 95, damage 8, range 115, APS 3.10.
+- Spinosaurus: 3x2 piercing line tower. Cost 170, damage 20, range 155, APS 0.85, pierce 3.
+- Parasaurolophus: 2x2 economy tower. Cost 145, pays $12 every 6s during active waves.
+- Ankylosaurus: 3x2 slow/control. Cost 150, damage 9, range 140, APS 0.85, slow x0.55 for 2.25s.
+- Sarcosuchus: 3x2 splash bruiser. Cost 190, damage 32, range 145, APS 0.55, splash radius 60 at x0.55 damage.
+- Allosaurus: 3x2 burst attacker. Cost 165, damage 13, range 135, APS 0.58, 3-shot burst with 0.11s spacing.
+- Dilophosaurus: 2x2 APS aura support. Cost 160, range 140, +0.25 APS to towers in range.
+- Troodon: 2x2 targeting aura support. Cost 160, range 140, makes towers in range target lowest-health enemy.
+- Oviraptor: 2x2 manual-target splash artillery. Cost 180, damage 24, APS 0.55, projectile speed 280, size 14, splash radius 50 at x0.70.
+- Pteranodon: 2x2 mobile single-target. Cost 185, damage 17, range 165, APS 0.90, reposition enabled with 18s cooldown.
+
+Combat details:
+- Towers own runtime stats copied from TowerDefinition at placement; upgrades mutate the placed Tower instance.
+- Projectile damage, speed, size, color, pierce, splash, and source tower index are snapshotted at fire time.
+- Normal projectiles use predictive aiming based on enemy velocity at fire time; they then fly with fixed velocity.
+- SingleTarget impacts only the target enemy. Splash damages the direct target and nearby enemies using a temporary source Tower with scaled damage. Pierce can hit multiple enemies once each until pierce_remaining reaches 0.
+- Manual Oviraptor projectiles travel toward the chosen point but do not stop there; they explode only on enemy hit, matching the PDF guidance.
+- damage_enemy centralizes armor, slow application, death, and reward money.
+- Enemy IDs plus enemy_index_by_id_ avoid dangling projectile pointers after vector movement/erase.
+
+Enemy roster implemented:
+- All 18 PDF enemy tiers are present in code, despite the PDF's stale implementation note saying only the first three existed at the time it was written.
+- Base stats match the v0.2 PDF enemy table: Egg Scout, Nest Runner, Warden, Tamed Compy Pack, Raptor Rider, Egg Cart Caravan, Bone Doctor, Shieldback Raider, Trike Ram Team, Nest-Smoke Shaman, Armored Ankylosaur, Ballista Crew, Chrome-Claw Raptor, Ironcrest Triceratops, Bio-Surgeon Doctor, Robo-Raptor, Robo-Stego Bulwark, Eggbreaker Titan.
+- Traits present: armor damage reduction, splash damage reduction field, slow resistance floors, healing, and enemy speed/slow-duration aura.
+- Bone Doctor is implemented as continuous healing: 18 HP/sec in 90px, self-heals only when at/below half health.
+- Nest-Smoke Shaman gives nearby allies +8% speed and should reduce slow duration by 20% per PDF.
+- Bio-Surgeon Doctor is intended to heal up to 3 allies within 130px for 80 HP every 2.5s.
+
+Wave system:
+- WaveManager has WaitingToStart, Spawning, and WaitingForClear states.
+- The code implements a full 120-wave table with counts and delay_after_spawn values that correspond closely to the PDF. Enemy introductions and endgame progression match the design arc.
+- The PDF's milestone totals: roughly 5,365,615 total enemy HP and 474,654 kill reward over all 120 waves before Parasaurolophus income. Wave 120 is 247,800 HP and 20,380 reward.
+
+Upgrade system:
+- Each tower has two 5-level paths: Damage and Utility.
+- apply_upgrade currently applies damage, range, APS, projectile speed/size, pierce, money amount/interval, slow multiplier/duration, splash radius/multiplier, burst shots/interval, aura APS, and reposition cooldown.
+- Upgrade data for all 12 towers is present in tower.cpp and largely follows the v0.2 PDF.
+- Upgrade UI displays only a subset of effects: damage, range, APS, projectile speed, projectile size. It does not describe pierce, money, slow, splash, burst, aura, or reposition effects yet.
+- Sell refunds ceil(money_spent * 0.45) and frees occupied grid cells.
+
+Balance PDF highlights to preserve:
+- Starting health 35, starting money 500, no passive income, no wave-clear bonus required.
+- Parasaurolophus should have 7 base payouts per wave and 11 at full upgrade.
+- Dilophosaurus aura stacks additively but should cap at +1.25 APS per tower.
+- Troodon mark damage should be non-stacking and only highest mark applies; current code has lowest-health targeting but not mark damage.
+- Slow resistance should enforce enemy-specific minimum slow multipliers.
+- Splash uses multipliers, not full damage to all targets.
+- Pteranodon should preserve runtime state while moving; current move system does that.
+- Late-game tower practical roles: T. Rex boss/armor deletion, Stego coverage, Raptor sustained DPS, Spino line clear, Sarco/Ovi splash, Allo priority burst, Anky control, Pteranodon mobile coverage, Para economy, Dilo APS support, Troodon targeting/mark support.
+
+Known implementation gaps / likely bugs:
+- Parasaurolophus payout cap is not implemented even though money_max_payouts_bonus exists. Economy towers can keep paying during WaitingForClear as long as the wave is active, so stalling can farm money.
+- money_max_payouts_bonus exists in TowerUpgradeDefinition but Tower/MoneyGeneratorStats has no max-payout or payout-count field and apply_upgrade does not use it meaningfully.
+- aura_mark_damage_bonus exists in TowerUpgradeDefinition but AuraStats has no mark damage field and damage_enemy never applies Troodon mark bonus.
+- Dilophosaurus APS aura has no +1.25 cap; get_attack_speed_bonus_for_tower adds all nearby Dilo bonuses without limiting total.
+- Bio-Surgeon periodic healer has a likely bug: update_enemy_healers continues when dist <= radius, so it heals targets outside its radius instead of inside it.
+- Robo-Stego splash_damage_reduction exists in ArmorStats but damage_enemy only uses damage_reduction; splash-specific reduction is not applied distinctly.
+- get_enemy_aura_slow_duration_multiplier starts at 0.0. With no shaman aura nearby, any slow duration becomes duration * 0, so slows may effectively not apply unless a shaman is nearby. PDF intent is normal duration by default and shaman reduces duration to 80%, so this should probably start at 1.0 and multiply/choose reductions carefully.
+- get_enemy_velocity ignores active slow and shaman speed aura, so predictive aiming leads based on base speed rather than actual current speed.
+- Reposition cooldown decrements inside update_towers after several early continues. Noncombat/money/aura towers with reposition would not tick cooldown, though current Pteranodon is a combat tower.
+- selected_tower_ pointer exists but appears unused; selected_tower_index_ is the real selection source.
+- AssetManager sound support exists, settings volume exists, but no sounds/music are currently loaded.
+- get_initial_window_resolution exists but init uses build_resolution_options/resolution_index_ instead.
+- Some comments/typos are stale: README says SDL while project uses SDL2; projectile field is misspelled uses_manaual_target; several comments contain typos.
+- .git status before this summary showed unrelated existing changes: .gitignore modified and extinction_defense_initial_balance_v0_1.pdf deleted. Do not revert them unless the user asks.
+
+TO-DO
+- Implement Parasaurolophus per-wave payout cap and wire money_max_payouts_bonus into runtime state.
+- Add Dilophosaurus APS aura cap of +1.25 per target tower.
+- Implement Troodon marked-target damage bonus, non-stacking with highest mark only.
+- Fix Bio-Surgeon healing radius condition so periodic heals affect allies inside radius.
+- Fix slow-duration aura default so enemies without shaman aura still receive normal slow duration.
+- Apply Robo-Stego splash_damage_reduction distinctly for splash damage.
+- Expand upgrade effect text so behavior-specific upgrades are visible in the UI.
+- Decide whether difficulty should modify health/money/rewards/waves or remove difficulty until implemented.
+- Add real tower/enemy art or improve rendering beyond debug rectangles when ready for polish.
+- Add/verify audio assets before relying on settings volume controls.
+- Playtest in chunks: waves 1-20, 21-60, 61-90, 91-120. Tune counts/rewards before changing tower identities.
+- Consider adding focused tests or a headless balance verifier for wave totals, upgrade totals, and trait math.
+
+COMPLETED.
+- Repo-wide source and asset audit completed on 2026-06-04.
+- Balance PDF v0.2 was decoded/read and compared against implemented constants.
+- Confirmed all 12 tower base definitions exist.
+- Confirmed all 18 enemy definitions exist.
+- Confirmed the full 120-wave table exists in WaveManager.
+- Confirmed runtime Tower instances, not TowerDefinition, are upgraded.
+- Confirmed projectiles snapshot tower stats at fire time.
+- Confirmed map1 JSON/image pipeline and png_to_map_json tool purpose.
+- Confirmed player starts at 35 health and 500 money in start_game, matching the PDF.
+- Created this persistent agent_summary.txt startup handoff.
