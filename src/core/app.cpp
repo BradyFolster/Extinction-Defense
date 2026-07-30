@@ -29,6 +29,8 @@ App::~App() { shutdown(); }
 
 // Initializes SDL
 bool App::init(){
+    // "should" fix DPI scaling issues on Windows
+    SDL_SetHint(SDL_HINT_WINDOWS_DPI_AWARENESS, "permonitorv2");
     // Starts up desired systems
     if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO) != 0){
         std::cerr << "SDL_Init failed: " << SDL_GetError() << "\n";
@@ -45,6 +47,9 @@ bool App::init(){
 
     // Loads game settings before creating the window so that resolution settings work right away
     load_settings();
+
+    std::string hint_filename = "assets/hints.json";
+    hint_messages_ = load_hints(hint_filename);
 
     // Creates a window and a renderer attached to said window
     // Title, resolution (width x height), flags
@@ -310,6 +315,12 @@ void App::process_events(){
                     else if (point_in_rect(mouse_x, mouse_y, get_show_fps_button_rect())){
                         play_sound("button_click");
                         show_fps_ = !show_fps_;
+
+                        save_settings();
+                    }
+                    else if (point_in_rect(mouse_x, mouse_y, get_show_hints_button_rect())){
+                        play_sound("button_click");
+                        show_hints_ = !show_hints_;
 
                         save_settings();
                     }
@@ -767,6 +778,7 @@ void App::render(){
 
     // Start next wave button
     render_gameplay_hud();
+    render_hint_box();
     render_fps_counter();
 
     // Renders build menu or the tower-specific menu
@@ -1740,6 +1752,91 @@ void App::render_speed_button(){
     SDL_SetRenderDrawColor(renderer_, 20, 20, 20, 255);
 
     draw_text("2x", rect.x + 14, rect.y + 18, SDL_Color{255, 255, 255, 255});
+}
+
+void App::render_hint_box(){
+    if (!show_hints_ || hint_messages_.empty()){
+        return;
+    }
+
+    int wave_number = wave_manager_.current_wave_number();
+
+    if (wave_manager_.can_start_next_wave()){
+        wave_number += 1;
+    }
+    if (wave_number <= 0){
+        wave_number = 1;
+    }
+
+    auto hint = hint_messages_.find(wave_number);
+    if (hint == hint_messages_.end()){
+        return;
+    }
+
+    SDL_Rect box{20, WORLD_HEIGHT - 150, 600, 120};
+
+    SDL_SetRenderDrawBlendMode(renderer_, SDL_BLENDMODE_BLEND);
+    SDL_SetRenderDrawColor(renderer_, 20, 24, 28, 220);
+    SDL_RenderFillRect(renderer_, &box);
+
+    SDL_SetRenderDrawColor(renderer_, 100, 120, 140, 255);
+    SDL_RenderDrawRect(renderer_, &box);
+
+    SDL_Color title_color{255, 255, 255, 255};
+    SDL_Color text_color{220, 230, 235, 255};
+
+    draw_text_small("Hint - Round " + std::to_string(wave_number), box.x + 16, box.y + 12, title_color);
+
+    std::istringstream words(hint->second);
+    std::string word;
+    std::string line;
+    int y = box.y + 42;
+    const int max_chars_per_line = 55;
+    const int line_height = 22;
+
+    while (words >> word && y < box.y + box.h - 16){
+        std::string candidate = line.empty() ? word : line + " " + word;
+
+        if (static_cast<int>(candidate.size()) > max_chars_per_line){
+            draw_text_small(line, box.x + 16, y, text_color);
+            y += line_height;
+            line = word;
+        } else{
+            line = candidate;
+        }
+    }
+
+    if (!line.empty() && y < box.y + box.h - 16){
+        draw_text_small(line, box.x + 16, y, text_color);
+    }
+}
+
+std::map<int, std::string> App::load_hints(std::string& filename){
+    std::map<int, std::string> hints;
+
+    std::ifstream file(filename);
+    if (!file.is_open()){
+        std::cerr << "Failed to open hints file: " << filename << "\n";
+        return hints;
+    }
+
+    nlohmann::json hint_json;
+    file >> hint_json;
+
+    for (auto it = hint_json.begin(); it != hint_json.end(); ++it){
+        if (!it.value().is_string()){
+            continue;
+        }
+
+        try{
+            int wave_number = std::stoi(it.key());
+            hints[wave_number] = it.value().get<std::string>();
+        } catch (const std::exception&){
+            std::cerr << "Invalid hint wave number: " << it.key() << "\n";
+        }
+    }
+
+    return hints;
 }
 
 void App::render_gameplay_hud(){
@@ -3737,6 +3834,13 @@ void App::render_settings_menu(){
 
     std::string fps_text = show_fps_ ? "Show FPS: ON" : "Show FPS: OFF";
     draw_text(fps_text, fps_rect.x + 130, fps_rect.y + 22, text_color);
+
+    SDL_Rect hints_rect = get_show_hints_button_rect();
+    render_button_texture(hints_rect, SDL_Color{50, 60, 70, 255});
+    SDL_SetRenderDrawColor(renderer_, 220, 220, 220, 255);
+
+    std::string hints_text = show_hints_ ? "Hints: ON" : "Hints: OFF";
+    draw_text(hints_text, hints_rect.x + 165, hints_rect.y + 22, text_color);
 }
 
 SDL_Rect App::get_resolution_button_rect() const{
@@ -4204,6 +4308,11 @@ SDL_Rect App::get_show_fps_button_rect() const{
     return SDL_Rect{WORLD_WIDTH / 2 - 250, 860, 500, 60};
 }
 
+SDL_Rect App::get_show_hints_button_rect() const{
+    // Goes directly under the FPS button.
+    return SDL_Rect{WORLD_WIDTH / 2 - 250, 940, 500, 60};
+}
+
 void App::render_fps_counter() const{
     if (!show_fps_){
         return;
@@ -4262,6 +4371,7 @@ bool App::load_settings(){
     show_debug_hud_ = settings.value("show_debug_hud", show_debug_hud_);
     show_grid_ = settings.value("show_grid", show_grid_);
     show_fps_ = settings.value("show_fps", show_fps_);
+    show_hints_ = settings.value("show_hints", show_hints_);
     master_volume_ = settings.value("master_volume", master_volume_);
     music_volume_ = settings.value("music_volume", music_volume_);
     sfx_volume_ = settings.value("sfx_volume", sfx_volume_);
@@ -4283,6 +4393,7 @@ bool App::save_settings() const{
         {"show_debug_hud", show_debug_hud_},
         {"show_grid", show_grid_},
         {"show_fps", show_fps_},
+        {"show_hints", show_hints_},
         {"master_volume", master_volume_},
         {"music_volume", music_volume_},
         {"sfx_volume", sfx_volume_}

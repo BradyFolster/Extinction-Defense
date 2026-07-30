@@ -7,5 +7,6 @@
     "show_debug_hud": false,
     "show_fps": false,
     "show_grid": false,
+    "show_hints": true,
     "vsync": false
 }

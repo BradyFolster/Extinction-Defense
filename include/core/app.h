@@ -16,6 +16,7 @@
 
 #include <string>
 #include <unordered_map>
+#include <map>
 
 struct ResolutionOption{
     int width = 1280;
@@ -204,6 +205,7 @@ class App{
         void toggle_fullscreen();
         SDL_Rect get_main_menu_button_rect() const;
         SDL_Rect get_show_fps_button_rect() const;
+        SDL_Rect get_show_hints_button_rect() const;
         void render_fps_counter() const;
 
         // Main menu helpers
@@ -234,6 +236,10 @@ class App{
 
         // Sound helpers
         void play_sound(const std::string& name) const;
+
+        // Hint Box Helpers
+        void render_hint_box();
+        std::map<int, std::string> load_hints(std::string& filename);
         
         // Debug rendering
         void render_path_debug();
@@ -325,6 +331,7 @@ class App{
         // Debug stuff
         bool show_debug_hud_ = false;
         bool show_fps_ = false;
+        bool show_hints_ = true;
         float current_fps_ = 0.0f;
 
         // Manual targeting mode (Oviraptor)
@@ -355,6 +362,8 @@ class App{
         std::vector<MapOption> map_options_{
             {"Map 1", "assets/maps/map1.json"}
         };
+
+        std::map<int, std::string> hint_messages_;
 
         int selected_map_index_ = -1;
         Difficulty selected_difficulty_ = Difficulty::Easy;
