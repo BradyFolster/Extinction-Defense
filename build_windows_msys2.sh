@@ -28,6 +28,7 @@ require_command(){
 require_command cmake
 require_command mingw32-make
 require_command pkg-config
+require_command objdump
 
 GENERATOR="MinGW Makefiles"
 
@@ -64,42 +65,77 @@ copy_dll(){
 
 echo "==> Copying runtime DLLs..."
 
-if command -v ntldd >/dev/null 2>&1; then
-    ACTIVE_MINGW_PREFIX="${MINGW_PREFIX:-/mingw64}"
+copy_dependency_tree() {
+    local root_binary="$1"
+    local mingw_bin="${MINGW_PREFIX:-/mingw64}/bin"
 
-    while IFS= read -r raw_dll_path; do
-        [[ -n "$raw_dll_path" ]] || continue
+    local -a pending=("$root_binary")
+    declare -A seen=()
 
-        # Convert paths such as C:\msys64\mingw64\bin\SDL2.dll
-        # into MSYS2 paths such as /mingw64/bin/SDL2.dll.
-        dll_path="$(cygpath -u "$raw_dll_path" 2>/dev/null || printf '%s' "$raw_dll_path")"
+    while ((${#pending[@]} > 0)); do
+        local binary="${pending[0]}"
+        pending=("${pending[@]:1}")
 
-        # Copy only DLLs supplied by the active MinGW environment.
-        case "$dll_path" in
-            "$ACTIVE_MINGW_PREFIX"/bin/*.dll)
-                copy_dll "$dll_path"
-                ;;
-        esac
-    done < <(
-        ntldd --recursive "$EXE_PATH" |
-            sed -nE 's/.*=>[[:space:]]+(.*)[[:space:]]+\(0x[0-9A-Fa-f]+\).*/\1/p'
-    )
-else
-    echo "ntldd not found; copying common SDL/runtime DLLs from the active MinGW bin directory."
+        while IFS= read -r dll_name; do
+            # Remove possible Windows carriage return.
+            dll_name="${dll_name//$'\r'/}"
 
-    MINGW_BIN="$(dirname "$(command -v gcc)")"
+            [[ -n "$dll_name" ]] || continue
 
-    for dll in \
-        SDL2.dll \
-        SDL2_image.dll \
-        SDL2_ttf.dll \
-        SDL2_mixer.dll \
-        libgcc_s_seh-1.dll \
-        libstdc++-6.dll \
-        libwinpthread-1.dll; do
-        copy_dll "$MINGW_BIN/$dll"
+            local key="${dll_name,,}"
+
+            if [[ -n "${seen[$key]:-}" ]]; then
+                continue
+            fi
+
+            seen["$key"]=1
+
+            # Locate the DLL case-insensitively in the active MinGW bin folder.
+            local dll_path
+            dll_path="$(
+                find "$mingw_bin" \
+                    -maxdepth 1 \
+                    -type f \
+                    -iname "$dll_name" \
+                    -print \
+                    -quit
+            )"
+
+            if [[ -n "$dll_path" ]]; then
+                cp -f "$dll_path" "$DIST_DIR/"
+                echo "    Copied: $(basename "$dll_path")"
+
+                # Inspect this DLL for its own dependencies.
+                pending+=("$dll_path")
+            fi
+        done < <(
+            objdump -p "$binary" |
+                sed -n 's/^[[:space:]]*DLL Name:[[:space:]]*//p'
+        )
     done
+}
+
+copy_dependency_tree "$EXE_PATH"
+
+DLL_COUNT="$(
+    find "$DIST_DIR" \
+        -maxdepth 1 \
+        -type f \
+        -iname '*.dll' |
+        wc -l |
+        tr -d ' '
+)"
+
+if [[ "$DLL_COUNT" -eq 0 ]]; then
+    echo "Error: No runtime DLLs were copied."
+    echo ""
+    echo "Dependencies reported by objdump:"
+    objdump -p "$EXE_PATH" |
+        sed -n 's/^[[:space:]]*DLL Name:[[:space:]]*/    /p'
+    exit 1
 fi
+
+echo "==> Copied $DLL_COUNT runtime DLLs."
 
 echo "==> Done. Windows release folder:"
 echo "    $DIST_DIR"
