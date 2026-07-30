@@ -26,7 +26,7 @@ require_command(){
 }
 
 require_command cmake
-require_command make
+require_command mingw32-make
 require_command pkg-config
 
 GENERATOR="MinGW Makefiles"

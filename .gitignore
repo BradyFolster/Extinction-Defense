@@ -26,3 +26,7 @@ ExtinctionDefense
 # OS junk
 .DS_Store
 Thumbs.db
+
+# Windows build output
+/build-windows/
+/dist/
