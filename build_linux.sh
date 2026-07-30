@@ -104,17 +104,20 @@ cat > "$DIST_DIR/run.sh" <<'RUNEOF'
 set -e
 cd "$(dirname "$0")"
 export LD_LIBRARY_PATH="$PWD/lib${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
-./ExtinctionDefense
+export SDL_VIDEO_X11_WMCLASS="ExtinctionDefense"
+exec ./ExtinctionDefense
 RUNEOF
 chmod +x "$DIST_DIR/run.sh"
 
-cat > "$DIST_DIR/ExtinctionDefense.desktop" <<'DESKTOPEOF'
+cat > "$DIST_DIR/ExtinctionDefense.desktop" <<DESKTOPEOF
 [Desktop Entry]
 Type=Application
 Name=Extinction Defense
 Comment=A dinosaur tower defense game
-Exec=./run.sh
-Icon=./extinction-defense.png
+Exec=$DIST_DIR/run.sh
+Icon=$DIST_DIR/extinction-defense.png
+Path=$DIST_DIR
+StartupWMClass=ExtinctionDefense
 Terminal=false
 Categories=Game;
 DESKTOPEOF

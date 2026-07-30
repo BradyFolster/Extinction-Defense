@@ -29,6 +29,8 @@ App::~App() { shutdown(); }
 
 // Initializes SDL
 bool App::init(){
+    SDL_SetHint(SDL_HINT_APP_NAME, "ExtinctionDefense");
+
     // "should" fix DPI scaling issues on Windows
     SDL_SetHint(SDL_HINT_WINDOWS_DPI_AWARENESS, "permonitorv2");
     // Starts up desired systems
@@ -62,6 +64,15 @@ bool App::init(){
     if (window_ == nullptr){
         std::cerr << "SDL_CreateWindow failed: " << SDL_GetError() << "\n";
         return false;
+    }
+
+    // Uses the correct icon
+    SDL_Surface* icon = IMG_Load("assets/images/icon.png");
+    if (icon != nullptr){
+        SDL_SetWindowIcon(window_, icon);
+        SDL_FreeSurface(icon);
+    } else{
+        std::cerr << "failed to load window icon: " << IMG_GetError() << "\n";
     }
 
     // Apply saved fullscreen preference 
@@ -1836,13 +1847,17 @@ SDL_Rect App::get_speed_button_rect() const{
 
 void App::render_next_wave_button(){
     SDL_Rect rect = get_next_wave_button_rect();
+    const bool can_start = wave_manager_.can_start_next_wave();
 
-    if (wave_manager_.can_start_next_wave()){
-        render_button_texture(rect, SDL_Color{60, 180, 90, 255});
-    } else{
-        render_button_texture(rect, SDL_Color{90, 90, 90, 255});
+    render_button_texture(rect, SDL_Color{60, 180, 90, 255});
+
+    if (!can_start){
+        SDL_SetRenderDrawBlendMode(renderer_, SDL_BLENDMODE_BLEND);
+        SDL_SetRenderDrawColor(renderer_, 0, 0, 0, 115);
+        SDL_RenderFillRect(renderer_, &rect);
     }
 
+    SDL_Color text_color = can_start ? SDL_Color{255, 255, 255, 255} : SDL_Color{255, 70, 70, 255};
     SDL_SetRenderDrawColor(renderer_, 20, 20, 20, 255);
 
     // Draws wave number centered inside the button.
@@ -1852,9 +1867,9 @@ void App::render_next_wave_button(){
     TTF_Font* font = assets_.get_font("debug_font");
 
     if (font != nullptr && TTF_SizeText(font, wave_text.c_str(), &text_w, &text_h) == 0){
-        draw_text(wave_text, rect.x + (rect.w - text_w) / 2, rect.y + 18, SDL_Color{255, 255, 255, 255});
+        draw_text(wave_text, rect.x + (rect.w - text_w) / 2, rect.y + 18, text_color);
     } else{
-        draw_text(wave_text, rect.x + 28, rect.y + 18, SDL_Color{255, 255, 255, 255});
+        draw_text(wave_text, rect.x + 28, rect.y + 18, text_color);
     }
 }
 
