@@ -63,15 +63,32 @@ copy_dll(){
 }
 
 echo "==> Copying runtime DLLs..."
+
 if command -v ntldd >/dev/null 2>&1; then
-    while IFS= read -r dll_path; do
-        copy_dll "$dll_path"
-    done < <(ntldd -R "$EXE_PATH" | awk '/=> \/mingw/ {print $3}')
+    ACTIVE_MINGW_PREFIX="${MINGW_PREFIX:-/mingw64}"
+
+    while IFS= read -r raw_dll_path; do
+        [[ -n "$raw_dll_path" ]] || continue
+
+        # Convert paths such as C:\msys64\mingw64\bin\SDL2.dll
+        # into MSYS2 paths such as /mingw64/bin/SDL2.dll.
+        dll_path="$(cygpath -u "$raw_dll_path" 2>/dev/null || printf '%s' "$raw_dll_path")"
+
+        # Copy only DLLs supplied by the active MinGW environment.
+        case "$dll_path" in
+            "$ACTIVE_MINGW_PREFIX"/bin/*.dll)
+                copy_dll "$dll_path"
+                ;;
+        esac
+    done < <(
+        ntldd --recursive "$EXE_PATH" |
+            sed -nE 's/.*=>[[:space:]]+(.*)[[:space:]]+\(0x[0-9A-Fa-f]+\).*/\1/p'
+    )
 else
     echo "ntldd not found; copying common SDL/runtime DLLs from the active MinGW bin directory."
-    echo "For better automatic DLL collection, install ntldd: pacman -S mingw-w64-x86_64-ntldd"
 
     MINGW_BIN="$(dirname "$(command -v gcc)")"
+
     for dll in \
         SDL2.dll \
         SDL2_image.dll \
