@@ -30,6 +30,7 @@ struct GridCell{
 };
 
 enum class AppScreen{
+    Intro,
     MainMenu,
     MapSelect,
     DifficultySelect,
@@ -84,6 +85,12 @@ class App{
         void update(float dt);
         // Draws the current frame
         void render();
+
+        // Intro helpers
+        void update_intro(float dt);
+        void render_intro_screen();
+        void render_logo(int center_x, int center_y, int target_width, Uint8 alpha) const;
+        void render_main_menu_logo() const;
 
         // Loads all game assets used by SDL in the asset manager
         bool load_assets();
@@ -352,7 +359,7 @@ class App{
         bool build_rotation_swapped_ = false;
 
         // Main menu & game starting members
-        AppScreen screen_ = AppScreen::MainMenu;
+        AppScreen screen_ = AppScreen::Intro;
         std::vector<AppScreen> screen_stack_;
 
         // Quick fade-to-black transition between menu screens.
@@ -362,6 +369,11 @@ class App{
         float screen_transition_alpha_ = 0.0f;
         static constexpr float SCREEN_TRANSITION_SPEED = 6.0f;
         static constexpr float SELECTED_TOWER_MENU_SLIDE_SPEED = 8.0f;
+        float intro_timer_ = 0.0f;
+        bool intro_finished_ = false;
+        static constexpr float INTRO_FADE_IN_DURATION = 0.8f;
+        static constexpr float INTRO_HOLD_DURATION = 1.6f;
+        static constexpr float INTRO_MOVE_DURATION = 1.1f;
 
         std::vector<MapOption> map_options_{
             {"Map 1", "assets/maps/map1.json"}

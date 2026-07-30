@@ -643,6 +643,11 @@ void App::process_events(){
 void App::update(float dt){
     update_screen_transition(dt);
 
+    if (screen_ == AppScreen::Intro){
+        update_intro(dt);
+        return;
+    }
+
     if (screen_ != AppScreen::Gameplay){
         return;
     }
@@ -701,6 +706,97 @@ void App::update(float dt){
     }
 }
 
+void App::update_intro(float dt){
+    if (intro_finished_){
+        return;
+    }
+
+    intro_timer_ += dt;
+
+    const float total_duration = INTRO_FADE_IN_DURATION + INTRO_HOLD_DURATION + INTRO_MOVE_DURATION;
+    if (intro_timer_ >= total_duration){
+        intro_timer_ = total_duration;
+        intro_finished_ = true;
+        screen_ = AppScreen::MainMenu;
+    }
+}
+
+void App::render_logo(int center_x, int center_y, int target_width, Uint8 alpha) const{
+    SDL_Texture* logo_texture = assets_.get_texture("logo");
+    if (logo_texture == nullptr){
+        return;
+    }
+
+    int texture_w = 0;
+    int texture_h = 0;
+    if (SDL_QueryTexture(logo_texture, nullptr, nullptr, &texture_w, &texture_h) != 0 || texture_w <= 0 || texture_h <= 0){
+        return;
+    }
+
+    const float aspect = static_cast<float>(texture_h) / static_cast<float>(texture_w);
+    const int target_height = static_cast<int>(target_width * aspect);
+
+    SDL_Rect dest{
+        center_x - target_width / 2,
+        center_y - target_height / 2,
+        target_width,
+        target_height
+    };
+
+    SDL_SetTextureAlphaMod(logo_texture, alpha);
+    SDL_RenderCopy(renderer_, logo_texture, nullptr, &dest);
+    SDL_SetTextureAlphaMod(logo_texture, 255);
+}
+
+void App::render_main_menu_logo() const{
+    render_logo(WORLD_WIDTH / 2, 210, 520, 255);
+}
+
+void App::render_intro_screen(){
+    const float move_start_time = INTRO_FADE_IN_DURATION + INTRO_HOLD_DURATION;
+    const float total_duration = move_start_time + INTRO_MOVE_DURATION;
+
+    if (intro_timer_ < move_start_time){
+        SDL_SetRenderDrawColor(renderer_, 16, 33, 33, 255);
+        SDL_Rect intro_background{0, 0, WORLD_WIDTH, WORLD_HEIGHT};
+        SDL_RenderFillRect(renderer_, &intro_background);
+
+        float fade_progress = intro_timer_ / INTRO_FADE_IN_DURATION;
+        fade_progress = std::clamp(fade_progress, 0.0f, 1.0f);
+        const Uint8 logo_alpha = static_cast<Uint8>(fade_progress * 255.0f);
+
+        render_logo(WORLD_WIDTH / 2, WORLD_HEIGHT / 2, 780, logo_alpha);
+        return;
+    }
+
+    render_main_menu();
+
+    float move_progress = (intro_timer_ - move_start_time) / INTRO_MOVE_DURATION;
+    move_progress = std::clamp(move_progress, 0.0f, 1.0f);
+    move_progress = move_progress * move_progress * (3.0f - 2.0f * move_progress);
+
+    const Uint8 black_alpha = static_cast<Uint8>((1.0f - move_progress) * 255.0f);
+    SDL_SetRenderDrawBlendMode(renderer_, SDL_BLENDMODE_BLEND);
+    SDL_SetRenderDrawColor(renderer_, 16, 33, 33, black_alpha);
+    SDL_Rect intro_background{0, 0, WORLD_WIDTH, WORLD_HEIGHT};
+    SDL_RenderFillRect(renderer_, &intro_background);
+
+    const int start_center_y = WORLD_HEIGHT / 2;
+    const int end_center_y = 210;
+    const int start_width = 780;
+    const int end_width = 520;
+
+    const int logo_center_y = static_cast<int>(start_center_y + (end_center_y - start_center_y) * move_progress);
+    const int logo_width = static_cast<int>(start_width + (end_width - start_width) * move_progress);
+
+    render_logo(WORLD_WIDTH / 2, logo_center_y, logo_width, 255);
+
+    if (intro_timer_ >= total_duration){
+        intro_finished_ = true;
+        screen_ = AppScreen::MainMenu;
+    }
+}
+
 // Renders the current frame
 void App::render(){
     // Set the color the renderer will use when clearing the screen
@@ -710,6 +806,12 @@ void App::render(){
     SDL_RenderClear(renderer_);
 
     // Renders different game states
+    if (screen_ == AppScreen::Intro){
+        render_intro_screen();
+        SDL_RenderPresent(renderer_);
+        return;
+    }
+
     if (screen_ == AppScreen::MainMenu){
         render_main_menu();
         render_screen_transition_overlay();
@@ -869,6 +971,10 @@ bool App::load_assets(){
     }
     if (!assets_.load_texture(renderer_, "menu_background", "assets/images/background.png")){
         std::cerr << "failed to load menu background texture.\n";
+        return false;
+    }
+    if (!assets_.load_texture(renderer_, "logo", "assets/images/logo.png")){
+        std::cerr << "failed to load logo texture.\n";
         return false;
     }
     if (!assets_.load_texture(renderer_, "coin_icon", "assets/images/coin.png")){
@@ -4145,8 +4251,9 @@ void App::render_main_menu(){
         }
     };
 
-    SDL_Rect title_area{0, 200, WORLD_WIDTH, 70};
-    draw_centered_text("Extinction Defense", title_area, text_color);
+    if (screen_ != AppScreen::Intro){
+        render_main_menu_logo();
+    }
 
     SDL_Rect play = get_main_play_button_rect();
     SDL_Rect settings = get_main_settings_button_rect();
