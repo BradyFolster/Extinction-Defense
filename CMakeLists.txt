@@ -26,6 +26,13 @@ add_executable(ExtinctionDefense
     src/assets/asset_manager.cpp
 )
 
+set(EXTINCTION_DEFENSE_WINDOWS_ICON "" CACHE FILEPATH "Windows .ico file for ExtinctionDefense.exe")
+if (WIN32 AND EXTINCTION_DEFENSE_WINDOWS_ICON AND EXISTS "${EXTINCTION_DEFENSE_WINDOWS_ICON}")
+    set(EXTINCTION_DEFENSE_ICON_RC "${CMAKE_CURRENT_BINARY_DIR}/ExtinctionDefenseIcon.rc")
+    file(WRITE "${EXTINCTION_DEFENSE_ICON_RC}" "IDI_ICON1 ICON \"${EXTINCTION_DEFENSE_WINDOWS_ICON}\"\n")
+    target_sources(ExtinctionDefense PRIVATE "${EXTINCTION_DEFENSE_ICON_RC}")
+endif()
+
 add_executable(png_to_map_json
     tools/png_to_map_json.cpp
 )

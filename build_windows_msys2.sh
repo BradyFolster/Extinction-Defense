@@ -7,6 +7,7 @@ BUILD_DIR="$PROJECT_ROOT/build-windows"
 DIST_ROOT="$PROJECT_ROOT/dist/windows"
 DIST_DIR="$DIST_ROOT/ExtinctionDefense"
 EXE_NAME="ExtinctionDefense.exe"
+ICON_PATH="$PROJECT_ROOT/assets/images/icon.ico"
 JOBS="${JOBS:-$(nproc 2>/dev/null || echo 4)}"
 
 cd "$PROJECT_ROOT"
@@ -32,8 +33,13 @@ require_command objdump
 
 GENERATOR="MinGW Makefiles"
 
+if [[ ! -f "$ICON_PATH" ]]; then
+    echo "Warning: Windows icon not found: $ICON_PATH"
+    echo "The build will continue without embedding an .ico file."
+fi
+
 echo "==> Configuring Windows build..."
-cmake -S "$PROJECT_ROOT" -B "$BUILD_DIR" -G "$GENERATOR" -DCMAKE_BUILD_TYPE=Release
+cmake -S "$PROJECT_ROOT" -B "$BUILD_DIR" -G "$GENERATOR" -DCMAKE_BUILD_TYPE=Release -DEXTINCTION_DEFENSE_WINDOWS_ICON="$ICON_PATH"
 
 echo "==> Building ExtinctionDefense..."
 cmake --build "$BUILD_DIR" --config Release --parallel "$JOBS" --target ExtinctionDefense
