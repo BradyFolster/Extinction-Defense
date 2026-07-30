@@ -476,6 +476,7 @@ void App::process_events(){
                             play_sound("sell_click");
                             sell_tower(towers_[selected_tower_index_]);
                             selected_tower_index_ = -1;
+                            selected_tower_menu_render_index_ = -1;
                             tower_selected_ = false;
                         }
                     }
@@ -646,6 +647,20 @@ void App::update(float dt){
         return;
     }
 
+    if (selected_tower_index_ >= 0 && selected_tower_index_ < static_cast<int>(towers_.size())){
+        selected_tower_menu_render_index_ = selected_tower_index_;
+        selected_tower_menu_slide_ += SELECTED_TOWER_MENU_SLIDE_SPEED * dt;
+        if (selected_tower_menu_slide_ > 1.0f){
+            selected_tower_menu_slide_ = 1.0f;
+        }
+    } else{
+        selected_tower_menu_slide_ -= SELECTED_TOWER_MENU_SLIDE_SPEED * dt;
+        if (selected_tower_menu_slide_ <= 0.0f){
+            selected_tower_menu_slide_ = 0.0f;
+            selected_tower_menu_render_index_ = -1;
+        }
+    }
+
     if (paused_){
         return;
     }
@@ -781,11 +796,11 @@ void App::render(){
     render_hint_box();
     render_fps_counter();
 
-    // Renders build menu or the tower-specific menu
-    if (selected_tower_index_ >= 0){
+    // Renders build menu with the selected tower menu sliding over it when needed
+    render_tower_menu();
+
+    if (selected_tower_menu_slide_ > 0.0f){
         render_selected_tower_menu();
-    } else{
-        render_tower_menu();
     }
 
     // Debug menu
@@ -2786,7 +2801,10 @@ void App::render_selected_tower_radius() const{
 }
 
 void App::render_selected_tower_menu(){
-    SDL_Rect panel{MENU_X, 0, MENU_WIDTH, WORLD_HEIGHT};
+    const int slide_offset = get_selected_tower_menu_slide_offset();
+    const int menu_x = MENU_X + slide_offset;
+
+    SDL_Rect panel{menu_x, 0, MENU_WIDTH, WORLD_HEIGHT};
 
     SDL_SetRenderDrawColor(renderer_, 30, 34, 40, 255);
     SDL_RenderFillRect(renderer_, &panel);
@@ -2794,17 +2812,17 @@ void App::render_selected_tower_menu(){
     SDL_SetRenderDrawColor(renderer_, 80, 90, 100, 255);
     SDL_RenderDrawRect(renderer_, &panel);
 
-    if (selected_tower_index_ < 0 || selected_tower_index_ >= static_cast<int>(towers_.size())){
+    if (selected_tower_menu_render_index_ < 0 || selected_tower_menu_render_index_ >= static_cast<int>(towers_.size())){
         return;
     }
 
-    const Tower& tower = towers_[selected_tower_index_];
+    const Tower& tower = towers_[selected_tower_menu_render_index_];
     const TowerDefinition& def = get_tower_definition(tower.type);
 
     SDL_Color title_color{255, 255, 255, 255};
     SDL_Color text_color{210, 220, 230, 255};
 
-    int x = MENU_X + 24;
+    int x = menu_x + 24;
     int y = 40;
     int line_height = 32;
 
@@ -2823,7 +2841,7 @@ void App::render_selected_tower_menu(){
     draw_text("Range: " + std::to_string(static_cast<int>(tower.attack_range)), x, y, text_color);
     y += line_height;
 
-    float aura_bonus = get_attack_speed_bonus_for_tower(selected_tower_index_);
+    float aura_bonus = get_attack_speed_bonus_for_tower(selected_tower_menu_render_index_);
     float effective_aps = tower.attacks_per_second + aura_bonus;
     draw_text("Attack Speed: " + format_float_2dp(effective_aps), x, y, text_color);
     y += line_height;
@@ -2875,9 +2893,13 @@ void App::render_selected_tower_menu(){
     render_sell_button();
 }
 
+int App::get_selected_tower_menu_slide_offset() const{
+    return static_cast<int>((1.0f - selected_tower_menu_slide_) * MENU_WIDTH);
+}
+
 SDL_Rect App::get_upgrade_button_rect(UpgradePath path) const{
     // Damage is first, utility is second
-    const int button_x = MENU_X + 24;
+    const int button_x = MENU_X + get_selected_tower_menu_slide_offset() + 24;
     const int button_w = MENU_WIDTH - 48;
     const int button_h = 110;
 
@@ -2923,7 +2945,7 @@ void App::handle_upgrade_button_click(UpgradePath path){
 }
 
 SDL_Rect App::get_sell_button_rect() const{
-    const int button_x = MENU_X + 24;
+    const int button_x = MENU_X + get_selected_tower_menu_slide_offset() + 24;
     const int button_w = MENU_WIDTH - 48;
     const int button_h = 110;
 
@@ -2937,7 +2959,12 @@ void App::render_sell_button(){
 
     SDL_SetRenderDrawColor(renderer_, 220, 220, 220, 255);
 
-    Tower &tower = towers_[selected_tower_index_];
+    int tower_index = selected_tower_index_ >= 0 ? selected_tower_index_ : selected_tower_menu_render_index_;
+    if (tower_index < 0 || tower_index >= static_cast<int>(towers_.size())){
+        return;
+    }
+
+    Tower &tower = towers_[tower_index];
     int sell_price = static_cast<int>(std::ceil(tower.money_spent * 0.45));
 
     SDL_Color text_color{210, 220, 230, 255};
@@ -3253,7 +3280,7 @@ void App::render_selected_manual_target() const{
 }
 
 SDL_Rect App::get_manual_target_button_rect() const{
-    return SDL_Rect{MENU_X + 24, 320, MENU_WIDTH - 48, 60};
+    return SDL_Rect{MENU_X + get_selected_tower_menu_slide_offset() + 24, 320, MENU_WIDTH - 48, 60};
 }
 
 void App::spawn_projectile_at_point(Tower& tower, int tower_index, float target_x, float target_y){
@@ -3408,7 +3435,7 @@ void App::render_reposition_preview(){
 }
 
 SDL_Rect App::get_reposition_button_rect() const{
-    return SDL_Rect{MENU_X + 24, 385, MENU_WIDTH - 38, 40};
+    return SDL_Rect{MENU_X + get_selected_tower_menu_slide_offset() + 24, 385, MENU_WIDTH - 38, 40};
 }
 
 float App::get_enemy_aura_speed_bonus(const Enemy& target_enemy) const{
@@ -4060,6 +4087,8 @@ void App::start_game(const MapOption& map, Difficulty difficulty){
 
     tower_selected_ = false;
     selected_tower_index_ = -1;
+    selected_tower_menu_render_index_ = -1;
+    selected_tower_menu_slide_ = 0.0f;
     selected_tower_ = nullptr;
 
     manual_targeting_mode_ = false;

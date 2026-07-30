@@ -123,6 +123,7 @@ class App{
         void render_tower_menu();
         void render_tower_button(TowerType type);
         void render_selected_tower_menu();
+        int get_selected_tower_menu_slide_offset() const;
         SDL_Rect get_upgrade_button_rect(UpgradePath path) const;
         void handle_upgrade_button_click(UpgradePath path);
         void render_upgrade_button(const Tower& tower, UpgradePath path, int current_path_level);
@@ -311,6 +312,8 @@ class App{
         bool tower_selected_ = false;
         TowerType selected_tower_type_ = TowerType::Trex;
         int selected_tower_index_ = -1;
+        int selected_tower_menu_render_index_ = -1;
+        float selected_tower_menu_slide_ = 0.0f;
 
         // Data for enemies and enemy paths
         std::vector<CellCoord> enemy_path_;
@@ -358,6 +361,7 @@ class App{
         AppScreen transition_next_screen_ = AppScreen::MainMenu;
         float screen_transition_alpha_ = 0.0f;
         static constexpr float SCREEN_TRANSITION_SPEED = 6.0f;
+        static constexpr float SELECTED_TOWER_MENU_SLIDE_SPEED = 8.0f;
 
         std::vector<MapOption> map_options_{
             {"Map 1", "assets/maps/map1.json"}
