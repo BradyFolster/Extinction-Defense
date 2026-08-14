@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="assets/images/logo.png" alt="Extinction Defense" width="700">
+  <img src="docs/screenshots/logo.png" alt="Extinction Defense" width="700">
 </p>
 
 <p align="center">
@@ -11,7 +11,7 @@
 </p>
 
 <p align="center">
-  <img src="docs/screenshots/gameplay.png" alt="Extinction Defense gameplay" width="900">
+  <img src="docs/screenshots/in_game.png" alt="Extinction Defense gameplay" width="900">
 </p>
 
 ## About
@@ -40,10 +40,10 @@ The project was built in C++ with SDL2 to deepen my understanding of systems pro
 <table>
   <tr>
     <td width="50%">
-      <img src="docs/screenshots/main-menu.png" alt="Extinction Defense main menu">
+      <img src="docs/screenshots/main_menu.png" alt="Extinction Defense main menu">
     </td>
     <td width="50%">
-      <img src="docs/screenshots/tower-upgrades.png" alt="Tower upgrade interface">
+      <img src="docs/screenshots/upgrade_screen.png" alt="Tower upgrade interface">
     </td>
   </tr>
   <tr>
@@ -52,9 +52,6 @@ The project was built in C++ with SDL2 to deepen my understanding of systems pro
   </tr>
 </table>
 
-<p align="center">
-  <img src="docs/screenshots/late-game.png" alt="Late-game Extinction Defense wave" width="900">
-</p>
 
 ## Dinosaur Towers
 
