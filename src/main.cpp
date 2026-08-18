@@ -1,11 +1,14 @@
 #include "core/app.h"
+#include <filesystem>
+#include <iostream>
+#include <string>
 
 // Doesn't take command line inputs, but windows gets angry if this isn't here
 int main(int argc, char* argv[]){
     (void)argc;
     (void)argv;
 
-    std::string version_ = "0.1.0";
+    std::string version_ = EXTINCTION_DEFENSE_VERSION;
 
     // Always run relative to the game's resource directory.
     //
