@@ -44,13 +44,9 @@ jobs:
           VERSION="${{ inputs.version }}"
 
           # Allow either:
-          #
           #   0.1.0
-          #
           # or:
-          #
           #   v0.1.0
-          #
           VERSION="${VERSION#v}"
 
           if [[ ! "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
@@ -94,6 +90,11 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v7
 
+      - name: Show build tools
+        shell: pwsh
+        run: |
+          cmake --version
+          git --version
 
       - name: Install pinned vcpkg
         shell: pwsh
@@ -116,7 +117,6 @@ jobs:
 
           "VCPKG_ROOT=$vcpkgRoot" >> $env:GITHUB_ENV
 
-
       - name: Configure
         shell: pwsh
         env:
@@ -125,13 +125,13 @@ jobs:
           cmake `
               -S . `
               -B build/windows `
+              -G "Visual Studio 17 2022" `
               -A x64 `
               -DCMAKE_TOOLCHAIN_FILE="$env:VCPKG_ROOT/scripts/buildsystems/vcpkg.cmake" `
               -DVCPKG_TARGET_TRIPLET=x64-windows-static-release `
               -DVCPKG_OVERLAY_TRIPLETS="$env:GITHUB_WORKSPACE/cmake/triplets" `
               -DEXTINCTION_DEFENSE_VERSION="$env:VERSION" `
               -DEXTINCTION_DEFENSE_BUILD_TOOLS=OFF
-
 
       - name: Build
         shell: pwsh
@@ -142,14 +142,12 @@ jobs:
               --parallel `
               --target ExtinctionDefense
 
-
       - name: Package Windows ZIP
         shell: pwsh
         env:
           VERSION: ${{ needs.validate.outputs.version }}
         run: |
           $packageName = "ExtinctionDefense-v$env:VERSION-Windows-x64"
-
           $packageDirectory = "dist\$packageName"
 
           New-Item `
@@ -157,8 +155,28 @@ jobs:
               -Force `
               -Path $packageDirectory
 
+          $exeCandidates = @(
+              "build\windows\Release\ExtinctionDefense.exe",
+              "build\windows\ExtinctionDefense.exe"
+          )
+
+          $exePath = $null
+
+          foreach ($candidate in $exeCandidates) {
+              if (Test-Path $candidate) {
+                  $exePath = $candidate
+                  break
+              }
+          }
+
+          if ($null -eq $exePath) {
+              Write-Error "Could not find ExtinctionDefense.exe"
+              Get-ChildItem build\windows -Recurse
+              exit 1
+          }
+
           Copy-Item `
-              "build\windows\Release\ExtinctionDefense.exe" `
+              $exePath `
               "$packageDirectory\ExtinctionDefense.exe"
 
           Copy-Item `
@@ -176,7 +194,6 @@ jobs:
               -Path "$packageDirectory\*" `
               -DestinationPath "dist\$packageName.zip" `
               -CompressionLevel Optimal
-
 
       - name: Upload Windows ZIP
         uses: actions/upload-artifact@v7
@@ -201,7 +218,6 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v7
 
-
       - name: Install Linux build requirements
         shell: bash
         run: |
@@ -213,8 +229,11 @@ jobs:
               git \
               curl \
               zip \
+              unzip \
+              ninja-build \
               pkg-config \
               autoconf \
+              autoconf-archive \
               automake \
               libtool \
               libx11-dev \
@@ -225,6 +244,17 @@ jobs:
               libegl1-mesa-dev \
               libibus-1.0-dev
 
+      - name: Show build tools
+        shell: bash
+        run: |
+          cmake --version
+          ninja --version
+          gcc --version
+          g++ --version
+          git --version
+          autoconf --version
+          automake --version
+          libtoolize --version
 
       - name: Install pinned vcpkg
         shell: bash
@@ -248,7 +278,6 @@ jobs:
 
           echo "VCPKG_ROOT=$VCPKG_ROOT" >> "$GITHUB_ENV"
 
-
       - name: Configure
         shell: bash
         env:
@@ -257,13 +286,13 @@ jobs:
           cmake \
               -S . \
               -B build/linux \
+              -G Ninja \
               -DCMAKE_BUILD_TYPE=Release \
               -DCMAKE_TOOLCHAIN_FILE="$VCPKG_ROOT/scripts/buildsystems/vcpkg.cmake" \
               -DVCPKG_TARGET_TRIPLET=x64-linux-release \
               -DVCPKG_OVERLAY_TRIPLETS="$GITHUB_WORKSPACE/cmake/triplets" \
               -DEXTINCTION_DEFENSE_VERSION="$VERSION" \
               -DEXTINCTION_DEFENSE_BUILD_TOOLS=OFF
-
 
       - name: Build
         shell: bash
@@ -273,12 +302,11 @@ jobs:
               --parallel \
               --target ExtinctionDefense
 
-
       - name: Show linked libraries
         shell: bash
         run: |
-          ldd build/linux/ExtinctionDefense
-
+          echo "Linked runtime libraries:"
+          ldd build/linux/ExtinctionDefense || true
 
       - name: Package Linux ZIP
         shell: bash
@@ -286,10 +314,15 @@ jobs:
           VERSION: ${{ needs.validate.outputs.version }}
         run: |
           PACKAGE_NAME="ExtinctionDefense-v${VERSION}-Linux-x64"
-
           PACKAGE_DIRECTORY="dist/${PACKAGE_NAME}"
 
           mkdir -p "$PACKAGE_DIRECTORY"
+
+          if [[ ! -f build/linux/ExtinctionDefense ]]; then
+              echo "Could not find Linux executable."
+              find build/linux -maxdepth 4 -type f -print
+              exit 1
+          fi
 
           cp \
               build/linux/ExtinctionDefense \
@@ -315,7 +348,6 @@ jobs:
               "${PACKAGE_NAME}.zip" \
               "${PACKAGE_NAME}"
 
-
       - name: Upload Linux ZIP
         uses: actions/upload-artifact@v7
         with:
@@ -339,6 +371,28 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v7
 
+      - name: Install macOS build requirements
+        shell: bash
+        run: |
+          brew update
+
+          brew install \
+              ninja \
+              pkg-config \
+              autoconf \
+              autoconf-archive \
+              automake \
+              libtool
+
+      - name: Show build tools
+        shell: bash
+        run: |
+          cmake --version
+          ninja --version
+          clang --version
+          git --version
+          autoconf --version
+          automake --version
 
       - name: Install pinned vcpkg
         shell: bash
@@ -362,7 +416,6 @@ jobs:
 
           echo "VCPKG_ROOT=$VCPKG_ROOT" >> "$GITHUB_ENV"
 
-
       - name: Configure
         shell: bash
         env:
@@ -371,14 +424,15 @@ jobs:
           cmake \
               -S . \
               -B build/macos-intel \
+              -G Ninja \
               -DCMAKE_BUILD_TYPE=Release \
+              -DCMAKE_OSX_ARCHITECTURES=x86_64 \
               -DCMAKE_OSX_DEPLOYMENT_TARGET=12.0 \
               -DCMAKE_TOOLCHAIN_FILE="$VCPKG_ROOT/scripts/buildsystems/vcpkg.cmake" \
               -DVCPKG_TARGET_TRIPLET=x64-osx-release \
               -DVCPKG_OVERLAY_TRIPLETS="$GITHUB_WORKSPACE/cmake/triplets" \
               -DEXTINCTION_DEFENSE_VERSION="$VERSION" \
               -DEXTINCTION_DEFENSE_BUILD_TOOLS=OFF
-
 
       - name: Build
         shell: bash
@@ -388,6 +442,11 @@ jobs:
               --parallel \
               --target ExtinctionDefense
 
+      - name: Verify Intel architecture
+        shell: bash
+        run: |
+          file build/macos-intel/ExtinctionDefense
+          lipo -info build/macos-intel/ExtinctionDefense
 
       - name: Upload Intel executable
         uses: actions/upload-artifact@v7
@@ -413,6 +472,28 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v7
 
+      - name: Install macOS build requirements
+        shell: bash
+        run: |
+          brew update
+
+          brew install \
+              ninja \
+              pkg-config \
+              autoconf \
+              autoconf-archive \
+              automake \
+              libtool
+
+      - name: Show build tools
+        shell: bash
+        run: |
+          cmake --version
+          ninja --version
+          clang --version
+          git --version
+          autoconf --version
+          automake --version
 
       - name: Install pinned vcpkg
         shell: bash
@@ -436,7 +517,6 @@ jobs:
 
           echo "VCPKG_ROOT=$VCPKG_ROOT" >> "$GITHUB_ENV"
 
-
       - name: Configure
         shell: bash
         env:
@@ -445,14 +525,15 @@ jobs:
           cmake \
               -S . \
               -B build/macos-arm \
+              -G Ninja \
               -DCMAKE_BUILD_TYPE=Release \
+              -DCMAKE_OSX_ARCHITECTURES=arm64 \
               -DCMAKE_OSX_DEPLOYMENT_TARGET=12.0 \
               -DCMAKE_TOOLCHAIN_FILE="$VCPKG_ROOT/scripts/buildsystems/vcpkg.cmake" \
               -DVCPKG_TARGET_TRIPLET=arm64-osx-release \
               -DVCPKG_OVERLAY_TRIPLETS="$GITHUB_WORKSPACE/cmake/triplets" \
               -DEXTINCTION_DEFENSE_VERSION="$VERSION" \
               -DEXTINCTION_DEFENSE_BUILD_TOOLS=OFF
-
 
       - name: Build
         shell: bash
@@ -462,6 +543,11 @@ jobs:
               --parallel \
               --target ExtinctionDefense
 
+      - name: Verify Apple Silicon architecture
+        shell: bash
+        run: |
+          file build/macos-arm/ExtinctionDefense
+          lipo -info build/macos-arm/ExtinctionDefense
 
       - name: Upload Apple Silicon executable
         uses: actions/upload-artifact@v7
@@ -490,20 +576,17 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v7
 
-
       - name: Download Intel executable
         uses: actions/download-artifact@v8
         with:
           name: macos-intel-binary
           path: macos-intel
 
-
       - name: Download Apple Silicon executable
         uses: actions/download-artifact@v8
         with:
           name: macos-arm-binary
           path: macos-arm
-
 
       - name: Create Universal macOS app
         shell: bash
@@ -518,10 +601,25 @@ jobs:
           mkdir -p \
               "$APP/Contents/Resources"
 
+          INTEL_BINARY="macos-intel/ExtinctionDefense"
+          ARM_BINARY="macos-arm/ExtinctionDefense"
+
+          if [[ ! -f "$INTEL_BINARY" ]]; then
+              echo "Intel executable not found."
+              find macos-intel -type f -print
+              exit 1
+          fi
+
+          if [[ ! -f "$ARM_BINARY" ]]; then
+              echo "Apple Silicon executable not found."
+              find macos-arm -type f -print
+              exit 1
+          fi
+
           lipo \
               -create \
-              macos-intel/ExtinctionDefense \
-              macos-arm/ExtinctionDefense \
+              "$INTEL_BINARY" \
+              "$ARM_BINARY" \
               -output \
               "$APP/Contents/MacOS/ExtinctionDefense"
 
@@ -579,14 +677,19 @@ jobs:
           </plist>
           EOF
 
-
       - name: Verify Universal executable
         shell: bash
         run: |
+          file \
+              "dist/Extinction Defense.app/Contents/MacOS/ExtinctionDefense"
+
           lipo \
               -info \
               "dist/Extinction Defense.app/Contents/MacOS/ExtinctionDefense"
 
+          plutil \
+              -lint \
+              "dist/Extinction Defense.app/Contents/Info.plist"
 
       - name: Package macOS ZIP
         shell: bash
@@ -602,7 +705,6 @@ jobs:
               --keepParent \
               "Extinction Defense.app" \
               "ExtinctionDefense-v${VERSION}-macOS-Universal.zip"
-
 
       - name: Upload macOS ZIP
         uses: actions/upload-artifact@v7
@@ -641,22 +743,39 @@ jobs:
           path: release-assets
           merge-multiple: true
 
-
       - name: Show release files
         shell: bash
         run: |
-          ls -lah release-assets
+          echo "Files being published:"
+          find release-assets -maxdepth 1 -type f -print
 
+      - name: Verify all three ZIPs exist
+        shell: bash
+        env:
+          VERSION: ${{ needs.validate.outputs.version }}
+        run: |
+          WINDOWS="release-assets/ExtinctionDefense-v${VERSION}-Windows-x64.zip"
+          LINUX="release-assets/ExtinctionDefense-v${VERSION}-Linux-x64.zip"
+          MACOS="release-assets/ExtinctionDefense-v${VERSION}-macOS-Universal.zip"
+
+          for FILE in "$WINDOWS" "$LINUX" "$MACOS"; do
+              if [[ ! -f "$FILE" ]]; then
+                  echo "Missing release file: $FILE"
+                  exit 1
+              fi
+          done
 
       - name: Create GitHub Release
         shell: bash
         env:
           GH_TOKEN: ${{ github.token }}
           VERSION: ${{ needs.validate.outputs.version }}
+          REPOSITORY: ${{ github.repository }}
         run: |
           gh release create \
               "v${VERSION}" \
               release-assets/*.zip \
+              --repo "$REPOSITORY" \
               --target "${GITHUB_SHA}" \
               --title "Extinction Defense v${VERSION}" \
               --generate-notes
