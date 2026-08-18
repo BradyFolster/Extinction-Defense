@@ -504,6 +504,8 @@ void App::process_events(){
                             selected_tower_type_ = TowerType::Trex;
                             selected_tower_index_ = -1;
                             build_rotation_swapped_ = false;
+                        } else{
+                            play_sound("cannot_afford");
                         }
                     }
                     else if (point_in_rect(mouse_x, mouse_y, get_tower_button_rect(TowerType::Stegosaurus))) {
@@ -514,6 +516,8 @@ void App::process_events(){
                             selected_tower_type_ = TowerType::Stegosaurus;
                             selected_tower_index_ = -1;
                             build_rotation_swapped_ = false;
+                        } else{
+                            play_sound("cannot_afford");
                         }
                     }
                     else if (point_in_rect(mouse_x, mouse_y, get_tower_button_rect(TowerType::Velociraptor))) {
@@ -524,6 +528,8 @@ void App::process_events(){
                             selected_tower_type_ = TowerType::Velociraptor;
                             selected_tower_index_ = -1;
                             build_rotation_swapped_ = false;
+                        } else{
+                            play_sound("cannot_afford");
                         }
                     }
                     else if (point_in_rect(mouse_x, mouse_y, get_tower_button_rect(TowerType::Spinosaurus))) {
@@ -534,6 +540,8 @@ void App::process_events(){
                             selected_tower_type_ = TowerType::Spinosaurus;
                             selected_tower_index_ = -1;
                             build_rotation_swapped_ = false;
+                        } else{
+                            play_sound("cannot_afford");
                         }
                     }
                     else if (point_in_rect(mouse_x, mouse_y, get_tower_button_rect(TowerType::Parasaurolophus))) {
@@ -544,6 +552,8 @@ void App::process_events(){
                             selected_tower_type_ = TowerType::Parasaurolophus;
                             selected_tower_index_ = -1;
                             build_rotation_swapped_ = false;
+                        } else{
+                            play_sound("cannot_afford");
                         }
                     }
                     else if (point_in_rect(mouse_x, mouse_y, get_tower_button_rect(TowerType::Ankylosaurus))) {
@@ -554,6 +564,8 @@ void App::process_events(){
                             selected_tower_type_ = TowerType::Ankylosaurus;
                             selected_tower_index_ = -1;
                             build_rotation_swapped_ = false;
+                        } else{
+                            play_sound("cannot_afford");
                         }
                     }
                     else if (point_in_rect(mouse_x, mouse_y, get_tower_button_rect(TowerType::Sarcosuchus))) {
@@ -564,6 +576,8 @@ void App::process_events(){
                             selected_tower_type_ = TowerType::Sarcosuchus;
                             selected_tower_index_ = -1;
                             build_rotation_swapped_ = false;
+                        } else{
+                            play_sound("cannot_afford");
                         }
                     }
                     else if (point_in_rect(mouse_x, mouse_y, get_tower_button_rect(TowerType::Allosaurus))) {
@@ -574,6 +588,8 @@ void App::process_events(){
                             selected_tower_type_ = TowerType::Allosaurus;
                             selected_tower_index_ = -1;
                             build_rotation_swapped_ = false;
+                        } else{
+                            play_sound("cannot_afford");
                         }
                     }
                     else if (point_in_rect(mouse_x, mouse_y, get_tower_button_rect(TowerType::Dilophosaurus))) {
@@ -584,6 +600,8 @@ void App::process_events(){
                             selected_tower_type_ = TowerType::Dilophosaurus;
                             selected_tower_index_ = -1;
                             build_rotation_swapped_ = false;
+                        } else{
+                            play_sound("cannot_afford");
                         }
                     }
                     else if (point_in_rect(mouse_x, mouse_y, get_tower_button_rect(TowerType::Troodon))) {
@@ -594,6 +612,8 @@ void App::process_events(){
                             selected_tower_type_ = TowerType::Troodon;
                             selected_tower_index_ = -1;
                             build_rotation_swapped_ = false;
+                        } else{
+                            play_sound("cannot_afford");
                         }
                     }
                     else if (point_in_rect(mouse_x, mouse_y, get_tower_button_rect(TowerType::Oviraptor))) {
@@ -604,6 +624,8 @@ void App::process_events(){
                             selected_tower_type_ = TowerType::Oviraptor;
                             selected_tower_index_ = -1;
                             build_rotation_swapped_ = false;
+                        } else{
+                            play_sound("cannot_afford");
                         }
                     }
                     else if (point_in_rect(mouse_x, mouse_y, get_tower_button_rect(TowerType::Pteranodon))) {
@@ -614,6 +636,8 @@ void App::process_events(){
                             selected_tower_type_ = TowerType::Pteranodon;
                             selected_tower_index_ = -1;
                             build_rotation_swapped_ = false;
+                        } else{
+                            play_sound("cannot_afford");
                         }
                     }
                 }
@@ -1147,7 +1171,7 @@ bool App::load_assets(){
         std::cerr << "failed to load button click sound.\n";
         return false;
     }
-    if (!assets_.load_sound("upgrade_click", "assets/sounds/sfx/upgrade.wav")){
+    if (!assets_.load_sound("upgrade_click", "assets/sounds/sfx/upgrade.ogg")){
         std::cerr << "failed to load upgrade click sound.\n";
         return false;
     }
@@ -1161,6 +1185,14 @@ bool App::load_assets(){
     }
     if (!assets_.load_sound("death", "assets/sounds/sfx/death.wav")){
         std::cerr << "failed to load death sound.\n";
+        return false;
+    }
+    if (!assets_.load_sound("place_tower", "assets/sounds/sfx/place_tower.ogg")){
+        std::cerr << "failed to load place tower sound.\n";
+        return false;
+    }
+    if (!assets_.load_sound("cannot_afford", "assets/sounds/sfx/cannot_afford.ogg")){
+        std::cerr << "failed to load cannot afford sound.\n";
         return false;
     }
 
@@ -1418,7 +1450,7 @@ bool App::place_selected_tower_if_valid(int center_col, int center_row) {
         }
     }
 
-    play_sound("upgrade_click");
+    play_sound("place_tower");
 
     return true;
 }
@@ -3069,6 +3101,7 @@ void App::handle_upgrade_button_click(UpgradePath path){
 
     // Do not apply the upgrade unless the player can afford it
     if (!player_.spend_money(upgrade->cost)){
+        play_sound("cannot_afford");
         return;
     }
 
