@@ -5,8 +5,10 @@ int main(int argc, char* argv[]){
     (void)argc;
     (void)argv;
 
+    std::string version_ = "0.1.0";
+
     // Creates App object
-    App app;
+    App app(version_);
 
     // Initialize SDL and create the window/renderer
     if (!app.init()){

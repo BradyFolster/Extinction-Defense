@@ -68,7 +68,7 @@ struct MapOption{
 // running the main loop, and closing things cleanly
 class App{
     public:
-        App();
+        explicit App(const std::string& version = "");
         ~App();
 
         // Initializes SDL 
@@ -363,6 +363,7 @@ class App{
         bool build_rotation_swapped_ = false;
 
         // Main menu & game starting members
+        std::string version_;
         AppScreen screen_ = AppScreen::Intro;
         std::vector<AppScreen> screen_stack_;
 

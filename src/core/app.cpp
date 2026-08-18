@@ -24,7 +24,7 @@ namespace{
 }
 
 // Default constructor & destructor
-App::App() : window_(nullptr), renderer_(nullptr), running_(false) {}
+App::App(const std::string& version) : window_(nullptr), renderer_(nullptr), version_(version), running_(false) {}
 App::~App() { shutdown(); }
 
 // Initializes SDL
@@ -4335,6 +4335,9 @@ void App::render_main_menu(){
 
     render_button_texture(quit, SDL_Color{110, 70, 70, 255});
     draw_centered_text("Quit", quit, text_color);
+
+    std::string version_text = "v" + version_;
+    draw_text_tiny(version_text, 25, WORLD_HEIGHT - 35, text_color);
 }
 
 SDL_Rect App::get_map_button_rect(int index) const{
