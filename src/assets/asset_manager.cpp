@@ -60,8 +60,7 @@ bool AssetManager::load_sound(const std::string& name, const std::string& path){
         return false;
     }
 
-    // Mix_LoadWAV is for short sound effects
-    // Later, music should use Mix_Music instead of Mix_Chunk
+    // Mix_LoadWAV is for short sound effects.
     Mix_Chunk* sound = Mix_LoadWAV(path.c_str());
 
     if (!sound){
@@ -69,9 +68,28 @@ bool AssetManager::load_sound(const std::string& name, const std::string& path){
         return false;
     }
 
-    // Stores the sound and remembers where it lives in the vector
+    // Stores the sound and remembers where it lives in the vector.
     sound_index_by_name_[name] = sounds_.size();
     sounds_.push_back(sound);
+
+    return true;
+}
+
+bool AssetManager::load_music(const std::string& name, const std::string& path){
+    if (music_index_by_name_.contains(name)){
+        SDL_Log("Music already loaded: %s", name.c_str());
+        return false;
+    }
+
+    Mix_Music* music = Mix_LoadMUS(path.c_str());
+
+    if (!music){
+        SDL_Log("Failed to load music '%s': %s", path.c_str(), Mix_GetError());
+        return false;
+    }
+
+    music_index_by_name_[name] = music_.size();
+    music_.push_back(music);
 
     return true;
 }
@@ -109,7 +127,20 @@ Mix_Chunk* AssetManager::get_sound(const std::string& name) const{
     return sounds_[it->second];
 }
 
+Mix_Music* AssetManager::get_music(const std::string& name) const{
+    auto it = music_index_by_name_.find(name);
+
+    if (it == music_index_by_name_.end()){
+        SDL_Log("Music not found: %s", name.c_str());
+        return nullptr;
+    }
+
+    return music_[it->second];
+}
+
 void AssetManager::cleanup(){
+    Mix_HaltMusic();
+
     // Destroy all GPU textures
     for (SDL_Texture* texture : textures_){
         SDL_DestroyTexture(texture);
@@ -122,6 +153,10 @@ void AssetManager::cleanup(){
     for (Mix_Chunk* sound : sounds_){
         Mix_FreeChunk(sound);
     }
+    // Free all loaded music tracks
+    for (Mix_Music* music : music_){
+        Mix_FreeMusic(music);
+    }
 
     // Clear both the storage vectors and lookup maps
     textures_.clear();
@@ -132,6 +167,9 @@ void AssetManager::cleanup(){
 
     sounds_.clear();
     sound_index_by_name_.clear();
+
+    music_.clear();
+    music_index_by_name_.clear();
 }
 
 void AssetManager::unload_texture(const std::string& name){

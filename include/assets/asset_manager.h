@@ -14,10 +14,12 @@ class AssetManager{
         bool load_texture(SDL_Renderer* renderer, const std::string& name, const std::string& path);
         bool load_font(const std::string& name, const std::string& path, int size);
         bool load_sound(const std::string& name, const std::string& path);
+        bool load_music(const std::string& name, const std::string& path);
 
         SDL_Texture* get_texture(const std::string& name) const;
         TTF_Font* get_font(const std::string& name) const;
         Mix_Chunk* get_sound(const std::string& name) const;
+        Mix_Music* get_music(const std::string& name) const;
 
         void unload_texture(const std::string& name);
 
@@ -32,4 +34,7 @@ class AssetManager{
 
         std::vector<Mix_Chunk*> sounds_;
         std::unordered_map<std::string, size_t> sound_index_by_name_;
+
+        std::vector<Mix_Music*> music_;
+        std::unordered_map<std::string, size_t> music_index_by_name_;
 };

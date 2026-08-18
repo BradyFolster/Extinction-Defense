@@ -244,6 +244,10 @@ class App{
 
         // Sound helpers
         void play_sound(const std::string& name) const;
+        void play_music(const std::string& name);
+        void update_music(float dt);
+        void ensure_music_for_screen();
+        std::string get_music_name_for_screen() const;
 
         // Hint Box Helpers
         void render_hint_box();
@@ -371,9 +375,13 @@ class App{
         static constexpr float SELECTED_TOWER_MENU_SLIDE_SPEED = 8.0f;
         float intro_timer_ = 0.0f;
         bool intro_finished_ = false;
+        static constexpr float INTRO_COMPLETE_TIME = 4.685f;
         static constexpr float INTRO_FADE_IN_DURATION = 0.8f;
         static constexpr float INTRO_HOLD_DURATION = 1.6f;
         static constexpr float INTRO_MOVE_DURATION = 1.1f;
+        static constexpr float MUSIC_LOOP_GAP_SECONDS = 2.0f;
+        std::string current_music_name_;
+        float music_restart_delay_remaining_ = -1.0f;
 
         std::vector<MapOption> map_options_{
             {"Map 1", "assets/maps/map1.json"}

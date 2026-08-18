@@ -42,6 +42,10 @@ bool App::init(){
         std::cerr << "IMG_Init failed: " << IMG_GetError() << "\n";
         return false;
     }
+    if (!(Mix_Init(MIX_INIT_OGG) & MIX_INIT_OGG)){
+        std::cerr << "Mix_Init OGG failed: " << Mix_GetError() << "\n";
+        return false;
+    }
     if (Mix_OpenAudio(44100, MIX_DEFAULT_FORMAT, 2, 256) != 0){
         std::cerr << "Mix_OpenAudio failed: " << Mix_GetError() << "\n";
         return false;
@@ -119,6 +123,7 @@ bool App::init(){
 
     // Apply saved volume settings after loading settings and opening SDL_mixer.
     apply_audio_settings();
+    ensure_music_for_screen();
     
     // Starts the first wave
     // wave_manager_.start_next_wave();
@@ -653,6 +658,7 @@ void App::process_events(){
 // Updates game logic
 void App::update(float dt){
     update_screen_transition(dt);
+    update_music(dt);
 
     if (screen_ == AppScreen::Intro){
         update_intro(dt);
@@ -724,7 +730,8 @@ void App::update_intro(float dt){
 
     intro_timer_ += dt;
 
-    const float total_duration = INTRO_FADE_IN_DURATION + INTRO_HOLD_DURATION + INTRO_MOVE_DURATION;
+    const float total_duration =
+        INTRO_COMPLETE_TIME;
     if (intro_timer_ >= total_duration){
         intro_timer_ = total_duration;
         intro_finished_ = true;
@@ -764,7 +771,8 @@ void App::render_main_menu_logo() const{
 }
 
 void App::render_intro_screen(){
-    const float move_start_time = INTRO_FADE_IN_DURATION + INTRO_HOLD_DURATION;
+    const float fade_start_time = INTRO_COMPLETE_TIME - INTRO_FADE_IN_DURATION - INTRO_HOLD_DURATION - INTRO_MOVE_DURATION;
+    const float move_start_time = INTRO_COMPLETE_TIME - INTRO_MOVE_DURATION;
     const float total_duration = move_start_time + INTRO_MOVE_DURATION;
 
     if (intro_timer_ < move_start_time){
@@ -772,7 +780,7 @@ void App::render_intro_screen(){
         SDL_Rect intro_background{0, 0, WORLD_WIDTH, WORLD_HEIGHT};
         SDL_RenderFillRect(renderer_, &intro_background);
 
-        float fade_progress = intro_timer_ / INTRO_FADE_IN_DURATION;
+        float fade_progress = (intro_timer_ - fade_start_time) / INTRO_FADE_IN_DURATION;
         fade_progress = std::clamp(fade_progress, 0.0f, 1.0f);
         const Uint8 logo_alpha = static_cast<Uint8>(fade_progress * 255.0f);
 
@@ -946,6 +954,7 @@ void App::shutdown(){
     }
 
     Mix_CloseAudio();
+    Mix_Quit();
 
     TTF_Quit();
     IMG_Quit();
@@ -1152,6 +1161,16 @@ bool App::load_assets(){
     }
     if (!assets_.load_sound("death", "assets/sounds/sfx/death.wav")){
         std::cerr << "failed to load death sound.\n";
+        return false;
+    }
+
+    // Music
+    if (!assets_.load_music("main_menu", "assets/sounds/music/main_menu.ogg")){
+        std::cerr << "failed to load main menu music.\n";
+        return false;
+    }
+    if (!assets_.load_music("game", "assets/sounds/music/game.ogg")){
+        std::cerr << "failed to load in-game music.\n";
         return false;
     }
 
@@ -4049,9 +4068,10 @@ void App::cycle_resolution(){
 
 void App::apply_audio_settings(){
     const int sdl_mixer_max = MIX_MAX_VOLUME;
+    const int sfx_output_percent = 75;
 
     int effective_music = (music_volume_ * master_volume_ * sdl_mixer_max) / 10000;
-    int effective_sfx = (sfx_volume_ * master_volume_ * sdl_mixer_max) / 10000;
+    int effective_sfx = (sfx_volume_ * master_volume_ * sfx_output_percent * sdl_mixer_max) / 1000000;
 
     Mix_VolumeMusic(effective_music);
     Mix_Volume(-1, effective_sfx);
@@ -4408,6 +4428,7 @@ void App::update_screen_transition(float dt){
         if (screen_transition_alpha_ >= 1.0f){
             screen_transition_alpha_ = 1.0f;
             screen_ = transition_next_screen_;
+            ensure_music_for_screen();
             screen_transition_fading_out_ = false;
         }
     } else{
@@ -4709,4 +4730,70 @@ void App::play_sound(const std::string& name) const{
     }
 
     Mix_PlayChannel(-1, sound, 0);
+}
+
+void App::play_music(const std::string& name){
+    Mix_Music* music = assets_.get_music(name);
+
+    if (music == nullptr){
+        return;
+    }
+
+    if (Mix_PlayMusic(music, 0) != 0){
+        SDL_Log("Failed to play music '%s': %s", name.c_str(), Mix_GetError());
+        return;
+    }
+
+    current_music_name_ = name;
+    music_restart_delay_remaining_ = -1.0f;
+}
+
+void App::update_music(float dt){
+    if (current_music_name_.empty()){
+        ensure_music_for_screen();
+        return;
+    }
+
+    if (Mix_PlayingMusic() != 0){
+        return;
+    }
+
+    if (music_restart_delay_remaining_ < 0.0f){
+        music_restart_delay_remaining_ = MUSIC_LOOP_GAP_SECONDS;
+        return;
+    }
+
+    music_restart_delay_remaining_ -= dt;
+    if (music_restart_delay_remaining_ <= 0.0f){
+        play_music(current_music_name_);
+    }
+}
+
+void App::ensure_music_for_screen(){
+    const std::string desired_music = get_music_name_for_screen();
+
+    if (desired_music.empty()){
+        Mix_HaltMusic();
+        current_music_name_.clear();
+        music_restart_delay_remaining_ = -1.0f;
+        return;
+    }
+
+    if (desired_music == current_music_name_){
+        return;
+    }
+
+    play_music(desired_music);
+}
+
+std::string App::get_music_name_for_screen() const{
+    if (screen_ == AppScreen::Gameplay){
+        return "game";
+    }
+
+    if (screen_ == AppScreen::Settings && !screen_stack_.empty() && screen_stack_.back() == AppScreen::Gameplay){
+        return "game";
+    }
+
+    return "main_menu";
 }
