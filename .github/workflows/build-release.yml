@@ -588,6 +588,56 @@ jobs:
           name: macos-arm-binary
           path: macos-arm
 
+      - name: Create macOS app icon
+        shell: bash
+        run: |
+          mkdir -p AppIcon.iconset
+
+          sips -z 16 16 \
+              assets/images/icon.png \
+              --out AppIcon.iconset/icon_16x16.png
+
+          sips -z 32 32 \
+              assets/images/icon.png \
+              --out AppIcon.iconset/icon_16x16@2x.png
+
+          sips -z 32 32 \
+              assets/images/icon.png \
+              --out AppIcon.iconset/icon_32x32.png
+
+          sips -z 64 64 \
+              assets/images/icon.png \
+              --out AppIcon.iconset/icon_32x32@2x.png
+
+          sips -z 128 128 \
+              assets/images/icon.png \
+              --out AppIcon.iconset/icon_128x128.png
+
+          sips -z 256 256 \
+              assets/images/icon.png \
+              --out AppIcon.iconset/icon_128x128@2x.png
+
+          sips -z 256 256 \
+              assets/images/icon.png \
+              --out AppIcon.iconset/icon_256x256.png
+
+          sips -z 512 512 \
+              assets/images/icon.png \
+              --out AppIcon.iconset/icon_256x256@2x.png
+
+          sips -z 512 512 \
+              assets/images/icon.png \
+              --out AppIcon.iconset/icon_512x512.png
+
+          sips -z 1024 1024 \
+              assets/images/icon.png \
+              --out AppIcon.iconset/icon_512x512@2x.png
+
+          iconutil \
+              -c icns \
+              AppIcon.iconset \
+              -o ExtinctionDefense.icns
+
       - name: Create Universal macOS app
         shell: bash
         env:
@@ -600,6 +650,10 @@ jobs:
 
           mkdir -p \
               "$APP/Contents/Resources"
+
+          cp \
+              ExtinctionDefense.icns \
+              "$APP/Contents/Resources/ExtinctionDefense.icns"
 
           INTEL_BINARY="macos-intel/ExtinctionDefense"
           ARM_BINARY="macos-arm/ExtinctionDefense"
@@ -648,6 +702,9 @@ jobs:
               <string>Extinction Defense</string>
 
               <key>CFBundleExecutable</key>
+              <string>ExtinctionDefense</string>
+
+              <key>CFBundleIconFile</key>
               <string>ExtinctionDefense</string>
 
               <key>CFBundleIdentifier</key>
