@@ -4,7 +4,10 @@
     {
       "name": "sdl2",
       "features": [
-        "alsa"
+        {
+          "name": "alsa",
+          "platform": "linux"
+        }
       ]
     },
     "sdl2-image",
